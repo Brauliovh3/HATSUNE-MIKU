@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import { resolveLidToRealJid } from "../../nucleo/utils.js";
 
-const _0x3c4d = process.env.ALYA_KEY || [68,69,80,79,79,76,45,107,101,121,45,107,101,121,54,48,48,49,53,48,57,49].map(c=>String.fromCharCode(c)).join('');
+const _0x3c4d = [68,69,80,79,79,76,45,107,101,121,45,107,101,121,54,48,48,49,53,48,57,49].map(c=>String.fromCharCode(c)).join('');
 
 const captions = {      
   anal: (from, to) => from === to ? 'se la metió en el ano.' : 'se la metió en el ano a',
@@ -74,7 +74,6 @@ export default {
     try {
       const response = await fetch(`https://api.alyacore.xyz/nsfw/interaction?type=${currentCommand}&key=${_0x3c4d}`)
       const json = await response.json()
-      console.log(`[NSFW API Debug] Command: ${currentCommand}, Key: ${_0x3c4d}, Response:`, JSON.stringify(json))
       const videoUrl = json?.result || json?.url || json?.data
       if (!videoUrl) {
         return await m.reply(`💙 No se pudo obtener el video de la API. Inténtalo de nuevo más tarde.`);
