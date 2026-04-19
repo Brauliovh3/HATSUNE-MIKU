@@ -9,8 +9,8 @@ export const categoryImages = {
   nsfw: 'https://i.pinimg.com/736x/95/92/63/95926316fbc8708df3245d45fabf3393.jpg',
   owner: 'https://jrocknews.com/wp-content/uploads/2019/03/hatsune-miku-v4x-promo-top.jpg',
   profile: 'https://i.pinimg.com/736x/cf/4f/bd/cf4fbdccb346330efd7f02c60f52c6d0.jpg',
-  sockets: 'https://i.imgur.com/3iA1FLc.jpeg',
-  stickers: 'https://i.etsystatic.com/30432133/r/il/cb5394/5988644209/il_fullxfull.5988644209_nv9n.jpg',
+  sockets: 'https://i.pinimg.com/736x/46/8d/e3/468de3ae91716d0b8033fc2b0d85772f.jpg',
+  stickers: 'https://i.pinimg.com/236x/7f/f1/04/7ff10431e8ab905b86498cbe94a0dbf1.jpg',
   utils: 'https://e1.pxfuel.com/desktop-wallpaper/532/937/desktop-wallpaper-hatsune-miku-1920x1080-hatsune-miku-thumbnail.jpg'
 };
 
