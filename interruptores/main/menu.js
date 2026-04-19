@@ -42,8 +42,9 @@ export default {
         gacha: ['gacha', 'rpg'],
         grupo: ['grupo', 'group'],
         nsfw: ['nsfw', '+18'],
+        owner: ['owner', 'dueño', 'creador'],
         profile: ['profile', 'perfil'],
-        sockets: ['sockets', 'bots'],
+        sockets: ['sockets', 'bots', 'config'],
         stickers: ['stickers', 'sticker'],
         utils: ['utils', 'utilidades', 'herramientas']
       };
