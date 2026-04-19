@@ -34,7 +34,18 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
       const sender = global.db.data.users[m.sender].name;
       const time = client.uptime ? formatearMs(Date.now() - client.uptime) : "Desconocido";
       const input = normalize(args[0] || '');
-      const cat = Object.keys(categoryAliases).find(k => categoryAliases[k].map(normalize).includes(input));
+      let cat = Object.keys(categoryAliases).find(k => categoryAliases[k].map(normalize).includes(input));
+      
+      
+      if (!cat && args[0] && categoryAliases[args[0]]) {
+        cat = args[0];
+      }
+      
+     
+      if (args[0]) {
+        console.log(`[Menu Debug] args[0]: ${args[0]}, normalized: ${input}, cat: ${cat}`);
+      }
+      
       const category = `${cat ? ` para \`${cat}\`` : '. *(˶ᵔ ᵕ ᵔ˶)*'}`;
       if (args[0] && !cat) {      
         return m.reply(`💙 La categoria *${args[0]}* no existe, las categorias disponibles son: *${Object.keys(categoryAliases).join(', ')}*.\n> Para ver la lista completa escribe *${usedPrefix}menu*\n> Para ver los comandos de una categoría escribe *${usedPrefix}menu [categoría]*\n> Ejemplo: *${usedPrefix}menu anime*`);
