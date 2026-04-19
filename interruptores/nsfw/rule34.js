@@ -14,11 +14,21 @@ export default {
       const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } })
       const type = res.headers.get('content-type') || ''
       if (res.ok && type.includes('json')) {
-        const json = await res.json()
-        const data = Array.isArray(json) ? json : json?.post || json?.data || []
-        const valid = data.map(i => i?.file_url || i?.sample_url || i?.preview_url).filter(u => typeof u === 'string' && /\.(jpe?g|png|gif|mp4)$/i.test(u))
-        if (valid.length) {
-          mediaList = [...new Set(valid)].sort(() => Math.random() - 0.5)
+        const text = await res.text()
+        if (!text || text.trim() === '[]' || text.trim() === '') {
+          return client.reply(m.chat, `💙 No se encontraron resultados para ${tag}`, m, global.miku)
+        }
+        try {
+          const json = JSON.parse(text)
+          const data = Array.isArray(json) ? json : json?.post || json?.data || []
+          const valid = data.map(i => i?.file_url || i?.sample_url || i?.preview_url).filter(u => typeof u === 'string' && /\.(jpe?g|png|gif|mp4)$/i.test(u))
+          if (valid.length) {
+            mediaList = [...new Set(valid)].sort(() => Math.random() - 0.5)
+          }
+        } catch (parseError) {
+          console.error('Error parsing JSON:', parseError.message)
+          console.error('Response text:', text.substring(0, 200))
+          return client.reply(m.chat, `💙 Error al procesar la respuesta de la API para ${tag}`, m, global.miku)
         }
       }
       if (!mediaList.length) 
