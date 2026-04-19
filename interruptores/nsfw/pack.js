@@ -1,33 +1,35 @@
 import fetch from 'node-fetch';
 
-const handler = async (m, {conn, command, usedPrefix}) => {
-  if (!global.db.data.chats[m.chat].nsfw && m.isGroup) return m.reply(`💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`);
-  
-  switch (command) {
-    case 'pack':
-      const url = global.pack[Math.floor(Math.random() * global.pack.length)];
-      conn.sendMessage(m.chat, {image: {url: url}, caption: `_🥵 Pack 🥵_`}, {quoted: m});
-      break;
-    case 'pack2':
-      const url2 = global.packgirl[Math.floor(Math.random() * global.packgirl.length)];
-      conn.sendMessage(m.chat, {image: {url: url2}, caption: `_🥵 Pack 2 🥵_`}, {quoted: m});
-      break;
-    case 'pack3':
-      const url3 = global.packmen[Math.floor(Math.random() * global.packmen.length)];
-      conn.sendMessage(m.chat, {image: {url: url3}, caption: `_🥵 Pack 3 🥵_`}, {quoted: m});
-      break;
-    case 'videoxxx': case 'vídeoxxx':
-      const url4 = global.videosxxxc[Math.floor(Math.random() * global.videosxxxc.length)];
-      await conn.sendMessage(m.chat, {video: {url: url4}, caption: `🥵 Video XXX 🥵*`}, {quoted: m});
-      break;
-    case 'videoxxxlesbi': case 'videolesbixxx': case 'pornolesbivid': case 'pornolesbianavid': case 'pornolesbiv': case 'pornolesbianav': case 'pornolesv':
-      const url5 = global.videosxxxc2[Math.floor(Math.random() * global.videosxxxc2.length)];
-      await conn.sendMessage(m.chat, {video: {url: url5}, caption: `🥵 Video Lesbiano 🥵*`}, {quoted: m});
-      break;
+export default {
+  command: ['pack','pack2','pack3','videoxxx','vídeoxxx','videoxxxlesbi','videolesbixxx','pornolesbivid','pornolesbianavid','pornolesbiv','pornolesbianav','pornolesv'],
+  category: 'nsfw',
+  run: async (client, m, args, usedPrefix, command) => {
+    if (!global.db.data.chats[m.chat].nsfw && m.isGroup) return m.reply(`💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`);
+    
+    switch (command) {
+      case 'pack':
+        const url = global.pack[Math.floor(Math.random() * global.pack.length)];
+        client.sendMessage(m.chat, {image: {url: url}, caption: `_🥵 Pack 🥵_`}, {quoted: m});
+        break;
+      case 'pack2':
+        const url2 = global.packgirl[Math.floor(Math.random() * global.packgirl.length)];
+        client.sendMessage(m.chat, {image: {url: url2}, caption: `_🥵 Pack 2 🥵_`}, {quoted: m});
+        break;
+      case 'pack3':
+        const url3 = global.packmen[Math.floor(Math.random() * global.packmen.length)];
+        client.sendMessage(m.chat, {image: {url: url3}, caption: `_🥵 Pack 3 🥵_`}, {quoted: m});
+        break;
+      case 'videoxxx': case 'vídeoxxx':
+        const url4 = global.videosxxxc[Math.floor(Math.random() * global.videosxxxc.length)];
+        await client.sendMessage(m.chat, {video: {url: url4}, caption: `🥵 Video XXX 🥵*`}, {quoted: m});
+        break;
+      case 'videoxxxlesbi': case 'videolesbixxx': case 'pornolesbivid': case 'pornolesbianavid': case 'pornolesbiv': case 'pornolesbianav': case 'pornolesv':
+        const url5 = global.videosxxxc2[Math.floor(Math.random() * global.videosxxxc2.length)];
+        await client.sendMessage(m.chat, {video: {url: url5}, caption: `🥵 Video Lesbiano 🥵*`}, {quoted: m});
+        break;
+    }
   }
 };
-handler.command = /^(pack|pack2|pack3|videoxxx|vídeoxxx|videoxxxlesbi|videolesbixxx|pornolesbivid|pornolesbianavid|pornolesbiv|pornolesbianav|pornolesv)$/i;
-export default handler;
 
 global.pack = [
   'https://telegra.ph/file/957fe4031132ef90b66ec.jpg',
