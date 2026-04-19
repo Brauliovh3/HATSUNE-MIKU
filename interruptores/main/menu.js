@@ -159,7 +159,7 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
 ;
 
 export default {
-  command: ['menu'],
+  command: ['menu','help','ayuda'],
   category: 'main',
   register: true,
   run: menuRun
