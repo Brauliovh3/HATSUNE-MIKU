@@ -38,6 +38,23 @@ export default async (client, m) => {
     } catch (e) {}
   }
   if (buttonId && buttonId.startsWith('menu_')) {
+    if (m.isGroup) {
+      const chat = global.db?.data?.chats?.[m.chat] || {};
+      const primaryBot = chat?.primaryBot;
+      if (primaryBot) {
+        const botJid = client.user?.id?.split(':')[0] + '@s.whatsapp.net' || ''
+        const normalizeJid = (jid) => {
+          if (!jid) return ''
+          const clean = String(jid).split(':')[0].replace(/\D/g, '')
+          return clean
+        }
+        const primaryDigits = normalizeJid(primaryBot)
+        const currentDigits = normalizeJid(botJid)
+        if (primaryDigits && primaryDigits !== currentDigits) {
+          return
+        }
+      }
+    }
     const { processMenuButton } = await import('./interruptores/main/menu.js')
     await processMenuButton(client, m)
     return

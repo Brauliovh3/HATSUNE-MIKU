@@ -195,7 +195,9 @@ export async function processMenuButton(conn, m) {
   }
   
   if (categoryAliases[category]) {
-    return await menuRun(conn, m, [category], usedPrefix, 'menu');
+    
+    const alias = categoryAliases[category][0]; 
+    return await menuRun(conn, m, [alias], usedPrefix, 'menu');
   }
   
   return false;
