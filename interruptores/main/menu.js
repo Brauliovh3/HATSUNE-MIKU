@@ -76,12 +76,10 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
         type: 1
       }));
       
-     
-      const buttonRows = [];
-      for (let i = 0; i < categoryButtons.length; i += 2) {
-        buttonRows.push(categoryButtons.slice(i, i + 2));
-      }
-      buttonRows.push([{ buttonId: 'menu_all', buttonText: { displayText: '📋 COMPLETO' }, type: 1 }]);
+      const buttons = [
+        ...categoryButtons,
+        { buttonId: 'menu_all', buttonText: { displayText: '📋 COMPLETO' }, type: 1 }
+      ];
       const replacements = {
         $owner: owner ? (!isNaN(owner.replace(/@s\.whatsapp\.net$/, '')) ? global.db.data.users[owner]?.name || owner.split('@')[0] : owner) : 'Oculto por privacidad',
         $botType: botType,
@@ -101,7 +99,7 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
         menu = menu.replace(new RegExp(`\\${key}`, 'g'), value);
       }
       
-      const messageContent = cat ? menu : `╭━━━💙 MENU PRINCIPAL 💙━━━╮\n│\n│ 💙 Selecciona una categoría:\n│\n╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+      const messageContent = cat ? menu : `╭━━━💙 MENU PRINCIPAL 💙━━━╮\n│\n│ 💙 *${botname}*\n│\n│ 👤 *Usuarios:* ${users.toLocaleString()}\n│ ⏱️ *Uptime:* ${time}\n│ 📱 *Tipo:* ${botType}\n│\n│ 💙 Selecciona una categoría:\n│\n╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
       const categoryBanner = cat ? (categoryImages[cat] || banner) : banner;
       
       if (cat) {
@@ -147,7 +145,7 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
           gifPlayback: true,
           caption: messageContent,
           footer: '💙 Hatsune Miku Bot',
-          buttons: buttonRows,
+          buttons: buttons,
           headerType: 4,
           contextInfo: {
             mentionedJid: [m.sender],
@@ -161,7 +159,7 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
         } : {
           text: messageContent,
           footer: '💙 Hatsune Miku Bot',
-          buttons: buttonRows,
+          buttons: buttons,
           headerType: 1,
           contextInfo: {
             mentionedJid: [m.sender],
