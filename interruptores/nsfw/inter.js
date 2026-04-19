@@ -73,12 +73,8 @@ export default {
     const caption = who !== m.sender ? `\`${fromName}.\` ${captionText} \`${toName}.\` ${getRandomSymbol()}.` : `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`;
     try {
       const response = await fetch(`https://api.alyacore.xyz/nsfw/interaction?type=${currentCommand}&key=${_0x3c4d}`)
-      const json = await response.json()
-      const videoUrl = json?.result || json?.url || json?.data
-      if (!videoUrl || json?.status === false) {
-        return await m.reply(`💙 No se pudo obtener el video de la API. Inténtalo de nuevo más tarde.`);
-      }
-      await client.sendMessage(m.chat, { video: { url: videoUrl }, gifPlayback: true, caption, mentions: [who, m.sender] }, { quoted: m });
+      const buffer = await response.buffer()
+      await client.sendMessage(m.chat, { video: buffer, gifPlayback: true, caption, mentions: [who, m.sender] }, { quoted: m });
     } catch (e) {
       await m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`);
     }
