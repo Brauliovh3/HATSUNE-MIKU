@@ -111,9 +111,13 @@ export default {
       }
 
       if (command == 'panties') {
-        const res = (await axios.get(`https://raw.githubusercontent.com/BrunoSobrino/TheMystic-Bot-MD/master/src/JSON/panties.json`)).data;
-        const url = await res[Math.floor(res.length * Math.random())];
-        client.sendMessage(m.chat, {image: {url: url}, caption: `_${command}_`.trim()}, {quoted: m});
+        try {
+          const res = (await axios.get(`https://raw.githubusercontent.com/BrunoSobrino/TheMystic-Bot-MD/master/src/JSON/panties.json`)).data;
+          const url = await res[Math.floor(res.length * Math.random())];
+          await client.sendMessage(m.chat, {image: {url: url}, caption: `_${command}_`.trim()}, {quoted: m});
+        } catch (imgError) {
+          m.reply(`💙 Error al cargar la imagen. La URL puede haber expirado.`);
+        }
       }
 
       if (command == 'pene') {
