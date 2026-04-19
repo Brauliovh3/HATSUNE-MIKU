@@ -146,6 +146,7 @@ grupo: `╭━━━👥 GRUPOS Solo admins 👥━━━╮
 │ ⬆️ .promote - Dar admin
 │ ⬇️ .demote - Quitar admin
 │ 🔗 .link - Enlace del grupo
+│ 🗑️ .delete - Eliminar mensaje
 │ 🔄 .revoke - Restablecer enlace
 │ 🔓 .open - Abrir grupo
 │ 🔒 .close - Cerrar grupo
@@ -154,7 +155,6 @@ grupo: `╭━━━👥 GRUPOS Solo admins 👥━━━╮
 │ 📋 .advlist - Ver advertidos
 │ 🔇 .mute - Silenciar usuario
 │ 🔊 .unmute - Quitar silencio
-│ 🗑️ .delete - Eliminar mensaje
 │ 👑 .admins - Mencionar admins
 │ ℹ️ .gp - Info del grupo
 │ 📊 .count - Contar participantes
