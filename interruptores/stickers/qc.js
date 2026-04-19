@@ -15,32 +15,43 @@ export default {
       const db = global.db.data
       const userGlobal = db.users[target] || {}
       const nombre = userGlobal?.name || target.split('@')[0];
-      if (textFinal.length > 30) {
+      if (textFinal.length > 25) {
         await m.react('✖️');
-        return client.reply(m.chat, `💙 El texto no puede tener más de 30 caracteres.`, m, global.miku);
+        return client.reply(m.chat, `💙 El texto no puede tener más de 25 caracteres.`, m, global.miku);
       }
       await m.react('🕒');
-      const quoteObj = { type: 'quote', format: 'png', backgroundColor: '#000000', width: 384, height: 512, scale: 1, messages: [{ entities: [], avatar: true, from: { id: 1, name: nombre, photo: { url: pp } }, text: textFinal, replyMessage: {} }] };
+      console.log('[QC] Generating quote for:', textFinal);
+      const quoteObj = { type: 'quote', format: 'png', backgroundColor: '#000000', width: 512, height: 512, scale: 1, messages: [{ entities: [], avatar: true, from: { id: 1, name: nombre, photo: { url: pp } }, text: textFinal, replyMessage: {} }] };
       const json = await axios.post('https://bot.lyo.su/quote/generate', quoteObj, { headers: { 'Content-Type': 'application/json' } });
+      if (!json.data?.result?.image) {
+        console.log('[QC] API response:', json.data);
+        throw new Error('API did not return image data');
+      }
       const buffer = Buffer.from(json.data.result.image, 'base64');
+      console.log('[QC] Buffer size:', buffer.length);
       const user = db.users[m.sender] || {}
       const name = user.name || m.sender.split('@')[0];
       const meta1 = user.metadatos ? String(user.metadatos).trim() : '';
       const meta2 = user.metadatos2 ? String(user.metadatos2).trim() : '';
       let texto1 = meta1 ? meta1 : '💙 HATSUNE MIKU';
       let texto2 = meta1 ? (meta2 ? meta2 : '') : `@${name}`;
-      const tmpFile = `./tmp/qc-${Date.now()}.webp`;
+      const tmpFile = `./tmp/qc-${Date.now()}.png`;
       fs.writeFileSync(tmpFile, buffer);
+      console.log('[QC] File saved:', tmpFile);
       const stats = fs.statSync(tmpFile);
+      console.log('[QC] File size:', stats.size);
       if (stats.size > 1000000) {
         fs.unlinkSync(tmpFile);
         await m.react('✖️');
         return m.reply(`💙 El sticker generado es demasiado grande (${Math.round(stats.size/1024)}KB). Intenta con un texto más corto.`);
       }
       try {
+        console.log('[QC] Sending sticker with packname:', texto1, 'author:', texto2);
         await client.sendImageAsSticker(m.chat, tmpFile, m, { packname: texto1, author: texto2 });
+        console.log('[QC] Sticker sent successfully');
         await m.react('✔️');
       } catch (stickerError) {
+        console.error('[QC] Sticker error:', stickerError.message);
         if (stickerError.message?.includes('overlimit') || stickerError.message?.includes('too large')) {
           await m.react('✖️');
           m.reply(`💙 El sticker excede el límite de tamaño de WhatsApp. Intenta con un texto más corto.`);
@@ -50,6 +61,7 @@ export default {
       }
       fs.unlinkSync(tmpFile);
     } catch (e) {
+      console.error('[QC] Error:', e);
       await m.react('✖️');
       return m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`);
     }
