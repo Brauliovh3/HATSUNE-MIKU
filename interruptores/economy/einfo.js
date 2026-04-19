@@ -48,7 +48,7 @@ export default {
 ⴵ Weekly » *${formatTime(cooldowns.weekly)}*
 ⴵ Monthly » *${formatTime(cooldowns.monthly)}*
 
-⛁ Coins totales » 🌱${coins.toLocaleString()} ${global.db.data.settings[botId].currency}`
+💙 Coins totales » 🌱${coins.toLocaleString()} ${global.db.data.settings[botId].currency}`
     await client.sendMessage(chatId, { text: mensaje }, { quoted: m })
   }
 }

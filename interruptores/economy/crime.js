@@ -66,7 +66,7 @@ export default {
       `Hackeaste una tarjeta de crédito, pero el banco bloqueó la transacción, perdiste *🌱${cantidad.toLocaleString()} ${monedas}*.`
     ]
     const message = éxito ? pickRandom(successMessages) : pickRandom(failMessages)
-    await client.sendMessage(m.chat, { text: `「✿」 ${message}` }, { quoted: m })
+    await client.sendMessage(m.chat, { text: `💙 ${message}` }, { quoted: m })
   },
 }
 
