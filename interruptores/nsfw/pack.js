@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import { proto, generateWAMessageFromContent, generateWAMessageContent } from '@whiskeysockets/baileys';
 
 export default {
   command: ['pack','pack2','pack3','videoxxx','vídeoxxx','videoxxxlesbi','videolesbixxx','pornolesbivid','pornolesbianavid','pornolesbiv','pornolesbianav','pornolesv','gallery'],
@@ -11,7 +12,10 @@ export default {
     try {
       switch (command) {
         case 'pack':
+          console.log('Pack command triggered');
+          console.log('global.pack length:', global.pack?.length);
           const url = global.pack[Math.floor(Math.random() * global.pack.length)];
+          console.log('Selected URL:', url);
           await client.sendMessage(m.chat, {image: {url: url}, caption: `_🥵 Pack 🥵_`}, {quoted: m});
           await m.react('✅');
           break;
@@ -41,9 +45,55 @@ export default {
           for (let i = 0; i < 5; i++) {
             randomImages.push(galleryImages[Math.floor(Math.random() * galleryImages.length)]);
           }
+          const cards = [];
           for (const imgUrl of randomImages) {
-            await client.sendMessage(m.chat, {image: {url: imgUrl}, caption: `_🥵 Gallery 🥵_`}, {quoted: m});
+            try {
+              const { imageMessage } = await generateWAMessageContent(
+                { image: { url: imgUrl } },
+                { upload: client.waUploadToServer },
+              );
+              cards.push({
+                body: proto.Message.InteractiveMessage.Body.fromObject({
+                  text: `🥵 *Gallery NSFW*`,
+                }),
+                footer: proto.Message.InteractiveMessage.Footer.fromObject({ text: '' }),
+                header: proto.Message.InteractiveMessage.Header.fromObject({
+                  title: '',
+                  hasMediaAttachment: true,
+                  imageMessage,
+                }),
+                nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.fromObject({ buttons: [] }),
+              });
+            } catch (err) {
+              console.error(`Error cargando imagen ${imgUrl}:`, err.message);
+            }
           }
+          if (!cards.length) {
+            throw new Error('No se pudo construir el carrusel con las imágenes');
+          }
+          const carouselMsg = generateWAMessageFromContent(
+            m.chat,
+            {
+              viewOnceMessage: {
+                message: {
+                  interactiveMessage: proto.Message.InteractiveMessage.fromObject({
+                    body: proto.Message.InteractiveMessage.Body.create({
+                      text: `💙 *Gallery NSFW*`,
+                    }),
+                    footer: proto.Message.InteractiveMessage.Footer.create({
+                      text: `${global?.botname || '💙Hatsune Miku💙'} \n ${global?.dev || 'DEPOOL'}`,
+                    }),
+                    header: proto.Message.InteractiveMessage.Header.create({
+                      hasMediaAttachment: false,
+                    }),
+                    carouselMessage: proto.Message.InteractiveMessage.CarouselMessage.fromObject({ cards }),
+                  }),
+                },
+              },
+            },
+            { quoted: m }
+          );
+          await client.relayMessage(m.chat, carouselMsg.message, { messageId: carouselMsg.key.id });
           await m.react('✅');
           break;
       }
