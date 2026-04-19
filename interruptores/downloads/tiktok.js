@@ -6,7 +6,7 @@ const _b = [68,69,80,79,79,76,45,107,101,121,50,53,50,53,56,48].map(c=>String.fr
 const NEW_API_BASE = process.env.NEW_API_BASE || `https://${_a}`
 const NEW_API_KEY = process.env.NEW_API_KEY || _b
 const ALYA_BASE = 'https://api.alyacore.xyz'
-const ALYA_KEY = [68,69,80,79,79,76,45,107,101,121,54,48,48,49,53].map(c=>String.fromCharCode(c)).join('')
+const ALYA_KEY = [68,69,80,79,79,76,45,107,101,121,45,107,101,121,54,48,48,49,53,48,57,49].map(c=>String.fromCharCode(c)).join('')
 const DOWNLOAD_COMMANDS = new Set(['tiktok', 'tt'])
 const SEARCH_COMMANDS = new Set(['tiktoksearch', 'ttsearch', 'tts'])
 const IMAGE_COMMANDS = new Set(['tiktokimg', 'ttimg'])
