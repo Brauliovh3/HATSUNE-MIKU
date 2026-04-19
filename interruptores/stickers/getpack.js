@@ -1,7 +1,7 @@
 import fs from 'fs';
 
 export default {
-  command: ['getpack', 'pack', 'stickerpack'],
+  command: ['getpack', 'gpack'],
   category: 'stickers',
   run: async (client, m, args, usedPrefix, command) => {
     try {
