@@ -1,6 +1,8 @@
 import fetch from 'node-fetch';
 import { resolveLidToRealJid } from "../../nucleo/utils.js"
 
+const _0x1a2b = [110,101,120,121,45,100,102,99,52,97,97].map(c=>String.fromCharCode(c)).join('');
+
 const captions = {
   peek: (from, to, genero) => from === to ? 'está espiando detrás de una puerta por diversión.' : `está espiando a`,
   comfort: (from, to) => (from === to ? 'se está consolando a sí mismo.' : 'está consolando a'),
@@ -161,10 +163,9 @@ command: ['angry','enojado','enojada','bleh','bored','aburrido','aburrida','clap
     const captionText = captions[currentCommand](fromName, toName, genero)
     const caption = who !== m.sender ? `\`${fromName}.\` ${captionText} \`${toName}.\` ${getRandomSymbol()}.` : `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`
     try {
-      const response = await fetch(`https://api.stellarwa.xyz/sfw/interaction?inter=${currentCommand}`)
-      const json = await response.json()
-      const { result } = json
-      await client.sendMessage(m.chat, { video: { url: result }, gifPlayback: true, caption, mentions: [who, m.sender] }, { quoted: m })
+      const response = await fetch(`https://api.nexylight.xyz/anime/reaction?type=${currentCommand}&key=${_0x1a2b}`)
+      const buffer = await response.buffer()
+      await client.sendMessage(m.chat, { video: buffer, gifPlayback: true, caption, mentions: [who, m.sender] }, { quoted: m })
     } catch (e) {
     await m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
     }
