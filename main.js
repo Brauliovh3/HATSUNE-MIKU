@@ -37,6 +37,12 @@ export default async (client, m) => {
       }
     } catch (e) {}
   }
+  if (buttonId && buttonId.startsWith('menu_')) {
+    const { processMenuButton } = await import('./interruptores/main/menu.js')
+    await processMenuButton(client, m)
+    return
+  }
+  
   if (buttonId && (
     buttonId.includes('youtube_audio_') ||
     buttonId.includes('youtube_video_360_') ||

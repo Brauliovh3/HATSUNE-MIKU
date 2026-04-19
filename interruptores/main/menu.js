@@ -166,42 +166,40 @@ export const menucompleto = {
   run: menuRun
 };
 
-export const menuHandler = {
-  command: ['menuhandler'],
-  category: 'main',
-  register: false,
-  run: async (client, m, args, usedPrefix, command) => {
-    let buttonId = null;
-    
-    if (m.message?.buttonsResponseMessage) {
-      buttonId = m.message.buttonsResponseMessage.selectedButtonId;
-    } else if (m.message?.templateButtonReplyMessage) {
-      buttonId = m.message.templateButtonReplyMessage.selectedId;
-    } else if (m.message?.interactiveResponseMessage) {
-      try {
-        const paramsJson = m.message.interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson;
-        if (paramsJson) {
-          const params = JSON.parse(paramsJson);
-          buttonId = params.id;
-        }
-      } catch (e) {}
-    }
-    
-    if (!buttonId || !buttonId.startsWith('menu_')) return false;
-    
-    const category = buttonId.replace('menu_', '');
-    
-    if (category === 'all') {
-      return await menuRun(client, m, [], usedPrefix, 'menucompleto');
-    }
-    
-    if (categoryAliases[category]) {
-      return await menuRun(client, m, [category], usedPrefix, 'menu');
-    }
-    
-    return false;
+export async function processMenuButton(conn, m) {
+  let buttonId = m.body || m.text || null;
+  
+  if (m.message?.buttonsResponseMessage) {
+    buttonId = m.message.buttonsResponseMessage.selectedButtonId;
   }
-};
+  if (m.message?.templateButtonReplyMessage) {
+    buttonId = m.message.templateButtonReplyMessage.selectedId;
+  }
+  if (m.message?.interactiveResponseMessage) {
+    try {
+      const paramsJson = m.message.interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson;
+      if (paramsJson) {
+        const params = JSON.parse(paramsJson);
+        buttonId = params.id;
+      }
+    } catch (e) {}
+  }
+  
+  if (!buttonId || !buttonId.startsWith('menu_')) return false;
+  
+  const category = buttonId.replace('menu_', '');
+  const usedPrefix = global.prefix || '.';
+  
+  if (category === 'all') {
+    return await menuRun(conn, m, [], usedPrefix, 'menucompleto');
+  }
+  
+  if (categoryAliases[category]) {
+    return await menuRun(conn, m, [category], usedPrefix, 'menu');
+  }
+  
+  return false;
+}
 
 function formatearMs(ms) {
   const segundos = Math.floor(ms / 1000);
