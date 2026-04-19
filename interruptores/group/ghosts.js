@@ -1,5 +1,4 @@
 import fs from 'fs';
-import { resolveLidToRealJid } from "../../nucleo/utils.js";
 
 export default {
   command: ['fantasmas', 'ghosts', 'inactivos'],
@@ -9,7 +8,7 @@ export default {
 
     const groupMetadata = await client.groupMetadata(m.chat);
     const participants = groupMetadata.participants;
-    const inactiveDays = 30; 
+    const inactiveDays = 30;
     const now = Date.now();
     const inactiveThreshold = now - (inactiveDays * 24 * 60 * 60 * 1000);
 
@@ -17,18 +16,22 @@ export default {
 
     for (const participant of participants) {
       const jid = participant.id;
-      const realJid = await resolveLidToRealJid(jid, client, m.chat);
-      const userId = realJid.split('@')[0];
       
-      const userData = global.db.data.users[realJid];
+      if (typeof jid === 'string' && jid.includes(':')) {
+        jid = jid.split(':')[0] + '@s.whatsapp.net';
+      }
+      
+      const phone = jid.split('@')[0];
+      const userData = global.db.data.users[jid];
       
       if (userData) {
         const lastActivity = userData.lastMessage || userData.lastseen || 0;
         if (lastActivity < inactiveThreshold && !participant.admin) {
-          const name = userData.name || participant.notify || `+${userId}`;
+          const name = userData.name || participant.notify || `@${phone}`;
           inactiveUsers.push({
             name: name,
-            number: userId,
+            number: phone,
+            jid: jid,
             lastActivity: lastActivity,
             daysInactive: Math.floor((now - lastActivity) / (24 * 60 * 60 * 1000))
           });
@@ -50,17 +53,19 @@ export default {
     message += `│\n`;
     message += `├━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n`;
 
+    const mentions = [];
     inactiveUsers.forEach((user, index) => {
       const num = (index + 1).toString().padStart(2, '0');
       message += `│ ${num}. 👤 ${user.name}\n`;
-      message += `│    📱 +${user.number}\n`;
+      message += `│    📱 @${user.number}\n`;
       message += `│    ⏳ ${user.daysInactive} días inactivo\n`;
       message += `│\n`;
+      mentions.push(user.jid);
     });
 
     message += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n`;
     message += `💙 Usa *${usedPrefix}kick* para eliminar usuarios inactivos.`;
 
-    client.sendMessage(m.chat, { text: message }, { quoted: m });
+    client.sendMessage(m.chat, { text: message, mentions }, { quoted: m });
   }
 };
