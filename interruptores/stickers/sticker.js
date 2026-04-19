@@ -33,8 +33,8 @@ export default {
       }
       let filteredText = argsWithoutUrl.join(' ').replace(/-\w+/g, '').trim();
       let marca = filteredText.split(/[\u2022|]/).map(part => part.trim());
-      let pack = marca[0] || texto1;
-      let author = marca.length > 1 ? marca[1] : texto2;
+      let pack = '';
+      let author = '';
       const shapeArgs = { '-c': 'circle', '-t': 'triangle', '-s': 'star', '-r': 'roundrect', '-h': 'hexagon', '-d': 'diamond', '-f': 'frame', '-b': 'border', '-w': 'wave', '-m': 'mirror', '-o': 'octagon', '-y': 'pentagon', '-e': 'ellipse', '-z': 'cross', '-v': 'heart', '-x': 'cover', '-i': 'contain' };
       const effectArgs = { '-blur': 'blur', '-sepia': 'sepia', '-sharpen': 'sharpen', '-brighten': 'brighten', '-darken': 'darken', '-invert': 'invert', '-grayscale': 'grayscale', '-rotate90': 'rotate90', '-rotate180': 'rotate180', '-flip': 'flip', '-flop': 'flop', '-normalice': 'normalise', '-negate': 'negate', '-tint': 'tint' };
       const effects = [];
