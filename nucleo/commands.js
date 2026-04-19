@@ -48,6 +48,7 @@ gacha: `╭━━━🎯 GACHA & WAIFUS 🎯━━━╮
 │ 👥 .rpg-coleccion - Colección RPG
 │ 💾 .rpg-save - Guardar progreso
 │ ⚔️ .rpg-waifu-pvp - PvP de waifus
+│ 🎮 .ttt - Tic-Tac-Toe Tres en raya
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 downloads: `╭━━━📥 DESCARGAS 📥━━━╮
 │ 🎵 .play - Música/video de YouTube
@@ -138,7 +139,7 @@ utils: `╭━━━🛠️ HERRAMIENTAS 🛠️━━━╮
 │ 🌐 .tourl - Convertir a URL
 │ 🖼️ .toimg - Sticker a imagen
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
-grupo: `╭━━━👥 GRUPOS (Solo admins) 👥━━━╮
+grupo: `╭━━━👥 GRUPOS Solo admins 👥━━━╮
 │ 👻 .hidetag - Mencionar todos oculto
 │ 🦵 .kick - Eliminar usuario
 │ ➕ .add - Invitar usuario
@@ -185,6 +186,9 @@ nsfw: `╭━━━🔞 NSFW (Solo +18) 🔞━━━╮
 │ 🔞 .boobjob - Hacer rusa
 │ 🔞 .cum - Venirse
 │ 🔞 .fap - Hacerse paja
+│ 🥵 .pack - Pack imágenes
+│ 🥵 .pack2 - Pack chicas
+│ 🥵 .pack3 - Pack hombres
 │ 🔞 .ppcouple - Parejas
 │ 🔞 .footjob - Paja con pies
 │ 🔞 .fuck - Follar
@@ -223,6 +227,8 @@ nsfw: `╭━━━🔞 NSFW (Solo +18) 🔞━━━╮
 │ 🔞 .nsfwfemdom - Femdom NSFW
 │ 🔞 .nsfwglass - Glass NSFW
 │ 🔞 .calata - Calata images
+│ 🥵 .videoxxx - Videos XXX
+│ 🥵 .videoxxxlesbi - Videos lesbianas
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 anime: `╭━━━🎌 ANIME & REACCIONES 🎌━━━╮
 │ 🤗 .hug - Dar abrazos
@@ -282,7 +288,7 @@ stickers: `╭━━━🎨 STICKERS 🎨━━━╮
 │ 🧩 .emojimix - Mezclar emojis
 │ 🎨 .stickers - Menú stickers
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
-owner: `╭━━━👑 OWNER (Solo dueño) 👑━━━╮
+owner: `╭━━━👑 OWNER Solo dueño 👑━━━╮
 │ 🔄 .restart - Reiniciar bot
 │ 💻 .exec - Ejecutar código
 │ 💻 .exec2 - Ejecutar código 2
