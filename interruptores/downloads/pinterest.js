@@ -1,7 +1,7 @@
 import fetch from 'node-fetch'
 import { proto, generateWAMessageFromContent, generateWAMessageContent } from '@whiskeysockets/baileys'
 
-const _k = process.env.ALYA_KEY || [68,69,80,79,79,76,45,107,101,121,54,48,48,49,53].map(c=>String.fromCharCode(c)).join('')
+const _k = process.env.ALYA_KEY || [68,69,80,79,79,76,45,107,101,121,45,107,101,121,54,48,48,49,53,48,57,49].map(c=>String.fromCharCode(c)).join('')
 
 const _u = (s = '') => /^https?:\/\//i.test(String(s || '').trim())
 const _s = (x = '') => String(x || '').trim()

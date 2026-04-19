@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
 
-const ALYA_KEY = process.env.ALYA_KEY || 'DEPOOL-key60015'
+const ALYA_KEY = process.env.ALYA_KEY || [68,69,80,79,79,76,45,107,101,121,45,107,101,121,54,48,48,49,53,48,57,49].map(c=>String.fromCharCode(c)).join('')
 const API_URL = `https://api.alyacore.xyz/nsfw/waifu?key=${encodeURIComponent(ALYA_KEY)}`
 
 function isValidUrl(url) {

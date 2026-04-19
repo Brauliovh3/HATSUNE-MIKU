@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import { resolveLidToRealJid } from "../../nucleo/utils.js";
 
-const _0x3c4d = process.env.ALYA_KEY || [68,69,80,79,79,76,45,107,101,121,54,48,48,49,53].map(c=>String.fromCharCode(c)).join('');
+const _0x3c4d = process.env.ALYA_KEY || [68,69,80,79,79,76,45,107,101,121,45,107,101,121,54,48,48,49,53,48,57,49].map(c=>String.fromCharCode(c)).join('');
 
 const captions = {      
   anal: (from, to) => from === to ? 'se la metió en el ano.' : 'se la metió en el ano a',
