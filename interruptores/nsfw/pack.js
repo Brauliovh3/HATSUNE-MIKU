@@ -1,32 +1,55 @@
 import fetch from 'node-fetch';
 
 export default {
-  command: ['pack','pack2','pack3','videoxxx','vídeoxxx','videoxxxlesbi','videolesbixxx','pornolesbivid','pornolesbianavid','pornolesbiv','pornolesbianav','pornolesv'],
+  command: ['pack','pack2','pack3','videoxxx','vídeoxxx','videoxxxlesbi','videolesbixxx','pornolesbivid','pornolesbianavid','pornolesbiv','pornolesbianav','pornolesv','gallery'],
   category: 'nsfw',
   run: async (client, m, args, usedPrefix, command) => {
     if (!global.db.data.chats[m.chat].nsfw && m.isGroup) return m.reply(`💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`);
     
-    switch (command) {
-      case 'pack':
-        const url = global.pack[Math.floor(Math.random() * global.pack.length)];
-        client.sendMessage(m.chat, {image: {url: url}, caption: `_🥵 Pack 🥵_`}, {quoted: m});
-        break;
-      case 'pack2':
-        const url2 = global.packgirl[Math.floor(Math.random() * global.packgirl.length)];
-        client.sendMessage(m.chat, {image: {url: url2}, caption: `_🥵 Pack 2 🥵_`}, {quoted: m});
-        break;
-      case 'pack3':
-        const url3 = global.packmen[Math.floor(Math.random() * global.packmen.length)];
-        client.sendMessage(m.chat, {image: {url: url3}, caption: `_🥵 Pack 3 🥵_`}, {quoted: m});
-        break;
-      case 'videoxxx': case 'vídeoxxx':
-        const url4 = global.videosxxxc[Math.floor(Math.random() * global.videosxxxc.length)];
-        await client.sendMessage(m.chat, {video: {url: url4}, caption: `🥵 Video XXX 🥵*`}, {quoted: m});
-        break;
-      case 'videoxxxlesbi': case 'videolesbixxx': case 'pornolesbivid': case 'pornolesbianavid': case 'pornolesbiv': case 'pornolesbianav': case 'pornolesv':
-        const url5 = global.videosxxxc2[Math.floor(Math.random() * global.videosxxxc2.length)];
-        await client.sendMessage(m.chat, {video: {url: url5}, caption: `🥵 Video Lesbiano 🥵*`}, {quoted: m});
-        break;
+    await m.react('⏳');
+    
+    try {
+      switch (command) {
+        case 'pack':
+          const url = global.pack[Math.floor(Math.random() * global.pack.length)];
+          await client.sendMessage(m.chat, {image: {url: url}, caption: `_🥵 Pack 🥵_`}, {quoted: m});
+          await m.react('✅');
+          break;
+        case 'pack2':
+          const url2 = global.packgirl[Math.floor(Math.random() * global.packgirl.length)];
+          await client.sendMessage(m.chat, {image: {url: url2}, caption: `_🥵 Pack 2 🥵_`}, {quoted: m});
+          await m.react('✅');
+          break;
+        case 'pack3':
+          const url3 = global.packmen[Math.floor(Math.random() * global.packmen.length)];
+          await client.sendMessage(m.chat, {image: {url: url3}, caption: `_🥵 Pack 3 🥵_`}, {quoted: m});
+          await m.react('✅');
+          break;
+        case 'videoxxx': case 'vídeoxxx':
+          const url4 = global.videosxxxc[Math.floor(Math.random() * global.videosxxxc.length)];
+          await client.sendMessage(m.chat, {video: {url: url4}, caption: `🥵 Video XXX 🥵*`}, {quoted: m});
+          await m.react('✅');
+          break;
+        case 'videoxxxlesbi': case 'videolesbixxx': case 'pornolesbivid': case 'pornolesbianavid': case 'pornolesbiv': case 'pornolesbianav': case 'pornolesv':
+          const url5 = global.videosxxxc2[Math.floor(Math.random() * global.videosxxxc2.length)];
+          await client.sendMessage(m.chat, {video: {url: url5}, caption: `🥵 Video Lesbiano 🥵*`}, {quoted: m});
+          await m.react('✅');
+          break;
+        case 'gallery':
+          const galleryImages = [...global.pack, ...global.packgirl, ...global.packmen];
+          const randomImages = [];
+          for (let i = 0; i < 5; i++) {
+            randomImages.push(galleryImages[Math.floor(Math.random() * galleryImages.length)]);
+          }
+          for (const imgUrl of randomImages) {
+            await client.sendMessage(m.chat, {image: {url: imgUrl}, caption: `_🥵 Gallery 🥵_`}, {quoted: m});
+          }
+          await m.react('✅');
+          break;
+      }
+    } catch (error) {
+      await m.react('❌');
+      m.reply(`💙 Error al obtener el contenido: ${error.message}`);
     }
   }
 };

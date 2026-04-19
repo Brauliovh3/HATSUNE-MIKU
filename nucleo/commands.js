@@ -172,7 +172,7 @@ grupo: `╭━━━👥 GRUPOS Solo admins 👥━━━╮
 │ 🎯 .setprimary - Bot primario
 │ ⚠️ .setwarnlimit - Límite warns
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
-nsfw: `╭━━━🔞 NSFW (Solo +18) 🔞━━━╮
+nsfw: `╭━━━🔞 NSFW Solo +18 🔞━━━╮
 │ 🔞 .waifu - Waifu NSFW
 │ 🔞 .rule34 - Buscar en Rule34
 │ 🔞 .danbooru - Danbooru images
@@ -189,6 +189,7 @@ nsfw: `╭━━━🔞 NSFW (Solo +18) 🔞━━━╮
 │ 🥵 .pack - Pack imágenes
 │ 🥵 .pack2 - Pack chicas
 │ 🥵 .pack3 - Pack hombres
+│ 🥵 .gallery - Galería aleatoria
 │ 🔞 .ppcouple - Parejas
 │ 🔞 .footjob - Paja con pies
 │ 🔞 .fuck - Follar
