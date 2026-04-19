@@ -1,3 +1,6 @@
+import fs from 'fs';
+import { resolveLidToRealJid } from "../../nucleo/utils.js";
+
 export default {
   command: ['fantasmas', 'ghosts', 'inactivos'],
   category: 'group',
@@ -14,10 +17,10 @@ export default {
 
     for (const participant of participants) {
       const jid = participant.id;
-      const userId = jid.split('@')[0];
+      const realJid = await resolveLidToRealJid(jid, client, m.chat);
+      const userId = realJid.split('@')[0];
       
-      
-      const userData = global.db.data.users[jid];
+      const userData = global.db.data.users[realJid];
       
       if (userData) {
         const lastActivity = userData.lastMessage || userData.lastseen || 0;
