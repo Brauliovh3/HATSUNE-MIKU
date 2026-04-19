@@ -20,7 +20,7 @@ export default {
         return client.reply(m.chat, `💙 El texto no puede tener más de 30 caracteres.`, m, global.miku);
       }
       await m.react('🕒');
-      const quoteObj = { type: 'quote', format: 'png', backgroundColor: '#000000', width: 512, height: 768, scale: 2, messages: [{ entities: [], avatar: true, from: { id: 1, name: nombre, photo: { url: pp } }, text: textFinal, replyMessage: {} }] };
+      const quoteObj = { type: 'quote', format: 'png', backgroundColor: '#000000', width: 384, height: 512, scale: 1, messages: [{ entities: [], avatar: true, from: { id: 1, name: nombre, photo: { url: pp } }, text: textFinal, replyMessage: {} }] };
       const json = await axios.post('https://bot.lyo.su/quote/generate', quoteObj, { headers: { 'Content-Type': 'application/json' } });
       const buffer = Buffer.from(json.data.result.image, 'base64');
       const user = db.users[m.sender] || {}
@@ -31,9 +31,24 @@ export default {
       let texto2 = meta1 ? (meta2 ? meta2 : '') : `@${name}`;
       const tmpFile = `./tmp/qc-${Date.now()}.webp`;
       fs.writeFileSync(tmpFile, buffer);
-      await client.sendImageAsSticker(m.chat, tmpFile, m, { packname: texto1, author: texto2 });
+      const stats = fs.statSync(tmpFile);
+      if (stats.size > 1000000) {
+        fs.unlinkSync(tmpFile);
+        await m.react('✖️');
+        return m.reply(`💙 El sticker generado es demasiado grande (${Math.round(stats.size/1024)}KB). Intenta con un texto más corto.`);
+      }
+      try {
+        await client.sendImageAsSticker(m.chat, tmpFile, m, { packname: texto1, author: texto2 });
+        await m.react('✔️');
+      } catch (stickerError) {
+        if (stickerError.message?.includes('overlimit') || stickerError.message?.includes('too large')) {
+          await m.react('✖️');
+          m.reply(`💙 El sticker excede el límite de tamaño de WhatsApp. Intenta con un texto más corto.`);
+        } else {
+          throw stickerError;
+        }
+      }
       fs.unlinkSync(tmpFile);
-      await m.react('✔️');
     } catch (e) {
       await m.react('✖️');
       return m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`);
