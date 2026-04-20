@@ -68,7 +68,8 @@ const sock = makeWASocket({
     try {
       await m.reply(caption)
       m.react('⏳')
-      setTimeout(async () => {
+      
+      const generateCode = async () => {
         try {
           let codeGen = await sock.requestPairingCode(phone);
           codeGen = codeGen?.match(/.{1,4}/g)?.join("-") || codeGen;
@@ -83,8 +84,22 @@ const sock = makeWASocket({
         } catch (err) {
           console.error('Error generando código:', err);
           m.react('❌');
+          await m.reply('❌ Error al generar código. La conexión no está lista. Intenta de nuevo.');
+          delete commandFlags[senderId];
         }
-      }, 2000)
+      };
+      
+      sock.ev.on('connection.update', async ({ connection }) => {
+        if (connection === 'open' && commandFlags[senderId]) {
+          await generateCode();
+        }
+      });
+      
+      setTimeout(async () => {
+        if (commandFlags[senderId]) {
+          await generateCode();
+        }
+      }, 3000);
     } catch {}
   }
 
