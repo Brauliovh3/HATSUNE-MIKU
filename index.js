@@ -23,7 +23,7 @@ const log = {
   error: (msg) => console.log(chalk.bgRed.white.bold(`ERROR`), chalk.redBright(msg))
 };
 
-const maxCache = 100;
+const maxCache = 50;
 let phoneNumber = global.botNumber || "";
 let phoneInput = "";
 const methodCodeQR = process.argv.includes("--qr");
@@ -95,7 +95,20 @@ function cleanCache() {
       const files = fs.readdirSync(tmpFolder);
       let cleaned = 0;
       for (const file of files) {
-        try { fs.unlinkSync(path.join(tmpFolder, file)); cleaned++; } catch {}
+        try {
+          const filePath = path.join(tmpFolder, file);
+          const stat = fs.statSync(filePath);
+          
+          if (stat.size > 5 * 1024 * 1024) {
+            fs.unlinkSync(filePath);
+            cleaned++;
+          }
+          
+          else if (Date.now() - stat.mtimeMs > 60 * 60 * 1000) {
+            fs.unlinkSync(filePath);
+            cleaned++;
+          }
+        } catch {}
       }
       if (cleaned > 0) console.log(chalk.gray(`[ 🗑️ ] Cache tmp: ${cleaned} archivos eliminados`));
     }
@@ -279,8 +292,10 @@ async function startBot() {
   };
 }
 
-setInterval(cleanCache, 3 * 60 * 60 * 1000);
+setInterval(cleanCache, 30 * 60 * 1000);
 cleanCache();
+// Limpieza agresiva al inicio
+setTimeout(cleanCache, 5 * 60 * 1000);
 
 (async () => {
 await loadBots();
