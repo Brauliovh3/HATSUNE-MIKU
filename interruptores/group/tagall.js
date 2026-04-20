@@ -6,56 +6,21 @@ export default {
     const groupInfo = await client.groupMetadata(m.chat)
     const participants = groupInfo.participants
     const pesan = args.join(' ')
-    let teks = `💙 *HATSUNE MIKU CALL* 💙\n\n${pesan || '¡Mencionando a todos!'}\n\n💙 *Miembros:* ${participants.length}\n💙 *Solicitado por:* @${m.sender.split('@')[0]}\n\n` +
-      `╭───『 *LISTA* 』───╮\n`
-    const mentions = []
-    
+    let teks =
+      `🩵 💙 ꒰ *HATSUNE MIKU* ꒱ 💙🩵\n` +
+      `🎵 初音ミク • *VOCALOID* • ミクミク 🎵\n\n` +
+      `🌊💙 *${pesan || '『 Miku Miku ni Shite Ageru~ 』'}* 💙🌊\n\n` +
+      `🎧 *Miembros:* ${participants.length} 👥\n` +
+      `🎀 *Solicitado por:* @${m.sender.split('@')[0]} ✨\n\n` +
+      `╭✦ ꒰ 🩵🎤 *Lista de Usuarios* 🎤🩵 ꒱ ✦╮\n`
+
     for (const mem of participants) {
-      const rawJid = mem.jid || mem.id || mem.lid || mem.phoneNumber
-      if (!rawJid) continue
-      
-      const decodedJid = client.decodeJid ? client.decodeJid(rawJid) : rawJid
-      
-     
-      let realJid = decodedJid
-      if (decodedJid.includes('@lid')) {
-        const lidKey = Object.keys(global.db.data.users).find(key => key.includes(decodedJid.split('@')[0]))
-        if (lidKey) realJid = lidKey
-      }
-      
-      const phone = realJid.split('@')[0]
-      
-      
-      let name = null
-      
-      
-      const userData = global.db.data.users[realJid] || global.db.data.users[decodedJid]
-      if (userData?.name) name = userData.name
-      
-      
-      if (!name && mem.notify) name = mem.notify
-      
-     
-      if (!name && client.getName) {
-        try {
-          const contactName = await client.getName(realJid)
-          if (contactName && !contactName.includes('+')) name = contactName
-        } catch {}
-      }
-      
-     
-      if (!name) name = phone
-      
-      
-      if (name.includes(':') || name.includes('@lid') || name.includes('@s.whatsapp')) {
-        name = phone
-      }
-      
-      teks += `│ 💙 ${name}\n`
-      mentions.push(decodedJid)
+      teks += `│ 🩵🎵 @${mem.id.split('@')[0]}\n`
     }
-    
-    teks += `╰────────────────╯`
-    return client.reply(m.chat, teks, m, global.miku, { mentions: [m.sender, ...mentions] })
+
+    teks += `╰✦──────────────────✦╯\n` +
+      `💙✨ *39!* • ミクミク • 初音ミク ✨💙`
+
+    return client.reply(m.chat, teks, m, { mentions: [m.sender, ...participants.map(p => p.id)] })
   }
 }
