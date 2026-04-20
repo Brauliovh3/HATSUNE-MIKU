@@ -173,6 +173,7 @@ const intentos = 15;
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState(global.sessionName);
   const { version } = await fetchLatestBaileysVersion();
+  global.baileysVersion = version;
   const logger = pino({ level: "silent" });
   console.info = () => {};
   console.debug = () => {};

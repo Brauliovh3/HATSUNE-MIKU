@@ -41,7 +41,7 @@ export async function startSubBot(m, client, caption = '', isCode = false, phone
   }
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionFolder)
-  const { version } = await fetchLatestBaileysVersion()
+  const version = global.baileysVersion || await fetchLatestBaileysVersion().then(v => v.version)
 
 console.info = () => {} 
 const sock = makeWASocket({
@@ -57,8 +57,8 @@ const sock = makeWASocket({
   userDevicesCache,
   cachedGroupMetadata: async (jid) => groupCache.get(jid),
   version,
-  keepAliveIntervalMs: 30000,
-  maxIdleTimeMs: 120000,
+  keepAliveIntervalMs: 45000,
+  maxIdleTimeMs: 60000,
 })
 
   sock.isInit = false
@@ -70,8 +70,8 @@ const sock = makeWASocket({
       m.react('⏳')
       setTimeout(async () => {
         try {
-          let codeGen = await sock.requestPairingCode(phone, 'ABCD1234');
-          codeGen = codeGen.match(/.{1,4}/g)?.join("-") || codeGen;
+          let codeGen = await sock.requestPairingCode(phone);
+          codeGen = codeGen?.match(/.{1,4}/g)?.join("-") || codeGen;
           const msgCode = await m.reply(codeGen);
           m.react('✅')
           delete commandFlags[senderId];
@@ -80,7 +80,10 @@ const sock = makeWASocket({
               await client.sendMessage(chatId, { delete: msgCode.key });
             } catch {}
           }, 60000);
-        } catch {}
+        } catch (err) {
+          console.error('Error generando código:', err);
+          m.react('❌');
+        }
       }, 2000)
     } catch {}
   }
@@ -98,8 +101,8 @@ const sock = makeWASocket({
       if (isNewLogin) sock.isInit = false
       if (qr && isCode && phone && client && chatId && commandFlags[senderId]) {
         try {
-          let codeGen = await sock.requestPairingCode(phone, 'ABCD1234');
-          codeGen = codeGen.match(/.{1,4}/g)?.join("-") || codeGen;
+          let codeGen = await sock.requestPairingCode(phone);
+          codeGen = codeGen?.match(/.{1,4}/g)?.join("-") || codeGen;
           const msgCode = await m.reply(codeGen);
           delete commandFlags[senderId];
           setTimeout(async () => {
@@ -107,7 +110,9 @@ const sock = makeWASocket({
               await client.sendMessage(chatId, { delete: msgCode.key });
             } catch {}
           }, 60000);
-        } catch {}
+        } catch (err) {
+          console.error('Error generando código QR:', err);
+        }
       }
       if (qr && !isCode && client && chatId && commandFlags[senderId]) {
         try {
