@@ -64,12 +64,32 @@ const sock = makeWASocket({
   sock.isInit = false
   sock.ev.on('creds.update', saveCreds)
 
-  sock.pendingPairingCode = isCode && caption && client && chatId && commandFlags[senderId]
-  
-  if (sock.pendingPairingCode) {
+  if (isCode && caption && client && chatId && commandFlags[senderId]) {
     try {
       await m.reply(caption)
       m.react('⏳')
+      
+      setTimeout(async () => {
+        try {
+          if (!state.creds.registered) {
+            const pairing = await sock.requestPairingCode(phone);
+            const codeBot = pairing?.match(/.{1,4}/g)?.join("-") || pairing;
+            const msgCode = await m.reply(codeBot);
+            m.react('✅')
+            delete commandFlags[senderId];
+            setTimeout(async () => {
+              try {
+                await client.sendMessage(chatId, { delete: msgCode.key });
+              } catch {}
+            }, 60000);
+          }
+        } catch (err) {
+          console.error('Error generando código:', err);
+          m.react('❌');
+          await m.reply('❌ Error al generar código. Intenta de nuevo.');
+          delete commandFlags[senderId];
+        }
+      }, 3000);
     } catch {}
   }
 
@@ -85,44 +105,6 @@ const sock = makeWASocket({
     try {
       if (isNewLogin) sock.isInit = false
       
-     
-      if (connection === 'open' && sock.pendingPairingCode && commandFlags[senderId]) {
-        try {
-          let codeGen = await sock.requestPairingCode(phone);
-          codeGen = codeGen?.match(/.{1,4}/g)?.join("-") || codeGen;
-          const msgCode = await m.reply(codeGen);
-          m.react('✅')
-          delete commandFlags[senderId];
-          sock.pendingPairingCode = false;
-          setTimeout(async () => {
-            try {
-              await client.sendMessage(chatId, { delete: msgCode.key });
-            } catch {}
-          }, 60000);
-        } catch (err) {
-          console.error('Error generando código:', err);
-          m.react('❌');
-          await m.reply('❌ Error al generar código. Intenta de nuevo.');
-          delete commandFlags[senderId];
-          sock.pendingPairingCode = false;
-        }
-      }
-      
-      if (qr && isCode && phone && client && chatId && commandFlags[senderId]) {
-        try {
-          let codeGen = await sock.requestPairingCode(phone);
-          codeGen = codeGen?.match(/.{1,4}/g)?.join("-") || codeGen;
-          const msgCode = await m.reply(codeGen);
-          delete commandFlags[senderId];
-          setTimeout(async () => {
-            try {
-              await client.sendMessage(chatId, { delete: msgCode.key });
-            } catch {}
-          }, 60000);
-        } catch (err) {
-          console.error('Error generando código QR:', err);
-        }
-      }
       if (qr && !isCode && client && chatId && commandFlags[senderId]) {
         try {
           const msgQR = await client.sendMessage(m.chat, { image: await qrcode.toBuffer(qr, { scale: 8 }), caption }, { quoted: m})

@@ -164,6 +164,30 @@ const normalizedAudioMap = Object.fromEntries(
   Object.entries(audioMap).map(([key, value]) => [normalize(key), value]),
 )
 
+
+const audioQueue = []
+let audioProcessing = false
+const AUDIO_DELAY = 2000 
+
+async function processAudioQueue() {
+  if (audioProcessing || audioQueue.length === 0) return
+  audioProcessing = true
+  
+  while (audioQueue.length > 0) {
+    const task = audioQueue.shift()
+    try {
+      await task()
+    } catch (e) {
+      console.error('Error en cola de audios:', e.message)
+    }
+    if (audioQueue.length > 0) {
+      await new Promise(r => setTimeout(r, AUDIO_DELAY))
+    }
+  }
+  
+  audioProcessing = false
+}
+
 async function toOpusVoiceNote(inputBuffer, inputExt = '.mp3') {
   const id = crypto.randomBytes(6).toString('hex')
   const inFile = path.join(os.tmpdir(), `miku-in-${id}${inputExt}`)
@@ -246,23 +270,28 @@ export async function all(m, { client }) {
     const exists = fs.existsSync(audioFile)
     
     if (exists) {
-      try {
-        const buffer = await fs.promises.readFile(audioFile)
-        if (!buffer || buffer.length < 32) return
-        const inputExt = path.extname(audioFile).toLowerCase() || '.mp3'
-        let voiceBuffer = buffer
+      audioQueue.push(async () => {
         try {
-          voiceBuffer = await toOpusVoiceNote(buffer, inputExt)
-        } catch {}
+          const buffer = await fs.promises.readFile(audioFile)
+          if (!buffer || buffer.length < 32) return
+          const inputExt = path.extname(audioFile).toLowerCase() || '.mp3'
+          let voiceBuffer = buffer
+          try {
+            voiceBuffer = await toOpusVoiceNote(buffer, inputExt)
+          } catch {}
 
-        await client.sendMessage(m.chat, {
-          audio: voiceBuffer,
-          mimetype: 'audio/ogg; codecs=opus',
-          ptt: true
-        }, { quoted: m })
-      } catch (e) {
-        console.error('❌ Error enviando audio:', e.message)
-      }
+          await client.sendMessage(m.chat, {
+            audio: voiceBuffer,
+            mimetype: 'audio/ogg; codecs=opus',
+            ptt: true
+          }, { quoted: m })
+        } catch (e) {
+          if (!e.message.includes('rate-overlimit')) {
+            console.error('❌ Error enviando audio:', e.message)
+          }
+        }
+      })
+      processAudioQueue()
     }
   }
 }
