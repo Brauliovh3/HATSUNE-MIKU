@@ -11,7 +11,7 @@ async function drainWelcomeQueue() {
   while (_welcomeQueue.length > 0) {
     const task = _welcomeQueue.shift()
     try { await task() } catch {}
-    await new Promise(r => setTimeout(r, 8000))
+    await new Promise(r => setTimeout(r, 500))
   }
   _welcomeRunning = false
 }
@@ -29,7 +29,7 @@ async function safeSend(client, jid, content, retries = 5) {
       const msg = String(err?.message || '')
       if (msg.includes('rate-overlimit') || msg.includes('rate') || err?.data === 429) {
         if (i < retries) {
-          const delay = Math.min(8000 * (i + 1), 30000)
+          const delay = Math.min(2000 * (i + 1), 10000)
           await new Promise(r => setTimeout(r, delay))
           continue
         }
@@ -54,7 +54,7 @@ export default async (client, m) => {
       let metadata = {};
       try {
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 10000)
+          setTimeout(() => reject(new Error('Timeout')), 3000)
         );
         metadata = await Promise.race([
           client.groupMetadata(anu.id),
@@ -96,16 +96,12 @@ export default async (client, m) => {
         const phone = validJid.split('@')[0];
         
         let pp = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg';
-        for (let i = 0; i < 3; i++) {
-          try {
-            pp = await Promise.race([
-              client.profilePictureUrl(validJid, 'image'),
-              new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 10000))
-            ])
-            break
-          } catch {}
-          if (i < 2) await new Promise(r => setTimeout(r, 3000))
-        }
+        try {
+          pp = await Promise.race([
+            client.profilePictureUrl(validJid, 'image'),
+            new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 2000))
+          ])
+        } catch {}
         
         const contextInfo = {
           isForwarded: true,
