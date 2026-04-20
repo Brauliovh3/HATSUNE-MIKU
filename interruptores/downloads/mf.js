@@ -67,7 +67,7 @@ export default {
         await m.react('❌')
         return client.reply(
           m.chat,
-          `💙 El enlace de *MediaFire* es inválido o ya no está disponible.\n\n🌱 Verifica el link e inténtalo de nuevo.`,
+          `💙 El enlace de *MediaFire* es inválido o ya no está disponible.\n\n🌱 *Causas posibles:*\n• El archivo fue eliminado por el dueño\n• El enlace expiró\n• MediaFire bloqueó el acceso\n\n💙 Verifica el link e inténtalo de nuevo.`,
           m,
           global.miku,
         )
@@ -119,6 +119,19 @@ ${scraped.size ? `💙 *Peso:* ${scraped.size}\n` : ''}${scraped.uploaded ? `�
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
+const HEADERS = {
+  'User-Agent': UA,
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9,es;q=0.8',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Connection': 'keep-alive',
+  'Upgrade-Insecure-Requests': '1',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Cache-Control': 'max-age=0'
+}
+
 function cleanText(x) {
   return String(x || '').replace(/\s+/g, ' ').trim()
 }
@@ -169,14 +182,14 @@ async function mediafireDl(url, timeout = 45000) {
 
   const res = await axios.get(mediafireUrl, {
     timeout,
-    maxRedirects: 5,
-    headers: {
-      'User-Agent': UA,
-      'Accept-Language': 'en-US,en;q=0.9',
-      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-    },
+    maxRedirects: 10,
+    headers: HEADERS,
     validateStatus: () => true
   })
+
+  if (res.status === 404) {
+    throw new Error('El archivo de MediaFire no existe o fue eliminado (404)')
+  }
 
   if (res.status < 200 || res.status >= 400) {
     throw new Error(`MediaFire HTTP ${res.status}`)
@@ -184,11 +197,18 @@ async function mediafireDl(url, timeout = 45000) {
 
   const $ = cheerio.load(String(res.data || ''))
 
-  const downloadLinkRaw = $('#downloadButton').attr('href') || $('a#downloadButton').attr('href') || null
+
+  const downloadLinkRaw = $('#downloadButton').attr('href') || 
+                           $('a#downloadButton').attr('href') || 
+                           $('.download-btn').attr('href') ||
+                           $('a[class*="download"]').attr('href') ||
+                           $('input[name="download"]').val() ||
+                           null
+  
   const downloadLink = normalizeUrl(downloadLinkRaw)
 
   if (!downloadLink) {
-    throw new Error('Download link not found')
+    throw new Error('No se encontró el enlace de descarga. El archivo podría estar protegido o eliminado.')
   }
 
   const filename = pickFilename($)
