@@ -6,26 +6,21 @@ const ALYA_KEY = [68,69,80,79,79,76,45,107,101,121,54,48,48,49,53,48,57,49].map(
 
 const VERIFIED_GAMES = [
   'Sugar Service', 'Dimension 69', 'Goddesses Whim', 'AIRevolution', 'Out of Touch!',
-  'Sarah\'s House', 'REC', 'A Miku in Brazil', 'Part-Time Witch', 'DoggySim 2000 REDUX',
-  'Acolyte Trainer', 'Zetria', 'The Censor', 'MODIFICATION APP', 'The Seeding Curse',
-  'Pac-8 Museum', 'Griffith\'s Paizuri Simulator', 'Wolf Complex', 'Isekai Brothel',
-  'Five Nights at FuzzBoob\'s', 'Cumrooms', 'Strange Laundry', 'Girl Galley Grand Line',
-  'Horny Union', 'Adventurer Trainer', 'New at the Gym', 'Cute Reapers in my Room',
-  'Small Complex', 'MILF\'s Plaza', 'In Heat', 'Corrupted Kingdoms', 'Hero\'s Harem Guild',
+  'REC', 'Acolyte Trainer', 'Griffith\'s Paizuri Simulator', 'Wolf Complex', 'Isekai Brothel',
+  'Five Nights at FuzzBoob\'s', 'Strange Laundry', 'Girl Galley Grand Line',
+  'Horny Union', 'Adventurer Trainer', 'New at the Gym',
+  'MILF\'s Plaza', 'Corrupted Kingdoms', 'Hero\'s Harem Guild',
   'School Game', 'Confined with Goddesses', 'Janitor of Love', 'Nicole\'s Risky Job',
-  'Lovely Craft', 'Barely Working', 'Love:99', 'BJ Quest', 'Huge-Tits Senpai',
-  'BOOBIES', 'BANGANRONPA', 'Riding to Bounce City', 'DawnofMalice', 'Lewd Virus Monster Trainer',
-  'Curly\'s Caves', 'Waifu\'s Mission', 'Truth or Drink', 'PIXEL CALL GIRLS', 'Karryn\'s Prison',
-  'HaremCraft', 'AFGirlfriend', 'SpunkStock', 'Lewd Falls', 'Cummy Friends', 'Coill City',
-  'Fremy\'s Nightclub', 'Maid rental service', 'DDLC: Of Berries And Love', 'Hedgehog Orgy',
-  'Life with the tribe', 'Master of the House', 'Bao vs The World', 'Space Rescue: Code Pink',
-  'Gyaru Teacher', 'Price of Desire', 'You Let The Next Hero In', 'Life in Woodchester',
-  'Indecent Wife Hana', 'Intoxicant', 'Waifu\'s Mission', 'Strip Poker Night', 'LEWD INVASION',
-  'Summer MC', 'STRIP Battle Action Cards', 'Starmaker Story', 'Mia\'s Milk Ranch',
-  'School of Lust RPG', 'Wednesday: Wicked & Wet', 'Third Crisis', 'Five Nights In Anime',
+  'Barely Working', 'Love:99', 'BJ Quest', 'Huge-Tits Senpai',
+  'Waifu\'s Mission', 'Truth or Drink', 'PIXEL CALL GIRLS',
+  'HaremCraft', 'AFGirlfriend', 'Lewd Falls', 'Cummy Friends',
+  'Fremy\'s Nightclub', 'Life in Woodchester',
+  'Indecent Wife Hana', 'Waifu\'s Mission', 'LEWD INVASION',
+  'STRIP Battle Action Cards', 'Third Crisis',
   'James Cabello Animations', 'TwistedWorld Remake', 'OH MY WAIFU', 'Dandy Boy Adventures',
-  'Coco Nutshake', 'Spooky Milk Life', 'Nude Byte', 'Tentacle Locker', 'PocketSweeties',
-  'Night Shift at Fazclaire\'s', 'Fap Nights At Frenni\'s', 'Innocent Witches'
+  'Coco Nutshake', 'Tentacle Locker', 'PocketSweeties',
+  'Night Shift at Fazclaire\'s', 'Innocent Witches',
+  'Price of Desire', 'You Let The Next Hero In', 'Bao vs The World'
 ];
 
 
@@ -57,8 +52,8 @@ export default {
   nsfw: true,
   run: async (client, m, args, usedPrefix, command) => {
     if (command === 'hgamelist') {
-      const gameList = VERIFIED_GAMES.slice(0, 50).map((g, i) => `${i+1}. ${g}`).join('\n');
-      return m.reply(`🔞 *COLECCIÓN DE JUEGOS H+18 VERIFICADOS*\n\n${gameList}\n\n💙 Total: ${VERIFIED_GAMES.length} juegos\n🤖 Todos con APK Android disponible\n\nUsa: *${usedPrefix}gameh <nombre>*`);
+      const gameList = VERIFIED_GAMES.map((g, i) => `${i+1}. ${g}`).join('\n');
+      return m.reply(`🔞 *JUEGOS H+18 CON APK ANDROID* 🤖\n\n${gameList}\n\n💙 Total: ${VERIFIED_GAMES.length} juegos\n🤖 Todos con APK Android verificado\n☁️ Fuente: itch.io\n\nUsa: *${usedPrefix}gameh <nombre>*`);
     }
     if (!args || !args.length) {
       return m.reply(`💙 *BUSCADOR DE JUEGOS H+18*\n\nIngresa el nombre del juego.\nEjemplo: *${usedPrefix}${command} miku*\n\n🔞 *Contenido NSFW* - Solo adultos`)
