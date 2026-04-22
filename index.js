@@ -13,6 +13,7 @@ import os from "os";
 import { smsg } from "./nucleo/message.js";
 import db from "./nucleo/system/database.js";
 import { startSubBot } from './nucleo/subs.js';
+import optimizer from './nucleo/system/optimizer.js';
 import { exec } from "child_process";
 
 const log = {
@@ -256,6 +257,11 @@ async function startBot() {
       reconexion = 0;
       const userName = sock.user.name || "Desconocido";
       console.log(chalk.green.bold(`[ 💙 ] Conectado a: ${userName}`));
+      
+      if (!optimizer.active) {
+        optimizer.start();
+        optimizer.registerSession('owner', 'Owner', { userName });
+      }
     }
     if (isNewLogin) log.info("Nuevo dispositivo detectado");
     if (receivedPendingNotifications === true) {

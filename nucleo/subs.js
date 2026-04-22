@@ -8,6 +8,7 @@ import fs from 'fs';
 import chalk from 'chalk';
 import { smsg } from './message.js';
 import moment from 'moment-timezone';
+import optimizer from './system/optimizer.js';
 
 if (!global.conns) global.conns = []
 const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
@@ -130,12 +131,21 @@ const sock = makeWASocket({
         }
 
         delete reintentos[sock.userId || id]
+        
+        optimizer.registerSession(sock.userId, 'Sub', {
+          folder: sessionFolder,
+          uptime: sock.uptime,
+          name: sock.user?.name || 'Unknown'
+        });
+        
         await joinChannels(sock)
       }
 
       if (connection === 'close') {
         const botId = sock.userId || id
         const reason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason || 0
+
+        optimizer.unregisterSession(botId);
 
         if (global.conns.find((c) => c.userId === botId)) {
           return
