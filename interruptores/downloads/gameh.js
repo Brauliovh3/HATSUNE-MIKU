@@ -6,21 +6,18 @@ const ALYA_KEY = [68,69,80,79,79,76,45,107,101,121,54,48,48,49,53,48,57,49].map(
 
 const VERIFIED_GAMES = [
   'Sugar Service', 'Dimension 69', 'Goddesses Whim', 'AIRevolution', 'Out of Touch!',
-  'REC', 'Acolyte Trainer', 'Griffith\'s Paizuri Simulator', 'Wolf Complex', 'Isekai Brothel',
+  'REC', 'Griffith\'s Paizuri Simulator', 'Wolf Complex', 'Isekai Brothel',
   'Five Nights at FuzzBoob\'s', 'Strange Laundry', 'Girl Galley Grand Line',
   'Horny Union', 'Adventurer Trainer', 'New at the Gym',
   'MILF\'s Plaza', 'Corrupted Kingdoms', 'Hero\'s Harem Guild',
-  'School Game', 'Confined with Goddesses', 'Janitor of Love', 'Nicole\'s Risky Job',
-  'Barely Working', 'Love:99', 'BJ Quest', 'Huge-Tits Senpai',
-  'Waifu\'s Mission', 'Truth or Drink', 'PIXEL CALL GIRLS',
-  'HaremCraft', 'AFGirlfriend', 'Lewd Falls', 'Cummy Friends',
-  'Fremy\'s Nightclub', 'Life in Woodchester',
-  'Indecent Wife Hana', 'Waifu\'s Mission', 'LEWD INVASION',
+  'Janitor of Love', 'Barely Working', 'Love:99',
+  'Waifu\'s Mission', 'LEWD INVASION',
   'STRIP Battle Action Cards', 'Third Crisis',
   'James Cabello Animations', 'TwistedWorld Remake', 'OH MY WAIFU', 'Dandy Boy Adventures',
   'Coco Nutshake', 'Tentacle Locker', 'PocketSweeties',
   'Night Shift at Fazclaire\'s', 'Innocent Witches',
-  'Price of Desire', 'You Let The Next Hero In', 'Bao vs The World'
+  'Price of Desire', 'You Let The Next Hero In', 'Bao vs The World',
+  'Life in Woodchester', 'Indecent Wife Hana'
 ];
 
 
@@ -87,33 +84,49 @@ export default {
     const query = args.join(' ').trim().toLowerCase()
     
     
-    const isVerified = VERIFIED_GAMES.some(game => 
-      game.toLowerCase().includes(query) || query.includes(game.toLowerCase().split(' ')[0])
-    ) || Object.entries(SEARCH_TERMS).some(([key, terms]) => 
+    const isVerified = VERIFIED_GAMES.some(game => {
+      const gameLower = game.toLowerCase();
+      const queryLower = query.toLowerCase();
+      return gameLower.includes(queryLower) || 
+             queryLower.includes(gameLower) ||
+             queryLower.includes(gameLower.split(' ')[0]) ||
+             queryLower.includes(gameLower.split(' ').slice(-1)[0]);
+    }) || Object.entries(SEARCH_TERMS).some(([key, terms]) => 
       (query.includes(key) || terms.some(t => query.includes(t)))
     );
     
     if (!isVerified) {
       await m.react('❌')
-      return m.reply(`💙 *Juego no encontrado en colección verificada*\n\n🔞 Este juego no está en nuestra colección H+18 verificada con APK Android.\n\n📋 Usa *${usedPrefix}hgamelist* para ver los juegos disponibles.`, global.miku)
+      return m.reply(`💙 *Juego no encontrado en colección verificada*\n\n🔞 Este juego no está en nuestra colección H+18 verificada con APK Android.\n\n📋 Usa *${usedPrefix}listah* para ver los juegos disponibles.`, global.miku)
     }
     
     try {
+      await m.reply('🔍 Buscando juego en la API...', global.miku)
+      
       const gameData = await searchGame(query)
       if (!gameData) {
         await m.react('❌')
-        return m.reply('💙 No se encontró el juego en la API.', global.miku)
+        return m.reply(`💙 No se encontró el juego "${args.join(' ')}" en la API.\n\n🔍 Intenta con otro nombre o revisa la lista con *${usedPrefix}listah*`, global.miku)
       }
       
-     
-      const hasAndroid = gameData.downloads.some(d => d.platforms?.android);
+      const hasAndroid = gameData.downloads.some(d => 
+        d.platforms?.android || 
+        d.filename?.toLowerCase().includes('android') ||
+        d.filename?.toLowerCase().includes('.apk')
+      );
+      
       if (!hasAndroid) {
+        const platforms = gameData.downloads.map(d => Object.keys(d.platforms || {}).join(', ') || 'Desconocido').join(', ');
         await m.react('📵')
-        return m.reply('💙 Este juego *no tiene versión Android APK* disponible.\n\n🎮 Solo está disponible para PC/Windows.', global.miku)
+        return m.reply(`💙 *${gameData.title}* no tiene APK Android.\n\n🎮 Plataformas disponibles: ${platforms || 'PC/Windows'}`, global.miku)
       }
 
       const { title, author, thumb, downloads } = gameData
-      const androidDownload = downloads.find(d => d.platforms?.android) || downloads[0]
+      const androidDownload = downloads.find(d => 
+        d.platforms?.android || 
+        d.filename?.toLowerCase().includes('android') ||
+        d.filename?.toLowerCase().includes('.apk')
+      ) || downloads[0]
       
       if (!androidDownload) {
         await m.react('❌')
@@ -130,11 +143,9 @@ export default {
 📏 *Tamaño:* ${size}
 🔖 *Versión:* ${version || 'N/A'}
 🤖 *Plataforma:* Android APK
-☁️ *Fuente:* Itch.io
+☁️ *Fuente:* itch.io
 
-💙 *HATSUNE MIKU BOT* 💙
-
-⚠️ *Descarga iniciada...*`
+⏳ *Descargando... espera por favor*`
 
       await client.sendMessage(m.chat, { 
         image: { url: thumb }, 
@@ -165,35 +176,53 @@ export default {
 
 async function searchGame(query) {
   try {
-    const url = `${ALYA_GAME_API}?query=${encodeURIComponent(query)}&key=${encodeURIComponent(ALYA_KEY)}`
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      },
-    })
+    const searchQueries = [query];
     
-    if (!res.ok) return null
-    
-    const json = await res.json()
-    
-    if (!json?.status || !json?.data) return null
-    
-    const { title, author, thumb, downloads } = json.data
-    
-    if (!downloads || !downloads.length) return null
-    
-    return {
-      title: title || 'Sin título',
-      author: author || 'Desconocido',
-      thumb: thumb || '',
-      downloads: downloads.map(d => ({
-        filename: d.filename || 'game.apk',
-        size: d.size || 'Desconocido',
-        version: d.version || '',
-        platforms: d.platforms || {},
-        dl: d.dl || ''
-      }))
+    const exactMatch = VERIFIED_GAMES.find(g => 
+      g.toLowerCase() === query.toLowerCase() ||
+      g.toLowerCase().includes(query.toLowerCase())
+    );
+    if (exactMatch && exactMatch.toLowerCase() !== query.toLowerCase()) {
+      searchQueries.push(exactMatch);
     }
+    
+    for (const searchTerm of searchQueries) {
+      const url = `${ALYA_GAME_API}?query=${encodeURIComponent(searchTerm)}&key=${encodeURIComponent(ALYA_KEY)}`
+      
+      try {
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
+          timeout: 15000
+        })
+        
+        if (!res.ok) continue;
+        
+        const json = await res.json()
+        
+        if (json?.status && json?.data && json.data.downloads?.length > 0) {
+          const { title, author, thumb, downloads } = json.data
+          return {
+            title: title || searchTerm,
+            author: author || 'Desconocido',
+            thumb: thumb || '',
+            downloads: downloads.map(d => ({
+              filename: d.filename || 'game.apk',
+              size: d.size || 'Desconocido',
+              version: d.version || '',
+              platforms: d.platforms || {},
+              dl: d.dl || ''
+            }))
+          }
+        }
+      } catch (innerErr) {
+        console.error('Error searching term:', searchTerm, innerErr.message);
+        continue;
+      }
+    }
+    
+    return null;
   } catch (e) {
     console.error('Error searchGame:', e)
     return null
