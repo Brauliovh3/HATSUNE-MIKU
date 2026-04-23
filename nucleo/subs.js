@@ -1,4 +1,4 @@
-import { Browsers, makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, DisconnectReason, jidDecode, } from '@whiskeysockets/baileys';
+import { Browsers, makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, DisconnectReason, jidDecode, } from '@whiskeysockets/baileys';
 import qrcode from "qrcode"
 import NodeCache from 'node-cache';
 import main from '../main.js'
@@ -8,25 +8,18 @@ import fs from 'fs';
 import chalk from 'chalk';
 import { smsg } from './message.js';
 import moment from 'moment-timezone';
-import optimizer from './system/optimizer.js';
 
 if (!global.conns) global.conns = []
 const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 const userDevicesCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 const groupCache = new NodeCache({ stdTTL: 3600, checkperiod: 300 });
 let reintentos = {}
-let sesionesEliminadas = new Set()
-let reconectando = new Set()
 const cleanJid = (jid = '') => jid.replace(/:\d+/, '').split('@')[0]
 
 export async function startSubBot(m, client, caption = '', isCode = false, phone = '', chatId = '', commandFlags = {}, isCommand = false) {
   const id = phone || (m?.sender || '').split('@')[0]
   const sessionFolder = `./Sessions/Subs/${id}`
   const senderId = m?.sender
-
-  if (sesionesEliminadas.has(id) && !isCommand) {
-    return null
-  }
 
   if (!fs.existsSync(sessionFolder) && isCommand) {
     fs.mkdirSync(sessionFolder, { recursive: true })
@@ -37,20 +30,19 @@ export async function startSubBot(m, client, caption = '', isCode = false, phone
   }
 
   if (isCommand) {
-    sesionesEliminadas.delete(id)
     delete reintentos[id]
   }
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionFolder)
-  const version = global.baileysVersion || await fetchLatestBaileysVersion().then(v => v.version)
+  const { version } = await fetchLatestBaileysVersion()
 
 console.info = () => {} 
 const sock = makeWASocket({
   logger: pino({ level: 'silent' }),
   printQRInTerminal: false,
   browser: Browsers.macOS('Chrome'),
-  auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })) },
-  markOnlineOnConnect: false,
+  auth: state,
+  markOnlineOnConnect: true,
   generateHighQualityLinkPreview: true,
   syncFullHistory: false,
   getMessage: async () => '',
@@ -58,40 +50,29 @@ const sock = makeWASocket({
   userDevicesCache,
   cachedGroupMetadata: async (jid) => groupCache.get(jid),
   version,
-  keepAliveIntervalMs: 45000,
-  maxIdleTimeMs: 60000,
+  keepAliveIntervalMs: 60000,
+  maxIdleTimeMs: 120000,
 })
 
   sock.isInit = false
   sock.ev.on('creds.update', saveCreds)
 
-  if (isCode && caption && client && chatId && commandFlags[senderId]) {
+  if (qr && isCode && phone && client && chatId && commandFlags[senderId]) {
     try {
-      await m.reply(caption)
-      m.react('⏳')
-      
+      let codeGen = await sock.requestPairingCode(phone, 'ABCD1234');
+      codeGen = codeGen.match(/.{1,4}/g)?.join("-") || codeGen;
+      const msg = await m.reply(caption)
+      const msgCode = await m.reply(codeGen);
+      delete commandFlags[senderId];
       setTimeout(async () => {
-        try {
-          if (!state.creds.registered) {
-            const pairing = await sock.requestPairingCode(phone);
-            const codeBot = pairing?.match(/.{1,4}/g)?.join("-") || pairing;
-            const msgCode = await m.reply(codeBot);
-            m.react('✅')
-            delete commandFlags[senderId];
-            setTimeout(async () => {
-              try {
-                await client.sendMessage(chatId, { delete: msgCode.key });
-              } catch {}
-            }, 60000);
-          }
-        } catch (err) {
-          console.error('Error generando código:', err);
-          m.react('❌');
-          await m.reply('❌ Error al generar código. Intenta de nuevo.');
-          delete commandFlags[senderId];
-        }
-      }, 3000);
-    } catch {}
+      try {
+      await client.sendMessage(chatId, { delete: msg.key });
+      await client.sendMessage(chatId, { delete: msgCode.key });
+      } catch {}
+      }, 60000);
+    } catch (err) {
+      console.error("[ Código Error]", err);
+    }
   }
 
   sock.decodeJid = (jid) => {
@@ -132,80 +113,41 @@ const sock = makeWASocket({
 
         delete reintentos[sock.userId || id]
         
-        optimizer.registerSession(sock.userId, 'Sub', {
-          folder: sessionFolder,
-          uptime: sock.uptime,
-          name: sock.user?.name || 'Unknown'
-        });
-        
         await joinChannels(sock)
+        console.log(chalk.gray(`[ 💙 ]  SUB-BOT conectado: ${sock.userId}`))
       }
 
       if (connection === 'close') {
         const botId = sock.userId || id
         const reason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason || 0
-
-        optimizer.unregisterSession(botId);
-
-        if (global.conns.find((c) => c.userId === botId)) {
-          return
-        }
-
-        if (reconectando.has(botId)) {
-          return
-        }
-
         const intentos = reintentos[botId] || 0
         reintentos[botId] = intentos + 1
 
         if ([401, 403].includes(reason)) {
           if (intentos < 5) {
-            reconectando.add(botId)
+            console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Conexión cerrada (código ${reason}) intento ${intentos}/5 → Reintentando...`))
             setTimeout(() => {
-              reconectando.delete(botId)
               startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
             }, 3000)
           } else {
-            reconectando.delete(botId)
+            console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Falló tras 5 intentos. Eliminando sesión.`))
             try {
               fs.rmSync(sessionFolder, { recursive: true, force: true })
-              sesionesEliminadas.add(botId)
-            } catch {}
-            delete reintentos[botId]
-            const connIndex = global.conns.findIndex((c) => c.userId === botId)
-            if (connIndex !== -1) {
-              global.conns.splice(connIndex, 1)
+            } catch (e) {
+              console.error(`[ 💙 ] No se pudo eliminar la carpeta ${sessionFolder}:`, e)
             }
-            return
+            delete reintentos[botId]
           }
           return
         }
 
         if ([DisconnectReason.connectionClosed, DisconnectReason.connectionLost, DisconnectReason.timedOut, DisconnectReason.connectionReplaced].includes(reason)) {
-          if (intentos < 5) {
-            reconectando.add(botId)
-            setTimeout(() => {
-              reconectando.delete(botId)
-              startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
-            }, 3000)
-          } else {
-            reconectando.delete(botId)
-            try {
-              fs.rmSync(sessionFolder, { recursive: true, force: true })
-              sesionesEliminadas.add(botId)
-            } catch {}
-            delete reintentos[botId]
-            const connIndex = global.conns.findIndex((c) => c.userId === botId)
-            if (connIndex !== -1) {
-              global.conns.splice(connIndex, 1)
-            }
-            return
-          }
+          setTimeout(() => {
+            startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
+          }, 3000)
           return
         }
-        reconectando.add(botId)
         setTimeout(() => {
-          reconectando.delete(botId)
           startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
         }, 3000)
       }
