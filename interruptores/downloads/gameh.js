@@ -46,27 +46,37 @@ const SEARCH_TERMS = {
   'innocent': ['innocent', 'witches', 'harry']
 };
 
+const showGameList = async (client, m, args, usedPrefix) => {
+  const page = parseInt(args[0]) || 1;
+  const perPage = 12;
+  const totalPages = Math.ceil(VERIFIED_GAMES.length / perPage);
+  
+  if (page > totalPages || page < 1) {
+    return m.reply(`💙 Página inválida. Hay ${totalPages} páginas.`);
+  }
+  
+  const start = (page - 1) * perPage;
+  const end = start + perPage;
+  const pageGames = VERIFIED_GAMES.slice(start, end);
+  
+  const gameList = pageGames.map((g, i) => `${start + i + 1}. ${g}`).join('\n');
+  
+  return m.reply(`🔞 *JUEGOS H+18 ANDROID* 🤖
+
+${gameList}
+
+💙 ${VERIFIED_GAMES.length} juegos | 📄 ${page}/${totalPages}
+➡️ Siguiente: *${usedPrefix}listah ${page+1 <= totalPages ? page+1 : 1}*
+⬇️ Descargar: *${usedPrefix}gameh nombre*`);
+};
+
 export default {
-  command: ['gameh', 'hgame', 'hgamelist', 'itch', 'nsfwgame'],
+  command: ['gameh', 'hgame', 'listah', 'hlist', 'hgames', 'itch', 'nsfwgame'],
   category: 'nsfw',
   nsfw: true,
   run: async (client, m, args, usedPrefix, command) => {
-    if (command === 'hgamelist') {
-      const page = parseInt(args[0]) || 1;
-      const perPage = 15;
-      const totalPages = Math.ceil(VERIFIED_GAMES.length / perPage);
-      
-      if (page > totalPages || page < 1) {
-        return m.reply(`💙 Página inválida. Hay ${totalPages} páginas.`);
-      }
-      
-      const start = (page - 1) * perPage;
-      const end = start + perPage;
-      const pageGames = VERIFIED_GAMES.slice(start, end);
-      
-      const gameList = pageGames.map((g, i) => `${start + i + 1}. ${g}`).join('\n');
-      
-      return m.reply(`🔞 *JUEGOS H+18 CON APK ANDROID* 🤖\n\n${gameList}\n\n💙 Total: ${VERIFIED_GAMES.length} juegos\n📄 Página ${page}/${totalPages}\n\nUsa: *${usedPrefix}hgamelist 2* (para página 2)\n🎮 Descarga: *${usedPrefix}gameh <nombre>*`);
+    if (['listah', 'hlist', 'hgames'].includes(command)) {
+      return showGameList(client, m, args, usedPrefix);
     }
     if (!args || !args.length) {
       return m.reply(`💙 *BUSCADOR DE JUEGOS H+18*\n\nIngresa el nombre del juego.\nEjemplo: *${usedPrefix}${command} miku*\n\n🔞 *Contenido NSFW* - Solo adultos`)
