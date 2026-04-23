@@ -72,6 +72,10 @@ export default {
   category: 'nsfw',
   nsfw: true,
   run: async (client, m, args, usedPrefix, command) => {
+    if (!global.db.data.chats[m.chat].nsfw) return m.reply(`💙 El contenido *NSFW* está desactivado en este grupo.
+
+Un *administrador* puede activarlo con el comando:
+» *${usedPrefix}nsfw on*`, m, global.miku);
     if (['listah', 'hlist', 'hgames'].includes(command)) {
       return showGameList(client, m, args, usedPrefix);
     }

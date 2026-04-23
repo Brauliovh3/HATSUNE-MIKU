@@ -6,7 +6,7 @@ import { proto, generateWAMessageFromContent, generateWAMessageContent } from "@
 export default {
   command: ["xvideos"],
   run: async (client, m, args, usedPrefix, command) => {
-    if (!db.data.chats[m.chat].nsfw) return m.reply(`💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`, m, global.miku)
+    if (!global.db.data.chats[m.chat].nsfw) return m.reply(`💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`, m, global.miku)
     try {
       try { await client.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }) } catch {}
       const query = args.join(" ")

@@ -4,9 +4,10 @@ export default {
   command: ['waifu', 'neko'],
   category: 'anime',
   run: async (client, m, args, usedPrefix, command, text) => {
+    if (!global.db.data.chats[m.chat].nsfw) return m.reply(`💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`, m, global.miku);
     try {
       await m.react('🕒')
-      let mode = db.data.chats[m.chat]?.nsfw ? 'nsfw' : 'sfw'
+      let mode = 'nsfw'
       let res = await fetch(`https://api.waifu.pics/${mode}/${command}`)
       if (!res.ok) return
       let json = await res.json()

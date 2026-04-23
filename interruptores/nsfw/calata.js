@@ -60,9 +60,12 @@ export default {
   category: 'nsfw',
   run: async (client, m, args, usedPrefix) => {
     try {
-      if (!globalThis.db.data.chats[m.chat]?.nsfw) {
+      if (!global.db.data.chats[m.chat].nsfw) {
         return m.reply(
-          `💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`,
+          `💙 El contenido *NSFW* está desactivado en este grupo.
+
+Un *administrador* puede activarlo con el comando:
+» *${usedPrefix}nsfw on*`,
           m,
           global.miku
         )
