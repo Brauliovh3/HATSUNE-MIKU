@@ -59,8 +59,8 @@ const sock = makeWASocket({
 
   if (isCode && caption && client && chatId && commandFlags[senderId]) {
     try {
-      let codeGen = await sock.requestPairingCode(phone, 'ABCD1234');
-      codeGen = codeGen.match(/.{1,4}/g)?.join("-") || codeGen;
+      let codeGen = await sock.requestPairingCode(phone);
+      codeGen = codeGen?.match(/.{1,4}/g)?.join("-") || codeGen;
       const msg = await m.reply(caption)
       const msgCode = await m.reply(codeGen);
       delete commandFlags[senderId];
