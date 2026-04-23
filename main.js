@@ -310,6 +310,31 @@ export default async (client, m) => {
     }
   }
   
+
+  if (hasPrefix) {
+    const ownerCreds = path.resolve('./Sessions/Owner/creds.json')
+    if (fs.existsSync(ownerCreds)) {
+      const ownerId = global.client?.user?.id?.split(':')[0] + '@s.whatsapp.net' || ''
+      const normalizeJid = (jid) => {
+        if (!jid) return ''
+        const clean = String(jid).split(':')[0].replace(/\D/g, '')
+        return clean + '@s.whatsapp.net'
+      }
+      const normalizedOwner = normalizeJid(ownerId)
+      const normalizedCurrent = normalizeJid(botJid)
+     
+      if (normalizedOwner && normalizedOwner !== normalizedCurrent) {
+        
+        const mainBotConnected = fs.existsSync('./Sessions/Owner/creds.json') && 
+          global.client?.user?.id
+        if (mainBotConnected) {
+         
+          return
+        }
+      }
+    }
+  }
+  
   if (!isOwners && settings.self) return;  
   if (m.chat && !m.chat.endsWith('g.us')) {
     const allowedInPrivateForUsers = ['allmenu', 'help', 'menu', 'infobot', 'botinfo', 'invite', 'invitar', 'ping', 'speed', 'p', 'status', 'estado', 'report', 'reporte', 'sug', 'suggest', 'token', 'join', 'unir', 'logout', 'reload', 'self', 'setbanner', 'setbotbanner', 'setchannel', 'setbotchannel', 'setbotcurrency', 'setcurrency', 'seticon', 'setboticon', 'setlink', 'setbotlink', 'setbotname', 'setname', 'setbotowner', 'setowner', 'setimage', 'setpfp', 'setprefix', 'setbotprefix', 'setstatus', 'setusername', 'code', 'qr']
