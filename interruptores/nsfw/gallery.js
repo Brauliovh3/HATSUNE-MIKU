@@ -56,9 +56,16 @@ export default {
       }
 
       if (command == 'hentai') {
-        const res = (await axios.get(`https://raw.githubusercontent.com/BrunoSobrino/TheMystic-Bot-MD/master/src/JSON/hentai.json`)).data;
-        const haha = await res[Math.floor(res.length * Math.random())];
-        client.sendMessage(m.chat, {image: {url: haha}, caption: `_${command}_`.trim()}, {quoted: m});
+        try {
+          const res = (await axios.get(`https://raw.githubusercontent.com/BrunoSobrino/TheMystic-Bot-MD/master/src/JSON/hentai.json`)).data;
+          const haha = await res[Math.floor(res.length * Math.random())];
+          client.sendMessage(m.chat, {image: {url: haha}, caption: `_${command}_`.trim()}, {quoted: m});
+        } catch {
+          const res = await fetch(`https://api.waifu.pics/nsfw/waifu`);
+          const json = await res.json();
+          const url = json.url;
+          client.sendMessage(m.chat, {image: {url: url}, caption: `_${command}_`.trim()}, {quoted: m});
+        }
       }
 
       if (command == 'nsfworgy') {
