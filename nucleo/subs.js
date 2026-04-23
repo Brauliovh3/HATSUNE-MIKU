@@ -57,7 +57,7 @@ const sock = makeWASocket({
   sock.isInit = false
   sock.ev.on('creds.update', saveCreds)
 
-  if (qr && isCode && phone && client && chatId && commandFlags[senderId]) {
+  if (isCode && caption && client && chatId && commandFlags[senderId]) {
     try {
       let codeGen = await sock.requestPairingCode(phone, 'ABCD1234');
       codeGen = codeGen.match(/.{1,4}/g)?.join("-") || codeGen;
