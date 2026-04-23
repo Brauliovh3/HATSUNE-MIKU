@@ -120,31 +120,60 @@ const sock = makeWASocket({
       if (connection === 'close') {
         const botId = sock.userId || id
         const reason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason || 0
+        
+        if (global.conns.find((c) => c.userId === botId)) {
+          return
+        }
+
         const intentos = reintentos[botId] || 0
         reintentos[botId] = intentos + 1
 
         if ([401, 403].includes(reason)) {
-          if (intentos < 5) {
-            console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Conexión cerrada (código ${reason}) intento ${intentos}/5 → Reintentando...`))
+          if (intentos < 3) {
+            console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Conexión cerrada (código ${reason}) intento ${intentos}/3 → Reintentando...`))
             setTimeout(() => {
               startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
             }, 3000)
           } else {
-            console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Falló tras 5 intentos. Eliminando sesión.`))
+            console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Falló tras 3 intentos. Eliminando sesión y matando proceso.`))
             try {
               fs.rmSync(sessionFolder, { recursive: true, force: true })
             } catch (e) {
               console.error(`[ 💙 ] No se pudo eliminar la carpeta ${sessionFolder}:`, e)
             }
             delete reintentos[botId]
+            const connIndex = global.conns.findIndex((c) => c.userId === botId)
+            if (connIndex !== -1) {
+              global.conns.splice(connIndex, 1)
+            }
+            try {
+              sock.end()
+            } catch {}
           }
           return
         }
 
         if ([DisconnectReason.connectionClosed, DisconnectReason.connectionLost, DisconnectReason.timedOut, DisconnectReason.connectionReplaced].includes(reason)) {
-          setTimeout(() => {
-            startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
-          }, 3000)
+          if (intentos < 3) {
+            setTimeout(() => {
+              startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
+            }, 3000)
+          } else {
+            console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Falló tras 3 intentos. Eliminando sesión y matando proceso.`))
+            try {
+              fs.rmSync(sessionFolder, { recursive: true, force: true })
+            } catch (e) {
+              console.error(`[ 💙 ] No se pudo eliminar la carpeta ${sessionFolder}:`, e)
+            }
+            delete reintentos[botId]
+            const connIndex = global.conns.findIndex((c) => c.userId === botId)
+            if (connIndex !== -1) {
+              global.conns.splice(connIndex, 1)
+            }
+            try {
+              sock.end()
+            } catch {}
+          }
           return
         }
         setTimeout(() => {

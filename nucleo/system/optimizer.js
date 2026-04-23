@@ -43,7 +43,7 @@ class SystemOptimizer {
     if (this.active) return;
     this.active = true;
     
-    console.log(chalk.cyanBright('[ 🔧 Optimizador ] Sistema de optimización iniciado'));
+    // console.log(chalk.cyanBright('[ 🔧 Optimizador ] Sistema de optimización iniciado'));
     
     this.schedule('memory-check', () => this.checkMemory(), 30000);
     this.schedule('tmp-cleanup', () => this.cleanTempFiles(), 5 * 60000);
@@ -63,7 +63,7 @@ class SystemOptimizer {
       clearInterval(timer);
     }
     this.timers.clear();
-    console.log(chalk.yellow('[ 🔧 Optimizador ] Sistema detenido'));
+    // console.log(chalk.yellow('[ 🔧 Optimizador ] Sistema detenido'));
   }
 
   schedule(name, fn, interval) {
@@ -93,12 +93,12 @@ class SystemOptimizer {
       };
       
       if (usedPercent > this.limits.memoryThreshold) {
-        console.log(chalk.yellow(`[ 🔧 Optimizador ] Memoria alta: ${usedPercent.toFixed(1)}%`));
+        // console.log(chalk.yellow(`[ 🔧 Optimizador ] Memoria alta: ${usedPercent.toFixed(1)}%`));
         await this.aggressiveCleanup();
         
         if (global.gc) {
           global.gc();
-          console.log(chalk.gray('[ 🔧 Optimizador ] Garbage collector ejecutado'));
+          // console.log(chalk.gray('[ 🔧 Optimizador ] Garbage collector ejecutado'));
         }
       }
       
@@ -158,7 +158,7 @@ class SystemOptimizer {
     if (cleaned > 0) {
       this.stats.cleanups++;
       this.stats.memoryFreed += freed;
-      console.log(chalk.gray(`[ 🔧 Optimizador ] Temp limpio: ${cleaned} archivos (${(freed/1024/1024).toFixed(2)} MB)`));
+      // console.log(chalk.gray(`[ 🔧 Optimizador ] Temp limpio: ${cleaned} archivos (${(freed/1024/1024).toFixed(2)} MB)`));
     }
   }
 
@@ -214,7 +214,7 @@ class SystemOptimizer {
     
     if (cleaned > 0) {
       this.stats.sessionsCleaned += cleaned;
-      console.log(chalk.gray(`[ 🔧 Optimizador ] Sesiones limpias: ${cleaned}`));
+      // console.log(chalk.gray(`[ 🔧 Optimizador ] Sesiones limpias: ${cleaned}`));
     }
   }
 
@@ -291,12 +291,12 @@ class SystemOptimizer {
     
     if (rotated > 0) {
       this.stats.prekeysRotated += rotated;
-      console.log(chalk.gray(`[ 🔧 Optimizador ] Prekeys rotadas: ${rotated}`));
+      // console.log(chalk.gray(`[ 🔧 Optimizador ] Prekeys rotadas: ${rotated}`));
     }
   }
 
   async aggressiveCleanup() {
-    console.log(chalk.cyan('[ 🔧 Optimizador ] Limpieza agresiva iniciada'));
+    // console.log(chalk.cyan('[ 🔧 Optimizador ] Limpieza agresiva iniciada'));
     
     await this.cleanTempFiles();
     
@@ -321,7 +321,7 @@ class SystemOptimizer {
     } catch {}
     
     this.stats.lastCleanup = Date.now();
-    console.log(chalk.green('[ 🔧 Optimizador ] Limpieza agresiva completada'));
+    // console.log(chalk.green('[ 🔧 Optimizador ] Limpieza agresiva completada'));
   }
 
   optimizeCache() {
@@ -329,7 +329,7 @@ class SystemOptimizer {
     if (keys.length > 1000) {
       const toDelete = keys.slice(0, keys.length - 500);
       this.cache.del(toDelete);
-      console.log(chalk.gray(`[ 🔧 Optimizador ] Cache optimizada: ${toDelete.length} entradas eliminadas`));
+      // console.log(chalk.gray(`[ 🔧 Optimizador ] Cache optimizada: ${toDelete.length} entradas eliminadas`));
     }
   }
 
@@ -368,14 +368,14 @@ class SystemOptimizer {
 
   printStats() {
     const mem = global.memoryStats || {};
-    console.log(chalk.blueBright('\n[ 📊 Stats Optimizador ]'));
-    console.log(chalk.white(`  Limpiezas: ${this.stats.cleanups}`));
-    console.log(chalk.white(`  Memoria liberada: ${(this.stats.memoryFreed / 1024 / 1024).toFixed(2)} MB`));
-    console.log(chalk.white(`  Sesiones limpiadas: ${this.stats.sessionsCleaned}`));
-    console.log(chalk.white(`  Prekeys rotadas: ${this.stats.prekeysRotated}`));
-    console.log(chalk.white(`  Memoria actual: RSS ${mem.rss || 'N/A'} MB`));
-    console.log(chalk.white(`  Sesiones activas: ${this.sessionRegistry.size}`));
-    console.log(chalk.white(`  Conexiones: ${global.conns?.length || 0}\n`));
+    // console.log(chalk.blueBright('\n[ 📊 Stats Optimizador ]'));
+    // console.log(chalk.white(`  Limpiezas: ${this.stats.cleanups}`));
+    // console.log(chalk.white(`  Memoria liberada: ${(this.stats.memoryFreed / 1024 / 1024).toFixed(2)} MB`));
+    // console.log(chalk.white(`  Sesiones limpiadas: ${this.stats.sessionsCleaned}`));
+    // console.log(chalk.white(`  Prekeys rotadas: ${this.stats.prekeysRotated}`));
+    // console.log(chalk.white(`  Memoria actual: RSS ${mem.rss || 'N/A'} MB`));
+    // console.log(chalk.white(`  Sesiones activas: ${this.sessionRegistry.size}`));
+    // console.log(chalk.white(`  Conexiones: ${global.conns?.length || 0}\n`));
   }
 
   getStats() {
