@@ -42,7 +42,7 @@ const sock = makeWASocket({
   printQRInTerminal: false,
   browser: Browsers.macOS('Chrome'),
   auth: state,
-  markOnlineOnConnect: true,
+  markOnlineOnConnect: false,
   generateHighQualityLinkPreview: true,
   syncFullHistory: false,
   getMessage: async () => '',
@@ -50,8 +50,8 @@ const sock = makeWASocket({
   userDevicesCache,
   cachedGroupMetadata: async (jid) => groupCache.get(jid),
   version,
-  keepAliveIntervalMs: 60000,
-  maxIdleTimeMs: 120000,
+  keepAliveIntervalMs: 25000,
+  maxIdleTimeMs: 300000,
 })
 
   sock.isInit = false
