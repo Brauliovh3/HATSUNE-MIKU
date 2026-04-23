@@ -323,7 +323,7 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason) => {
   const msg = String(reason?.message || reason || '');
   const lowerMsg = msg.toLowerCase();
-  if (lowerMsg.includes('rate-overlimit') || lowerMsg.includes('timed out') || lowerMsg.includes('timeout') || lowerMsg.includes('connection closed') || lowerMsg.includes('connection lost') || lowerMsg.includes('etimeout') || lowerMsg.includes('enoent') || lowerMsg.includes('no such file or directory')) {
+  if (lowerMsg.includes('rate-overlimit') || lowerMsg.includes('timed out') || lowerMsg.includes('timeout') || lowerMsg.includes('connection closed') || lowerMsg.includes('connection lost') || lowerMsg.includes('etimeout') || lowerMsg.includes('enoent') || lowerMsg.includes('no such file or directory') || lowerMsg.includes('404') || lowerMsg.includes('request failed')) {
     return;
   }
   console.error(chalk.red('[unhandledRejection]'), msg.slice(0, 120));
