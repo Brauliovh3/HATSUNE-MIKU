@@ -4,17 +4,30 @@ export default {
   isAdmin: true,
   isOwner: true,
   run: async (client, m, args, usedPrefix, command) => {
-    const target = m.mentionedJid[0] || m.quoted?.sender || args[0]
+    let target = m.mentionedJid[0] || m.quoted?.sender
+    
+    if (!target && args[0]) {
+      const number = args[0].replace(/[^0-9]/g, '')
+      if (number.length >= 10) {
+        target = number + '@s.whatsapp.net'
+      }
+    }
     
     if (!target) {
       return m.reply(`💙 *Uso del comando*\n\n💙 _Banear ›_ *${usedPrefix}ban @usuario [razón]*\n💙 _Desbanear ›_ *${usedPrefix}unban @usuario*\n\n💙 _Ejemplo:_ *${usedPrefix}ban @1234567890 irrespeto*`, m, global.miku)
     }
     
     const targetJid = target.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
-    const userData = global.db.data.users[targetJid]
+    
+    if (!global.db.data.users) {
+      global.db.data.users = {}
+    }
+    
+    let userData = global.db.data.users[targetJid]
     
     if (!userData) {
-      return m.reply(`💙 El usuario @${targetJid.split('@')[0]} no está registrado en la base de datos.`, m, global.miku)
+      userData = { banned: false, bannedReason: null }
+      global.db.data.users[targetJid] = userData
     }
     
     const reason = args.slice(1).join(' ') || 'Comportamiento irrespetuoso'
