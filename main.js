@@ -196,7 +196,8 @@ export default async (client, m) => {
   }  
   const isBotAdmins = m.isGroup ? groupAdmins.some(p => p.phoneNumber === botJid || p.jid === botJid || p.id === botJid || p.lid === botJid ) : false
   const isAdmins = m.isGroup ? groupAdmins.some(p => p.phoneNumber === sender || p.jid === sender || p.id === sender || p.lid === sender ) : false
-  const isOwners = [botJid, ...(settings.owner ? [settings.owner] : []), ...global.owner.map(num => num + '@s.whatsapp.net')].includes(sender);
+  const connectedSubbots = global.conns.map(c => c.userId + '@s.whatsapp.net') || []
+  const isOwners = [botJid, ...(settings.owner ? [settings.owner] : []), ...global.owner.map(num => num + '@s.whatsapp.net'), ...connectedSubbots].includes(sender);
 
   for (const name in global.plugins) {
     const plugin = global.plugins[name];

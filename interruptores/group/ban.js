@@ -18,6 +18,11 @@ export default {
     }
     
     const targetJid = target.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+    const ownerNumber = global.owner[0] + '@s.whatsapp.net'
+    
+    if (command === 'ban' && targetJid === ownerNumber) {
+      return m.reply(`💙 No puedes banear al *owner principal*.`, global.miku)
+    }
     
     if (!global.db.data.users) {
       global.db.data.users = {}
