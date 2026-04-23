@@ -193,24 +193,24 @@ export default async (client, m) => {
   const groupMetadata = await client.groupMetadata(id).catch(() => null)
   const groupAdmins = groupMetadata?.participants.filter(p => (p.admin === 'admin' || p.admin === 'superadmin')) || []
   const participant = groupMetadata?.participants.find(p => p.id === actor)
-  const userName = participant?.notify || participant?.name || `@${phone}`
+  const userName = participant?.notify || participant?.name || phone
   if (m.messageStubType == 21) {
-    await safeSend(client, id, { text: `💙 @${phone} cambió el nombre del grupo a *${m.messageStubParameters[0]}*`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
+    await safeSend(client, id, { text: `💙 ${userName} cambió el nombre del grupo a *${m.messageStubParameters[0]}*`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
   }
   if (m.messageStubType == 22) {
-    await safeSend(client, id, { text: `💙 @${phone} cambió el icono del grupo.`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
+    await safeSend(client, id, { text: `💙 ${userName} cambió el icono del grupo.`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
   }
   if (m.messageStubType == 23) {
-    await safeSend(client, id, { text: `💙 @${phone} restableció el enlace del grupo.`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
+    await safeSend(client, id, { text: `💙 ${userName} restableció el enlace del grupo.`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
   }
   if (m.messageStubType == 24) {
-    await safeSend(client, id, { text: `💙 @${phone} cambió la descripción del grupo.`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
+    await safeSend(client, id, { text: `💙 ${userName} cambió la descripción del grupo.`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
   }
   if (m.messageStubType == 25) {
-    await safeSend(client, id, { text: `💙 @${phone} cambió los ajustes del grupo para permitir que ${m.messageStubParameters[0] == 'on' ? 'solo admins' : 'todos'} puedan configurar el grupo.`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
+    await safeSend(client, id, { text: `💙 ${userName} cambió los ajustes del grupo para permitir que ${m.messageStubParameters[0] == 'on' ? 'solo admins' : 'todos'} puedan configurar el grupo.`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
   }
   if (m.messageStubType == 26) {
-    await safeSend(client, id, { text: `💙 @${phone} cambió los ajustes del grupo para permitir que ${m.messageStubParameters[0] === 'on' ? 'solo los administradores puedan enviar mensajes al grupo.' : 'todos los miembros puedan enviar mensajes al grupo.'}`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
+    await safeSend(client, id, { text: `💙 ${userName} cambió los ajustes del grupo para permitir que ${m.messageStubParameters[0] === 'on' ? 'solo los administradores puedan enviar mensajes al grupo.' : 'todos los miembros puedan enviar mensajes al grupo.'}`, mentions: [actor, ...groupAdmins.map(v => v.id)], ...global.miku })
   }
 })
 }
