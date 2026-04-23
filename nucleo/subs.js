@@ -57,24 +57,6 @@ const sock = makeWASocket({
   sock.isInit = false
   sock.ev.on('creds.update', saveCreds)
 
-  if (isCode && caption && client && chatId && commandFlags[senderId]) {
-    try {
-      let codeGen = await sock.requestPairingCode(phone);
-      codeGen = codeGen?.match(/.{1,4}/g)?.join("-") || codeGen;
-      const msg = await m.reply(caption)
-      const msgCode = await m.reply(codeGen);
-      delete commandFlags[senderId];
-      setTimeout(async () => {
-      try {
-      await client.sendMessage(chatId, { delete: msg.key });
-      await client.sendMessage(chatId, { delete: msgCode.key });
-      } catch {}
-      }, 60000);
-    } catch (err) {
-      console.error("[ Código Error]", err);
-    }
-  }
-
   sock.decodeJid = (jid) => {
     if (!jid) return jid
     if (/:\d+@/gi.test(jid)) {
@@ -86,6 +68,27 @@ const sock = makeWASocket({
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, isNewLogin, qr }) => {
     try {
       if (isNewLogin) sock.isInit = false
+      
+      if (isCode && caption && client && chatId && commandFlags[senderId]) {
+        try {
+          const state = sock.authState.creds
+          if (!state.registered) {
+            let codeGen = await sock.requestPairingCode(phone);
+            codeGen = codeGen?.match(/.{1,4}/g)?.join("-") || codeGen;
+            const msg = await m.reply(caption)
+            const msgCode = await m.reply(codeGen);
+            delete commandFlags[senderId];
+            setTimeout(async () => {
+            try {
+            await client.sendMessage(chatId, { delete: msg.key });
+            await client.sendMessage(chatId, { delete: msgCode.key });
+            } catch {}
+            }, 60000);
+          }
+        } catch (err) {
+          console.error("[ Código Error]", err);
+        }
+      }
       
       if (qr && !isCode && client && chatId && commandFlags[senderId]) {
         try {
