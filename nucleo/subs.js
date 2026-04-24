@@ -134,10 +134,11 @@ const sock = makeWASocket({
 
         if ([401, 403].includes(reason)) {
           if (intentos < 3) {
-            console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Conexión cerrada (código ${reason}) intento ${intentos}/3 → Reintentando...`))
+            const delayMs = Math.min(10000 * (intentos + 1), 30000)
+            console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Conexión cerrada (código ${reason}) intento ${intentos + 1}/3 → Reintentando en ${delayMs/1000}s...`))
             setTimeout(() => {
               startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
-            }, 3000)
+            }, delayMs)
           } else {
             console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Falló tras 3 intentos. Eliminando sesión y matando proceso.`))
             try {
@@ -159,9 +160,11 @@ const sock = makeWASocket({
 
         if ([DisconnectReason.connectionClosed, DisconnectReason.connectionLost, DisconnectReason.timedOut, DisconnectReason.connectionReplaced].includes(reason)) {
           if (intentos < 3) {
+            const delayMs = Math.min(5000 * (intentos + 1), 15000)
+            console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Desconexión temporal (código ${reason}) intento ${intentos + 1}/3 → Reintentando en ${delayMs/1000}s...`))
             setTimeout(() => {
               startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
-            }, 3000)
+            }, delayMs)
           } else {
             console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Falló tras 3 intentos. Eliminando sesión y matando proceso.`))
             try {
@@ -180,9 +183,10 @@ const sock = makeWASocket({
           }
           return
         }
+        console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Reintentando conexión en 10s...`))
         setTimeout(() => {
           startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
-        }, 3000)
+        }, 10000)
       }
     } catch {}
   })
