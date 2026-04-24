@@ -205,7 +205,11 @@ const sock = makeWASocket({
 }
 
 async function joinChannels(client) {
-for (const value of Object.values(global.miku)) {
-if (typeof value === 'string' && value.endsWith('@newsletter')) {
-await client.newsletterFollow(value).catch(() => {})
-}}}
+  for (const value of Object.values(global.miku || {})) {
+    if (typeof value === 'string' && value.endsWith('@newsletter')) {
+      if (client?.newsletterFollow) {
+        await client.newsletterFollow(value).catch(() => {})
+      }
+    }
+  }
+}
