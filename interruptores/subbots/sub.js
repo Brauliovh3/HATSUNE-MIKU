@@ -49,7 +49,7 @@ export default {
         version,
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
-        browser: Browsers.macOS('Chrome'),
+        browser: Browsers.ubuntu('Chrome'),
         auth: state,
         markOnlineOnConnect: false,
         generateHighQualityLinkPreview: true,
@@ -57,6 +57,9 @@ export default {
         getMessage: async () => '',
         keepAliveIntervalMs: 30000,
         maxIdleTimeMs: 300000,
+        connectTimeoutMs: 60000,
+        defaultQueryTimeoutMs: 60000,
+        fireInitQueries: true,
       });
 
       pendingSessions.set(sessionId, {
@@ -128,7 +131,7 @@ export default {
           if (!pending) return;
           
           if (!state.creds.registered) {
-            const code = await sock.requestPairingCode(phoneNumber);
+            const code = await sock.requestPairingCode(phoneNumber.replace(/\D/g, ''));
             const formattedCode = code?.match(/.{1,4}/g)?.join("-") || code;
             
             const instructions = `💙 *VINCULA TU WHATSAPP* 💙\n\n` +
