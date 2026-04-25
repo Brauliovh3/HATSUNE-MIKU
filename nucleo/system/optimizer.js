@@ -43,7 +43,7 @@ class SystemOptimizer {
     if (this.active) return;
     this.active = true;
     
-    // console.log(chalk.cyanBright('[ 🔧 Optimizador ] Sistema de optimización iniciado'));
+  
     
     this.schedule('memory-check', () => this.checkMemory(), 30000);
     this.schedule('tmp-cleanup', () => this.cleanTempFiles(), 5 * 60000);
@@ -63,7 +63,7 @@ class SystemOptimizer {
       clearInterval(timer);
     }
     this.timers.clear();
-    // console.log(chalk.yellow('[ 🔧 Optimizador ] Sistema detenido'));
+  
   }
 
   schedule(name, fn, interval) {
@@ -72,7 +72,14 @@ class SystemOptimizer {
     }
     fn();
     const timer = setInterval(() => {
-      if (this.active) fn().catch(() => {});
+      if (this.active) {
+        try {
+          const result = fn();
+          if (result && typeof result.catch === 'function') {
+            result.catch(() => {});
+          }
+        } catch {}
+      }
     }, interval);
     this.timers.set(name, timer);
   }

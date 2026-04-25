@@ -15,6 +15,8 @@ const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 const userDevicesCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 const groupCache = new NodeCache({ stdTTL: 3600, checkperiod: 300 });
 let reintentos = {}
+let globalReconnectCooldown = false
+let pendingReconnects = []
 const cleanJid = (jid = '') => jid.replace(/:\d+/, '').split('@')[0]
 
 export async function startSubBot(m, client, caption = '', isCode = true, phone = '', chatId = '', commandFlags = {}, isCommand = false) {
@@ -147,12 +149,23 @@ const sock = makeWASocket({
         const intentos = reintentos[botId] || 0
         reintentos[botId] = intentos + 1
 
+        if (globalReconnectCooldown) {
+          pendingReconnects.push({ m, client, caption, isCode, phone, chatId, isCommand, botId, reason, intentos })
+          console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} en cola de reconexión (${pendingReconnects.length} en espera)`))
+          return
+        }
+
         if ([401, 403].includes(reason)) {
           if (intentos < 3) {
+            globalReconnectCooldown = true
             const delayMs = Math.min(10000 * (intentos + 1), 30000)
             console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Conexión cerrada (código ${reason}) intento ${intentos + 1}/3 → Reintentando en ${delayMs/1000}s...`))
             setTimeout(() => {
               startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
+              setTimeout(() => {
+                globalReconnectCooldown = false
+                processPendingReconnects()
+              }, 2000)
             }, delayMs)
           } else {
             console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Falló tras 3 intentos. Eliminando sesión y matando proceso.`))
@@ -173,12 +186,17 @@ const sock = makeWASocket({
           return
         }
 
-        if ([DisconnectReason.connectionClosed, DisconnectReason.connectionLost, DisconnectReason.timedOut, DisconnectReason.connectionReplaced].includes(reason)) {
+        if ([DisconnectReason.connectionClosed, DisconnectReason.connectionLost, DisconnectReason.timedOut, DisconnectReason.connectionReplaced, 408].includes(reason)) {
           if (intentos < 3) {
-            const delayMs = Math.min(5000 * (intentos + 1), 15000)
+            globalReconnectCooldown = true
+            const delayMs = Math.min(8000 * (intentos + 1), 20000)
             console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Desconexión temporal (código ${reason}) intento ${intentos + 1}/3 → Reintentando en ${delayMs/1000}s...`))
             setTimeout(() => {
               startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
+              setTimeout(() => {
+                globalReconnectCooldown = false
+                processPendingReconnects()
+              }, 2000)
             }, delayMs)
           } else {
             console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Falló tras 3 intentos. Eliminando sesión y matando proceso.`))
@@ -199,8 +217,13 @@ const sock = makeWASocket({
           return
         }
         console.log(chalk.gray(`[ 💙 ]  SUB-BOT ${botId} Reintentando conexión en 10s...`))
+        globalReconnectCooldown = true
         setTimeout(() => {
           startSubBot(m, client, caption, isCode, phone, chatId, {}, isCommand)
+          setTimeout(() => {
+            globalReconnectCooldown = false
+            processPendingReconnects()
+          }, 2000)
         }, 10000)
       }
     } catch {}
@@ -230,5 +253,22 @@ async function joinChannels(client) {
         await client.newsletterFollow(value).catch(() => {})
       }
     }
+  }
+}
+
+function processPendingReconnects() {
+  if (pendingReconnects.length === 0) return
+  
+  console.log(chalk.gray(`[ 💙 ] Procesando ${pendingReconnects.length} reconexiones pendientes...`))
+  
+  const batch = pendingReconnects.splice(0, 3)
+  for (const item of batch) {
+    setTimeout(() => {
+      startSubBot(item.m, item.client, item.caption, item.isCode, item.phone, item.chatId, {}, item.isCommand)
+    }, Math.random() * 2000)
+  }
+  
+  if (pendingReconnects.length > 0) {
+    setTimeout(processPendingReconnects, 5000)
   }
 }
