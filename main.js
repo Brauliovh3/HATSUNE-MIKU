@@ -12,6 +12,8 @@ import { getGroupAdmins } from './nucleo/message.js';
 
 seeCommands();
 
+global.gallerySessions = global.gallerySessions || new Map();
+
 export default async (client, m) => {
   const sender = m.sender;
   let body = m.message?.conversation || m.message?.extendedTextMessage?.text || m.message?.imageMessage?.caption || m.message?.videoMessage?.caption || m.message?.buttonsResponseMessage?.selectedButtonId || m.message?.listResponseMessage?.singleSelectReply?.selectedRowId || m.message?.templateButtonReplyMessage?.selectedId || m.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson || '';
@@ -170,7 +172,7 @@ export default async (client, m) => {
       };
       const emoji = rarityColors[currentWaifu?.rarity] || '💙';
       
-      let msg = `✅ ¡PERSONAJE RECLAMADO! ✅\n\n`;
+      let msg = `✅ ¡RECLAMADO! ✅\n\n`;
       msg += `${emoji} *${waifuName}*\n`;
       msg += `💎 *${currentWaifu?.rarity?.toUpperCase() || 'COMÚN'}*\n`;
       msg += `👤 ${userName}\n`;
@@ -210,7 +212,7 @@ export default async (client, m) => {
       };
       const emoji = rarityColors[currentWaifu?.rarity] || '💙';
       
-      let msg = `💰 ¡PERSONAJE VENDIDO! 💰\n\n`;
+      let msg = `💰 VENDIDO!💰\n\n`;
       msg += `${emoji} *${currentWaifu?.name || 'personaje'}*\n`;
       msg += `💎 *${currentWaifu?.rarity?.toUpperCase() || 'COMÚN'}*\n`;
       msg += `💵 *Recibiste:* ${sellPrice} cebollines\n`;
@@ -231,6 +233,78 @@ export default async (client, m) => {
       );
       return;
     }
+  }
+
+  if (buttonId && (buttonId.startsWith('gallery_prev_') || buttonId.startsWith('gallery_next_'))) {
+    const sessionId = buttonId.split('_').slice(2).join('_');
+    const session = gallerySessions.get(sessionId);
+
+    if (!session) {
+      await m.reply('❌ Sesión de galería expirada. Usa *.gallery* nuevamente.');
+      return;
+    }
+
+    if (m.sender !== session.userId) {
+      await m.reply('❌ Esta galería no es tuya.');
+      return;
+    }
+
+    const action = buttonId.startsWith('gallery_prev_') ? 'prev' : 'next';
+    let newIndex = session.index;
+    const userCharacters = session.characters || [];
+
+    if (action === 'prev') {
+      newIndex = session.index - 1;
+      if (newIndex < 0) newIndex = userCharacters.length - 1;
+    } else {
+      newIndex = session.index + 1;
+      if (newIndex >= userCharacters.length) newIndex = 0;
+    }
+
+    const waifu = userCharacters[newIndex];
+    
+    const rarityColors = {
+      'común': '⚪',
+      'rara': '🔵',
+      'épica': '🟣',
+      'ultra rara': '🟡',
+      'legendaria': '🔴'
+    };
+
+    const emoji = rarityColors[waifu.rarity] || '💙';
+
+    let message = `🎨 *MI COLECCIÓN* 🎨\n\n`;
+    message += `${emoji} *${waifu.name}*\n`;
+    message += `💎 *Rareza:* ${waifu.rarity.toUpperCase()}\n`;
+    message += `⚡ *Poder:* ${waifu.power}\n`;
+    message += `🎯 *Habilidad:* ${waifu.skill}\n`;
+    message += `📜 *Descripción:* ${waifu.skillDesc}\n\n`;
+    message += `📖 Personaje ${newIndex + 1} de ${userCharacters.length}\n`;
+    message += `📊 Total en colección: ${userCharacters.length}\n\n`;
+    message += `💡 Usa los botones para navegar`;
+
+    const buttons = [
+      { buttonId: `gallery_prev_${sessionId}`, buttonText: { displayText: '⬅️ Anterior' }, type: 1 },
+      { buttonId: `gallery_next_${sessionId}`, buttonText: { displayText: '➡️ Siguiente' }, type: 1 },
+      { buttonId: '.rw', buttonText: { displayText: '🎲 Invocar' }, type: 1 }
+    ];
+
+    await client.sendMessage(m.chat, {
+      image: { url: waifu.img },
+      caption: message,
+      buttons: buttons,
+      footer: '🎮 Mi Colección - Hatsune Miku Bot',
+      headerType: 4
+    }, { quoted: m });
+
+    gallerySessions.set(sessionId, {
+      index: newIndex,
+      chat: m.chat,
+      userId: session.userId,
+      characters: userCharacters
+    });
+
+    return;
   }
 
   if ((m.id.startsWith("3EB0") || (m.id.startsWith("BAE5") && m.id.length === 16) || (m.id.startsWith("B24E") && m.id.length === 20)) && !m.message?.interactiveResponseMessage) return

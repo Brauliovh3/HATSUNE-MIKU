@@ -177,10 +177,25 @@ let handler = async (client, m) => {
         message += `• *.rw* - Obtener nuevos personajes\n`;
         message += `• *.c* - Reclamar personaje pendiente\n`;
         message += `• *.v* - Vender personaje pendiente\n`;
+        message += `• *.gallery* - Ver galería con imágenes\n`;
         message += `• *.waifupvp 01 @user 02* - Batalla PVP\n`;
         message += `━━━━━━━━━━━━━━━━━━`;
 
-        return await client.sendFile(m.chat, 'https://files.catbox.moe/y980w8.png', 'coleccion.jpg', message, m, false, { mentions: [userId] });
+        const buttons = [
+            { buttonId: '.gallery', buttonText: { displayText: '🎨 Galería' }, type: 1 },
+            { buttonId: '.rw', buttonText: { displayText: '🎲 Invocar' }, type: 1 }
+        ];
+
+        return await client.sendButton(
+            m.chat, 
+            message, 
+            '🎮 Colección - Hatsune Miku Bot',
+            'https://files.catbox.moe/y980w8.png',
+            buttons,
+            null,
+            { mentions: [userId] },
+            m
+        );
     } catch (e) {
         console.error(e);
         return m.reply('💙 Error al mostrar la colección. Intenta de nuevo.');
