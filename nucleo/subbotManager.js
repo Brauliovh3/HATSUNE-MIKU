@@ -13,7 +13,7 @@ class SubBotManager {
     this.msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
     this.userDevicesCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
     this.groupCache = new NodeCache({ stdTTL: 3600, checkperiod: 300 });
-    this.maxRetries = 10;
+    this.maxRetries = 3;
     this.baseDelay = 5000;
     this.maxDelay = 60000;
   }
@@ -118,8 +118,6 @@ class SubBotManager {
         sock.isConnected = false;
         const reason = lastDisconnect?.error?.output?.statusCode || 0;
         
-        console.log(chalk.yellow(`💙 Subbot ${sessionId} desconectado (código: ${reason})`));
-
         const shouldReconnect = this.shouldReconnect(reason, sock.retryCount);
         
         if (shouldReconnect) {
@@ -129,17 +127,13 @@ class SubBotManager {
             this.maxDelay
           );
           
-          console.log(chalk.cyan(`💙 Reconectando ${sessionId} en ${Math.round(delay/1000)}s (intento ${sock.retryCount}/${this.maxRetries})`));
-          
           setTimeout(() => {
             this.reconnectSubBot(sessionId);
           }, delay);
         } else {
-          console.log(chalk.red(`💙 Subbot ${sessionId} alcanzó máximo de reintentos o sesión inválida`));
           this.subbots.delete(sessionId);
           
           if ([401, 403, 500].includes(reason)) {
-            console.log(chalk.red(`💙 Eliminando sesión inválida: ${sessionId}`));
             this.deleteSession(sessionFolder);
           }
         }
@@ -280,7 +274,6 @@ class SubBotManager {
     setInterval(() => {
       for (const [id, sock] of this.subbots) {
         if (!sock.isConnected && sock.retryCount < this.maxRetries) {
-          console.log(chalk.cyan(`💙 Health check: reconectando ${id}`));
           this.reconnectSubBot(id);
         }
       }
