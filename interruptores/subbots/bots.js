@@ -127,9 +127,12 @@ export default {
     msg += `│\n`;
     msg += `╰━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n`;
 
-    msg += `💙 *Powered by Hatsune Miku Bot* 🎤\n`;
+    msg += `💙 *🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ)* 🎤\n`;
     msg += `✨ Sistema de Subbots Premium v2.0`;
 
-    await client.sendMessage(m.chat, { text: msg }, { quoted: m });
+    await client.sendMessage(m.chat, {
+      image: { url: 'https://files.catbox.moe/70548q.png' },
+      caption: msg
+    }, { quoted: m });
   }
 };

@@ -8,7 +8,7 @@ import subBotManager from '../../nucleo/subbotManager.js';
 const pendingSessions = new Map();
 
 export default {
-  command: ['sub', 'vincular', 'conectar'],
+  command: ['sub', 'vincular', 'conectar', 'code', 'serbot--code', 'serbot-code', 'botcode'],
   category: 'subbots',
   run: async (client, m, args, usedPrefix, command) => {
     const userId = m.sender;
