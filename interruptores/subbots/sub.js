@@ -39,8 +39,7 @@ export default {
 
     fs.mkdirSync(sessionFolder, { recursive: true });
 
-    await m.reply(`💙 *Iniciando vinculación...*\n\n` +
-      `⏳ Generando código de emparejamiento para ${phoneNumber}...`);
+    await m.react('⏳');
 
     try {
       const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
@@ -83,7 +82,7 @@ export default {
           const cleanId = sock.user?.id?.split(':')[0] || sessionId;
           const userName = sock.user?.name || 'Usuario';
           
-          console.log(chalk.green(`[ 💙 ] Nuevo subbot vinculado: ${cleanId}`));
+          console.log(chalk.green(`💙 Nuevo subbot vinculado: ${cleanId}`));
 
           await client.sendMessage(m.chat, {
             text: `✅ *¡VINCULACIÓN EXITOSA!* ✅\n\n` +
@@ -125,6 +124,9 @@ export default {
 
       setTimeout(async () => {
         try {
+          const pending = pendingSessions.get(sessionId);
+          if (!pending) return;
+          
           if (!state.creds.registered) {
             const code = await sock.requestPairingCode(phoneNumber);
             const formattedCode = code?.match(/.{1,4}/g)?.join("-") || code;
@@ -138,7 +140,7 @@ export default {
               `5️⃣ Selecciona *"Vincular con número de teléfono"*\n` +
               `6️⃣ Ingresa el *código de 8 dígitos* que te enviaré a continuación\n\n` +
               `⚠️ *Importante:*\n` +
-              `• El código expira en *2 minutos*\n` +
+              `• El código expira en *60 segundos*\n` +
               `• Solo funciona en *este número* (${phoneNumber})\n` +
               `• No compartas el código con nadie\n\n` +
               `🌸 *Esperando código...*`;
@@ -148,9 +150,7 @@ export default {
             await new Promise(resolve => setTimeout(resolve, 1500));
 
             await client.sendMessage(m.chat, {
-              text: `🔢 *CÓDIGO DE VINCULACIÓN*\n\n` +
-                `*${formattedCode}*\n\n` +
-                `Ingresa este código en tu WhatsApp`
+              text: formattedCode
             }, { quoted: m });
 
             pending.codeSent = true;
