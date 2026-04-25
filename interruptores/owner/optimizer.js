@@ -24,7 +24,6 @@ export default {
         '',
         '📡 *CONEXIONES*',
         `👤 Owner: ${global.client?.user ? '✅' : '❌'}`,
-        `🤖 Subbots: ${stats.connections}`,
         `📋 Sesiones registradas: ${stats.activeSessions}`
       ].join('\n');
       

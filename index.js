@@ -12,7 +12,6 @@ import readlineSync from "readline-sync";
 import os from "os";
 import { smsg } from "./nucleo/message.js";
 import db from "./nucleo/system/database.js";
-import { startSubBot } from './nucleo/subs.js';
 import optimizer from './nucleo/system/optimizer.js';
 import { exec } from "child_process";
 
@@ -53,41 +52,7 @@ console.log(chalk.magentaBright('\n💙 Iniciando 01'))
   gradient: ['blue', 'magenta']
 })
 
-const botTypes = [
-  { name: 'SubBot', folder: './Sessions/Subs', starter: startSubBot }
-];
-
 if (!fs.existsSync('./tmp')) fs.mkdirSync('./tmp', { recursive: true });
-global.conns = global.conns || [];
-const reconnecting = new Set();
-
-async function loadBots() {
-  for (const { name, folder, starter } of botTypes) {
-    if (!fs.existsSync(folder)) continue;
-    const botIds = fs.readdirSync(folder);
-    for (const userId of botIds) {
-      const sessionPath = path.join(folder, userId);
-      const credsPath = path.join(sessionPath, 'creds.json');
-      if (!fs.existsSync(sessionPath)) continue;
-      if (!fs.existsSync(credsPath)) continue;
-      if (global.conns.some((conn) => conn.userId === userId)) continue;
-      if (reconnecting.has(userId)) continue;
-      try {
-        reconnecting.add(userId);
-        await starter(null, null, 'Auto reconexión', false, userId, sessionPath);
-      } catch (e) {
-        console.log(chalk.gray(`[ loadBots ] Error iniciando ${name} ${userId}: ${e?.message || e}`));
-        if (e?.message?.includes('ENOENT') || e?.message?.includes('no such file or directory')) {
-          console.log(chalk.gray(`[ loadBots ] Eliminando referencia a sesión eliminada ${userId}`));
-        }
-      } finally {
-        reconnecting.delete(userId);
-      }
-      await new Promise((res) => setTimeout(res, 2500));
-    }
-  }
-  setTimeout(loadBots, 60 * 1000);
-}
 
 function cleanCache() {
   try {
@@ -140,10 +105,8 @@ function cleanCache() {
             }
           }
         };
-        for (const botType of ['Owner', 'Subs']) {
-          const botFolder = path.join(sessionsFolder, botType);
-          if (fs.existsSync(botFolder)) safeDelete(botFolder);
-        }
+        const ownerFolder = path.join(sessionsFolder, 'Owner');
+        if (fs.existsSync(ownerFolder)) safeDelete(ownerFolder);
       }
     }
   } catch (e) {
@@ -301,12 +264,8 @@ async function startBot() {
 
 setInterval(cleanCache, 30 * 60 * 1000);
 cleanCache();
-// Limpieza agresiva al inicio
-setTimeout(cleanCache, 5 * 60 * 1000);
 
-(async () => {
-await loadBots();
-})();
+setTimeout(cleanCache, 5 * 60 * 1000);
 
 (async () => {
 global.loadDatabase()

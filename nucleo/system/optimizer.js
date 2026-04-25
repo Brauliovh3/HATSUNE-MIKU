@@ -171,8 +171,7 @@ class SystemOptimizer {
 
   async cleanSessions() {
     const sessionDirs = [
-      './Sessions/Owner',
-      './Sessions/Subs'
+      './Sessions/Owner'
     ];
     
     let cleaned = 0;
@@ -201,14 +200,11 @@ class SystemOptimizer {
             
             if (age > this.limits.sessionMaxAge) {
               const sessionId = entry.name;
-              const conn = global.conns?.find(c => c.userId === sessionId);
               
-              if (!conn || !conn.ws || conn.ws.readyState !== 1) {
+              if (!fs.existsSync(credsPath)) {
                 fs.rmSync(sessionPath, { recursive: true, force: true });
                 cleaned++;
-                
-                const idx = global.conns?.findIndex(c => c.userId === sessionId);
-                if (idx > -1) global.conns.splice(idx, 1);
+                continue;
               }
             }
             
@@ -259,8 +255,7 @@ class SystemOptimizer {
 
   async rotatePrekeys() {
     const sessionDirs = [
-      './Sessions/Owner',
-      './Sessions/Subs'
+      './Sessions/Owner'
     ];
     
     let rotated = 0;
@@ -310,14 +305,6 @@ class SystemOptimizer {
     try {
       if (global.client?.ev?.flush) {
         global.client.ev.flush();
-      }
-    } catch {}
-    
-    try {
-      for (const conn of global.conns || []) {
-        if (conn?.ev?.flush) {
-          conn.ev.flush();
-        }
       }
     } catch {}
     
@@ -382,14 +369,14 @@ class SystemOptimizer {
     // console.log(chalk.white(`  Prekeys rotadas: ${this.stats.prekeysRotated}`));
     // console.log(chalk.white(`  Memoria actual: RSS ${mem.rss || 'N/A'} MB`));
     // console.log(chalk.white(`  Sesiones activas: ${this.sessionRegistry.size}`));
-    // console.log(chalk.white(`  Conexiones: ${global.conns?.length || 0}\n`));
+    // console.log(chalk.white(`  Conexiones: 1\n`));
   }
 
   getStats() {
     return {
       ...this.stats,
       activeSessions: this.sessionRegistry.size,
-      connections: global.conns?.length || 0,
+      connections: 1,
       memory: global.memoryStats || {}
     };
   }

@@ -46,7 +46,6 @@ Desarrollo activo — nuevas funciones desplegadas continuamente.
 ✦ Bienvenidas Personalizadas   →  Mensajes dinámicos con imagen
 ✦ IA Conversacional            →  SimSimi + módulo propio
 ✦ Motor de Stickers            →  Desde imágenes / videos / GIFs / URLs
-✦ SubBot - Jadibot             →  Funcionalidad multi-sesión
 ✦ RPG & Entretenimiento        →  Juegos, minijuegos, ranking
 ✦ Descargas de YouTube         →  Música y video en alta calidad
 ✦ Módulos Secretos             →  Próximamente...

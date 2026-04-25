@@ -255,8 +255,7 @@ export default async (client, m) => {
   }  
   const isBotAdmins = m.isGroup ? groupAdmins.some(p => p.phoneNumber === botJid || p.jid === botJid || p.id === botJid || p.lid === botJid ) : false
   const isAdmins = m.isGroup ? groupAdmins.some(p => p.phoneNumber === sender || p.jid === sender || p.id === sender || p.lid === sender ) : false
-  const connectedSubbots = global.conns.map(c => c.userId + '@s.whatsapp.net') || []
-  const isOwners = [botJid, ...(settings.owner ? [settings.owner] : []), ...global.owner.map(num => num + '@s.whatsapp.net'), ...connectedSubbots].includes(sender);
+  const isOwners = [botJid, ...(settings.owner ? [settings.owner] : []), ...global.owner.map(num => num + '@s.whatsapp.net')].includes(sender);
 
   for (const name in global.plugins) {
     const plugin = global.plugins[name];
@@ -332,29 +331,6 @@ export default async (client, m) => {
   }
   
   const hasPrefix = settings.prefix === true ? true : (Array.isArray(settings.prefix) ? settings.prefix : typeof settings.prefix === 'string' ? [settings.prefix] : []).some(p => textToMatch?.startsWith(p));
-  function getAllSessionBots() {
-    const sessionDirs = ['./Sessions/Subs']
-    let bots = []
-    for (const dir of sessionDirs) {
-      try {
-        const subDirs = fs.readdirSync(path.resolve(dir))
-        for (const sub of subDirs) {
-          const credsPath = path.resolve(dir, sub, 'creds.json')
-          if (fs.existsSync(credsPath)) {
-            bots.push(sub + '@s.whatsapp.net')
-          }
-        }
-      } catch {}
-    }
-    try {
-      const ownerCreds = path.resolve('./Sessions/Owner/creds.json')
-      if (fs.existsSync(ownerCreds)) {
-        const ownerId = global.client?.user?.id?.split(':')[0] + '@s.whatsapp.net' || ''
-        if (ownerId) bots.push(ownerId)
-      }
-    } catch {}
-    return bots;
-  }
   const botprimaryId = chat?.primaryBot
   if (botprimaryId && hasPrefix && m.isGroup) {
     const normalizeJid = (jid) => {
@@ -370,29 +346,6 @@ export default async (client, m) => {
   }
   
 
-  if (hasPrefix) {
-    const ownerCreds = path.resolve('./Sessions/Owner/creds.json')
-    if (fs.existsSync(ownerCreds)) {
-      const ownerId = global.client?.user?.id?.split(':')[0] + '@s.whatsapp.net' || ''
-      const normalizeJid = (jid) => {
-        if (!jid) return ''
-        const clean = String(jid).split(':')[0].replace(/\D/g, '')
-        return clean + '@s.whatsapp.net'
-      }
-      const normalizedOwner = normalizeJid(ownerId)
-      const normalizedCurrent = normalizeJid(botJid)
-     
-      if (normalizedOwner && normalizedOwner !== normalizedCurrent) {
-        
-        const mainBotConnected = fs.existsSync('./Sessions/Owner/creds.json') && 
-          global.client?.user?.id
-        if (mainBotConnected) {
-         
-          return
-        }
-      }
-    }
-  }
   
   if (!isOwners && settings.self) return;  
   if (m.chat && !m.chat.endsWith('g.us')) {

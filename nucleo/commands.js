@@ -89,13 +89,10 @@ profile: `╭━━━📝 PERFIL & USUARIO 📝━━━╮
 sockets: `╭━━━⚙️ INFORMACIÓN & CONFIG ⚙️━━━╮
 │ 📡 .ping - Velocidad del bot
 │ ⏱️ .uptime - Tiempo activo
-│ 🤖 .code - Código SubBot
-│ 📱 .qr - Código QR SubBot
-│ 📊 .status - Estado del bot
+│  .status - Estado del bot
 │ ℹ️ .infobot - Información completa
 │ 📜 .script - Código fuente
 │ 👨‍💻 .staff - Desarrolladores
-│ 🔗 .bots - Lista de Sub-Bots
 │ 🌐 .links - Enlaces oficiales
 │ 💡 .suggest - Sugerir comando
 │ 🐛 .reporte - Reportar errores
