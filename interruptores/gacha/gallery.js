@@ -584,28 +584,26 @@ let handler = async (client, m, args, usedPrefix, command) => {
     message += `📊 Total en colección: ${userCharacters.length}\n\n`;
     message += `💡 Usa los botones para navegar`;
 
-    const sections = userCharacters.map((char, i) => {
-        const charEmoji = rarityColors[char.rarity] || '💙';
-        return {
-            title: `${charEmoji} ${char.name}`,
-            rows: [
-                {
-                    title: `💎 ${char.rarity.toUpperCase()} - ⚡ ${char.power}`,
-                    description: `${char.skill}: ${char.skillDesc}`,
-                    id: `gallery_view_${sessionId}_${i}`
-                }
-            ]
-        };
-    });
+    const buttons = [
+        { buttonId: `gallery_prev_${sessionId}`, buttonText: { displayText: '⬅️ Anterior' }, type: 1 },
+        { buttonId: `gallery_next_${sessionId}`, buttonText: { displayText: '➡️ Siguiente' }, type: 1 },
+        { buttonId: `gallery_rw_${sessionId}`, buttonText: { displayText: '🎲 Invocar' }, type: 1 }
+    ];
 
-    const listMessage = {
-        title: '🎨 *MI COLECCIÓN* 🎨',
-        buttonText: 'Seleccionar Personaje',
-        description: `📊 Total: ${userCharacters.length} personajes`,
-        sections
+    const buttonMessage = {
+        text: message,
+        footer: '🎮 Mi Colección - Hatsune Miku Bot',
+        buttons: buttons,
+        headerType: 4
     };
 
-    await client.sendMessage(m.chat, listMessage, { quoted: m });
+    await client.sendMessage(m.chat, {
+        image: { url: waifu.img },
+        caption: message,
+        buttons: buttons,
+        footer: '🎮 Mi Colección - Hatsune Miku Bot',
+        headerType: 4
+    }, { quoted: m });
 
     gallerySessions.set(sessionId, {
         index,
@@ -645,67 +643,94 @@ handler.before = async function (m, { conn, client }) {
         return false;
     }
 
-    if (!buttonId || (!buttonId.startsWith('gallery_view_') && !buttonId.startsWith('gallery_prev_') && !buttonId.startsWith('gallery_next_'))) {
+    if (!buttonId || (!buttonId.startsWith('gallery_prev_') && !buttonId.startsWith('gallery_next_') && !buttonId.startsWith('gallery_rw_'))) {
         return false;
     }
 
-    if (buttonId.startsWith('gallery_view_')) {
-        const parts = buttonId.split('_');
-        const sessionId = parts.slice(2, -1).join('_');
-        const charIndex = parseInt(parts[parts.length - 1]);
-
+    if (buttonId.startsWith('gallery_rw_')) {
+        const sessionId = buttonId.split('_').slice(2).join('_');
         const session = gallerySessions.get(sessionId);
-
-        if (!session) {
-            await m.reply('❌ Sesión de galería expirada. Usa *.gallery* nuevamente.');
-            return true;
+        if (session && m.sender === session.userId) {
+            const rwHandler = (await import('./rpg-waifu.js')).default;
+            return rwHandler.run(client, m, [], '', 'rw');
         }
+        return false;
+    }
 
-        if (m.sender !== session.userId) {
-            await m.reply('❌ Esta galería no es tuya.');
-            return true;
-        }
+    const sessionId = buttonId.split('_').slice(2).join('_');
+    const session = gallerySessions.get(sessionId);
 
-        const userCharacters = session.characters || [];
-        if (charIndex < 0 || charIndex >= userCharacters.length) {
-            await m.reply('❌ Personaje no encontrado.');
-            return true;
-        }
-
-        const waifu = userCharacters[charIndex];
-        
-        const rarityColors = {
-            'común': '⚪',
-            'rara': '🔵',
-            'épica': '🟣',
-            'ultra rara': '🟡',
-            'legendaria': '🔴'
-        };
-
-        const emoji = rarityColors[waifu.rarity] || '💙';
-
-        let message = `🎨 *DETALLE DE PERSONAJE* 🎨\n\n`;
-        message += `${emoji} *${waifu.name}*\n`;
-        message += `💎 *Rareza:* ${waifu.rarity.toUpperCase()}\n`;
-        message += `⚡ *Poder:* ${waifu.power}\n`;
-        message += `🎯 *Habilidad:* ${waifu.skill}\n`;
-        message += `📜 *Descripción:* ${waifu.skillDesc}\n\n`;
-        message += `📊 Personaje ${charIndex + 1} de ${userCharacters.length}`;
-
-        const clientToUse = client || conn;
-        await clientToUse.sendMessage(m.chat, {
-            image: { url: waifu.img },
-            caption: message
-        }, { quoted: m });
-
+    if (!session) {
+        await m.reply('❌ Sesión de galería expirada. Usa *.gallerywaifu* nuevamente.');
         return true;
     }
 
-    return false;
+    if (m.sender !== session.userId) {
+        await m.reply('❌ Esta galería no es tuya.');
+        return true;
+    }
+
+    const action = buttonId.startsWith('gallery_prev_') ? 'prev' : 'next';
+    let newIndex = session.index;
+    const userCharacters = session.characters || [];
+
+    if (action === 'prev') {
+        newIndex = session.index - 1;
+        if (newIndex < 0) newIndex = userCharacters.length - 1;
+    } else {
+        newIndex = session.index + 1;
+        if (newIndex >= userCharacters.length) newIndex = 0;
+    }
+
+    const waifu = userCharacters[newIndex];
+    
+    const rarityColors = {
+        'común': '⚪',
+        'rara': '🔵',
+        'épica': '🟣',
+        'ultra rara': '🟡',
+        'legendaria': '🔴'
+    };
+
+    const emoji = rarityColors[waifu.rarity] || '💙';
+
+    let message = `🎨 *MI COLECCIÓN* 🎨\n\n`;
+    message += `${emoji} *${waifu.name}*\n`;
+    message += `💎 *Rareza:* ${waifu.rarity.toUpperCase()}\n`;
+    message += `⚡ *Poder:* ${waifu.power}\n`;
+    message += `🎯 *Habilidad:* ${waifu.skill}\n`;
+    message += `📜 *Descripción:* ${waifu.skillDesc}\n\n`;
+    message += `� Personaje ${newIndex + 1} de ${userCharacters.length}\n`;
+    message += `📊 Total en colección: ${userCharacters.length}\n\n`;
+    message += `💡 Usa los botones para navegar`;
+
+    const buttons = [
+        { buttonId: `gallery_prev_${sessionId}`, buttonText: { displayText: '⬅️ Anterior' }, type: 1 },
+        { buttonId: `gallery_next_${sessionId}`, buttonText: { displayText: '➡️ Siguiente' }, type: 1 },
+        { buttonId: `gallery_rw_${sessionId}`, buttonText: { displayText: '🎲 Invocar' }, type: 1 }
+    ];
+
+    const clientToUse = client || conn;
+    await clientToUse.sendMessage(m.chat, {
+        image: { url: waifu.img },
+        caption: message,
+        buttons: buttons,
+        footer: '🎮 Mi Colección - Hatsune Miku Bot',
+        headerType: 4
+    }, { quoted: m });
+
+    gallerySessions.set(sessionId, {
+        index: newIndex,
+        chat: m.chat,
+        userId: session.userId,
+        characters: userCharacters
+    });
+
+    return true;
 };
 
 export default {
-    command: ['gallery', 'galeria', 'waifus', 'personajes'],
+    command: ['gallerywaifu', 'galeriawaifu', 'mygallery', 'micoleccion'],
     category: 'gacha',
     run: handler
 };
