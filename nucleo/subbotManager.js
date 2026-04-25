@@ -70,10 +70,12 @@ class SubBotManager {
         cachedGroupMetadata: async (jid) => this.groupCache.get(jid),
         keepAliveIntervalMs: 30000,
         maxIdleTimeMs: 300000,
-        connectTimeoutMs: 60000,
-        defaultQueryTimeoutMs: 60000,
+        connectTimeoutMs: 120000,
+        defaultQueryTimeoutMs: 120000,
         emitOwnEvents: true,
         fireInitQueries: true,
+        retryRequestDelayMs: 5000,
+        maxMsgRetryCount: 5,
       });
 
       sock.userId = sessionId;
