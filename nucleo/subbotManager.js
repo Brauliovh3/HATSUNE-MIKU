@@ -16,6 +16,7 @@ class SubBotManager {
     this.maxRetries = 3;
     this.baseDelay = 5000;
     this.maxDelay = 60000;
+    this.startingSubbots = new Set();
   }
 
   async initializeAll() {
@@ -39,9 +40,14 @@ class SubBotManager {
 
   async startSubBot(sessionId) {
     if (this.subbots.has(sessionId)) {
-      console.log(chalk.yellow(`💙 Subbot ${sessionId} ya está activo`));
       return;
     }
+
+    if (this.startingSubbots.has(sessionId)) {
+      return;
+    }
+
+    this.startingSubbots.add(sessionId);
 
     const sessionFolder = `./Sessions/subbots/${sessionId}`;
     
@@ -53,7 +59,7 @@ class SubBotManager {
         version,
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
-        browser: Browsers.macOS('Chrome'),
+        browser: Browsers.ubuntu('Safari'),
         auth: state,
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: true,
@@ -83,6 +89,8 @@ class SubBotManager {
     } catch (err) {
       console.error(chalk.red(`💙 Error iniciando subbot ${sessionId}:`), err.message);
       this.scheduleReconnect(sessionId);
+    } finally {
+      this.startingSubbots.delete(sessionId);
     }
   }
 
@@ -132,10 +140,8 @@ class SubBotManager {
           }, delay);
         } else {
           this.subbots.delete(sessionId);
-          
-          if ([401, 403, 500].includes(reason)) {
-            this.deleteSession(sessionFolder);
-          }
+          console.log(chalk.red(`💙 Eliminando sesión problemática: ${sessionId}`));
+          this.deleteSession(sessionFolder);
         }
       }
     });

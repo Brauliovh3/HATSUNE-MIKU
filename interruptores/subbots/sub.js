@@ -49,7 +49,7 @@ export default {
         version,
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
-        browser: Browsers.ubuntu('Chrome'),
+        browser: Browsers.ubuntu('Safari'),
         auth: state,
         markOnlineOnConnect: false,
         generateHighQualityLinkPreview: true,
