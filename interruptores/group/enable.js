@@ -8,11 +8,11 @@ export default {
     const validFeatures = ['nsfw', 'welcome', 'goodbye', 'alerts', 'antilinks', 'economy', 'gacha', 'adminonly']
     
     if (!feature) {
-      return m.reply(`💙 *Uso del comando*\n\n💙 _Activar ›_ *${usedPrefix}enable <opción>*\n💙 _Desactivar ›_ *${usedPrefix}disable <opción>*\n\n💙 *Opciones disponibles:*\n• nsfw\n• welcome\n• goodbye\n• alerts\n• antilinks\n• economy\n• gacha\n• adminonly\n\n💙 _Ejemplo:_ *${usedPrefix}enable nsfw*`, m, global.miku)
+      return client.reply(m.chat, `💙 *Uso del comando*\n\n💙 _Activar ›_ *${usedPrefix}enable <opción>*\n💙 _Desactivar ›_ *${usedPrefix}disable <opción>*\n\n💙 *Opciones disponibles:*\n• nsfw\n• welcome\n• goodbye\n• alerts\n• antilinks\n• economy\n• gacha\n• adminonly\n\n💙 _Ejemplo:_ *${usedPrefix}enable nsfw*`, m, global.miku)
     }
     
     if (!validFeatures.includes(feature)) {
-      return m.reply(`💙 Opción no válida. Las opciones disponibles son:\n${validFeatures.map(f => `• ${f}`).join('\n')}`, m, global.miku)
+      return client.reply(m.chat, `💙 Opción no válida. Las opciones disponibles son:\n${validFeatures.map(f => `• ${f}`).join('\n')}`, m, global.miku)
     }
     
     const featureNames = {
@@ -30,10 +30,10 @@ export default {
     const current = chatData[feature] === true
     
     if (current === enabled) {
-      return m.reply(`💙 ${featureNames[feature]} ya estaba *${enabled ? 'activado' : 'desactivado'}*.`, m, global.miku)
+      return client.reply(m.chat, `💙 ${featureNames[feature]} ya estaba *${enabled ? 'activado' : 'desactivado'}*.`, m, global.miku)
     }
     
     chatData[feature] = enabled
-    return m.reply(`💙 Has *${enabled ? 'activado' : 'desactivado'}* ${featureNames[feature]}.`, m, global.miku)
+    return client.reply(m.chat, `💙 Has *${enabled ? 'activado' : 'desactivado'}* ${featureNames[feature]}.`, m, global.miku)
   }
 }
