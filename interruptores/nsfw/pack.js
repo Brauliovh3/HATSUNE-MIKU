@@ -138,7 +138,7 @@ if (!global.videosxxxc2) {
 }
 
 export default {
-  command: ['pack','pack2','pack3','videoxxx','vídeoxxx','videoxxxlesbi','videolesbixxx','pornolesbivid','pornolesbianavid','pornolesbiv','pornolesbianav','pornolesv','gallery'],
+  command: ['pack','pack2','pack3','videoxxx','vídeoxxx','videoxxxlesbi','videolesbixxx','pornolesbivid','pornolesbianavid','pornolesbiv','pornolesbianav','pornolesv'],
   category: 'nsfw',
   run: async (client, m, args, usedPrefix, command) => {
     if (!global.db.data.chats[m.chat].nsfw && m.isGroup) return m.reply(`💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`);

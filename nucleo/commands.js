@@ -36,18 +36,12 @@ economia: `╭━━━💰 ECONOMÍA & RPG 💰━━━╮
 │ 🏰 .dungeon - Explorar mazmorras
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 gacha: `╭━━━🎯 GACHA & WAIFUS 🎯━━━╮
-│ 🎲 .rollwaifu - Invocar waifu aleatoria
-│ ❤️ .claim - Reclamar personaje
-│ 👥 .harem - Ver tu colección
-│ 🖼️ .charimage - Imagen del personaje
-│ ℹ️ .charinfo - Información detallada
-│ 🎁 .givechar - Regalar personaje
-│ 👍 .vote - Votar por personaje
-│ 🏆 .waifusboard - Top waifus del servidor
-│ ⚔️ .rpg-waifu - Batalla waifu RPG
-│ 👥 .rpg-coleccion - Colección RPG
-│ 💾 .rpg-save - Guardar progreso
-│ ⚔️ .rpg-waifu-pvp - PvP de waifus
+│ 🎲 .rw - Invocar waifu aleatoria
+│ ❤️ .c - Reclamar personaje
+│ 🛒 .v - Vender personaje
+│ 👥 .coleccion - Colección RPG
+│ 🎨 .gallery - Galería con imágenes
+│ ⚔️ .waifupvp - PvP de waifus
 │ 🎮 .ttt - Tic-Tac-Toe Tres en raya
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 downloads: `╭━━━📥 DESCARGAS 📥━━━╮
@@ -83,7 +77,6 @@ profile: `╭━━━📝 PERFIL & USUARIO 📝━━━╮
 │ 🏆 .lb - Top usuarios por XP
 │ 📊 .level - Ver nivel actual
 │ 📈 .lboard - Ranking de niveles
-│ ⭐ .premium - Información premium
 │ 😴 .afk - Modo ausente
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 sockets: `╭━━━⚙️ INFORMACIÓN & CONFIG ⚙️━━━╮
@@ -120,24 +113,19 @@ sockets: `╭━━━⚙️ INFORMACIÓN & CONFIG ⚙️━━━╮
 │ 🚪 .logout - Cerrar sesión
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 utils: `╭━━━🛠️ HERRAMIENTAS 🛠️━━━╮
-│ 🌤️ .clima - Ver clima de ciudad
-│ 🈵 .translate - Traducir texto
-│ ✨ .enhance - Mejorar calidad imagen
+│ 🌤️ .translate - Traducir texto
+│ ✨ .hd - Mejorar calidad imagen
 │ 🧮 .math - Calculadora
-│ 🎭 .fake - Mensajes falsos
-│ 🔤 .letra - Cambiar fuente
+│ 🎭 .say - Repetir mensaje
 │ 👁️ .read - Ver imágenes vista única
-│ 🎵 .whatmusic - Identificar canción
 │ 📸 .ss - Screenshot de web
-│ 📏 .length - Cambiar tamaño
-│ 🗣️ .say - Repetir mensaje
-│ 📄 .todoc - Crear documento
-│ 🕐 .horario - Horario mundial
-│ 🔍 .inspect - Inspeccionar código
-│ 📥 .get - Descargar de URL
+│ 🪷 .get - Descargar de URL
 │ 🖼️ .getpic - Obtener imagen
 │ 🌐 .tourl - Convertir a URL
 │ 🖼️ .toimg - Sticker a imagen
+│ 🌿 .gitclone - Clonar repositorios
+│ 🤖 .ia - ChatGPT AI
+│ 🔍 .inspect - Inspeccionar código
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 grupo: `╭━━━👥 GRUPOS Solo admins 👥━━━╮
 │ 👻 .hidetag - Mencionar todos oculto
@@ -151,26 +139,23 @@ grupo: `╭━━━👥 GRUPOS Solo admins 👥━━━╮
 │ 🔓 .open - Abrir grupo
 │ 🔒 .close - Cerrar grupo
 │ ⚠️ .warn - Advertir usuario
-│ ✅ .unwarn - Quitar advertencias
-│ 📋 .advlist - Ver advertidos
-│ 🔇 .mute - Silenciar usuario
-│ 🔊 .unmute - Quitar silencio
-│ 👑 .admins - Mencionar admins
+│ ✅ .delwarn - Quitar advertencias
+│ 📋 .warns - Ver advertidos
+│ 👑 .admins - Lista de administradores
 │ ℹ️ .gp - Info del grupo
 │ 📊 .count - Contar participantes
-│ 📊 .linea - Usuarios online
-│ 👋 .setwelcome - Bienvenida
-│ 👋 .setgoodbye - Despedida
-│ 📊 .encuesta - Crear encuesta
 │ 👻 .fantasmas - Ver inactivos
 │ 📢 .tagall - Invocar todos
-│ 😀 .setemoji - Cambiar emoji
-│ 🖼️ .setgpbanner - Banner grupo
+│ 🪬 .setwelcome - Bienvenida
+│ 🪬 .setgoodbye - Despedida
 │ 📝 .setgpname - Nombre grupo
 │ 📄 .setgpdesc - Descripción grupo
+│ 🖼️ .setgpbanner - Banner grupo
 │ 🤖 .bot - Configurar bot
 │ 🎯 .setprimary - Bot primario
 │ ⚠️ .setwarnlimit - Límite warns
+│ 🔓 .enable - Activar función
+│ 🔒 .disable - Desactivar función
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 nsfw: `╭━━━🔞 NSFW Solo +18 🔞━━━╮
 │ 🔞 .waifu - Waifu NSFW
@@ -181,19 +166,18 @@ nsfw: `╭━━━🔞 NSFW Solo +18 🔞━━━╮
 │ 🔞 .xnxx - Videos XNXX
 │ 🔞 .teta - Imágenes específicas
 │ 🔞 .anal - Contenido anal
-│ 🛁 .bath - Bañarse juntos
 │ 🔞 .blowjob - Hacer mamada
 │ 🔞 .boobjob - Hacer rusa
 │ 🔞 .cum - Venirse
 │ 🔞 .fap - Hacerse paja
-│ 🥵 .pack - Pack imágenes
-│ 🥵 .pack2 - Pack chicas
-│ 🥵 .pack3 - Pack hombres
-│ 🥵 .gallery - Galería aleatoria
+│ 🔞 .pack - Pack imágenes
+│ 🔞 .pack2 - Pack chicas
+│ 🔞 .pack3 - Pack hombres
+│ 🔞 .videoxxx - Videos XXX
+│ 🔞 .videoxxxlesbi - Videos lesbianas
 │ 🔞 .ppcouple - Parejas
 │ 🔞 .footjob - Paja con pies
 │ 🔞 .fuck - Follar
-│ ☕ .cafe - Tomar café
 │ 🔞 .violar - Violar
 │ 🔞 .grabboobs - Agarrar pechos
 │ 🔞 .grop - Manosear
@@ -204,8 +188,6 @@ nsfw: `╭━━━🔞 NSFW Solo +18 🔞━━━╮
 │ 🔞 .undress - Desnudar
 │ 🔞 .yuri - Tijeras lésbicas
 │ 🔞 .yaoi - Yaoi images
-│ 🔞 .yaoi2 - Yaoi GIF
-│ 🔞 .yuri2 - Yuri GIF
 │ 🔞 .trapito - Trap images
 │ 🔞 .panties - Panties images
 │ 🔞 .tetas - Tetas images
@@ -228,8 +210,7 @@ nsfw: `╭━━━🔞 NSFW Solo +18 🔞━━━╮
 │ 🔞 .nsfwfemdom - Femdom NSFW
 │ 🔞 .nsfwglass - Glass NSFW
 │ 🔞 .calata - Calata images
-│ 🥵 .videoxxx - Videos XXX
-│ 🥵 .videoxxxlesbi - Videos lesbianas
+│ 🎮 .hgames - Juegos H APKs
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 anime: `╭━━━🎌 ANIME & REACCIONES 🎌━━━╮
 │ 🤗 .hug - Dar abrazos
