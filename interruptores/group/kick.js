@@ -5,7 +5,7 @@ export default {
   botAdmin: true,
   run: async (client, m, args, usedPrefix, command) => {
     if (!m.mentionedJid[0] && !m.quoted) {
-      return m.reply('《✧》 Etiqueta o responde al *mensaje* de la *persona* que quieres eliminar')
+      return m.reply('💙 Etiqueta o responde al *mensaje* de la *persona* que quieres eliminar', m, global.miku)
     }
     let user = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted.sender
     const groupInfo = await client.groupMetadata(m.chat)
