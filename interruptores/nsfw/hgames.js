@@ -60,15 +60,21 @@ let handler = async (client, m, args, usedPrefix, command) => {
       downloadMsg += `📱 *${game.name}*\n`;
       downloadMsg += `📁 Tamaño: ${game.size}\n`;
       downloadMsg += `📄 Archivo: ${game.file}\n\n`;
-      downloadMsg += `⏳ Preparando descarga...\n\n`;
+      downloadMsg += `⏳ Enviando archivo...\n\n`;
       downloadMsg += `💙 Hatsune Miku Bot`;
       
       await m.reply(downloadMsg);
       
       try {
-        await client.sendFile(m.chat, `https://github.com/hgames-apk/files/releases/download/v1.0/${game.file}`, game.file, `🎮 ${game.name}\n\n💙 Hatsune Miku Bot`, m);
+        await client.sendMessage(m.chat, {
+          document: { url: `https://github.com/hgames-apk/files/releases/download/v1.0/${game.file}` },
+          mimetype: 'application/vnd.android.package-archive',
+          fileName: game.file,
+          caption: `🎮 ${game.name}\n\n💙 Hatsune Miku Bot`
+        }, { quoted: m });
       } catch (err) {
-        await m.reply(`❌ Error al descargar el juego. El archivo podría no estar disponible.\n\n💡 Intenta más tarde.`);
+        console.error('Error descargando juego:', err);
+        await m.reply(`❌ Error al descargar el juego. El archivo podría no estar disponible.\n\n💡 Intenta más tarde o usa el enlace directo:\nhttps://github.com/hgames-apk/files/releases/download/v1.0/${game.file}`);
       }
       return;
     }
