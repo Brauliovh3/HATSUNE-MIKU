@@ -42,7 +42,7 @@ let handler = async (client, m) => {
   });
 
   message += `━━━━━━━━━━━━━━━━━━\n`;
-  message += `💙 *Hatsune Miku Bot*`;
+  message += `💙 *Hatsune Miku Bot\n*`;
   message += `━━━━━━━━━━━━━━━━━━`;
 
   const mentions = groupAdmins.map(a => a.id);
