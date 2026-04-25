@@ -700,7 +700,7 @@ handler.before = async function (m, { conn, client }) {
     message += `⚡ *Poder:* ${waifu.power}\n`;
     message += `🎯 *Habilidad:* ${waifu.skill}\n`;
     message += `📜 *Descripción:* ${waifu.skillDesc}\n\n`;
-    message += `� Personaje ${newIndex + 1} de ${userCharacters.length}\n`;
+    message += `👑 Personaje ${newIndex + 1} de ${userCharacters.length}\n`;
     message += `📊 Total en colección: ${userCharacters.length}\n\n`;
     message += `💡 Usa los botones para navegar`;
 

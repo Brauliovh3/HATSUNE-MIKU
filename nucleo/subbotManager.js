@@ -14,16 +14,44 @@ const groupCache = new NodeCache({ stdTTL: 3600, checkperiod: 300 });
 let reintentos = {};
 const cleanJid = (jid = '') => jid.replace(/:\d+/, '').split('@')[0];
 
+const normalizeJid = (jid) => {
+  if (!jid) return '';
+  const clean = String(jid).split(':')[0].replace(/\D/g, '');
+  return clean;
+};
+
+const shouldProcessCommand = (sock, m) => {
+  if (!m.isGroup) return true;
+  
+  const chat = global.db?.data?.chats?.[m.chat] || {};
+  const primaryBot = chat?.primaryBot;
+  
+  if (!primaryBot) return true;
+  
+  const botJid = sock.user?.id?.split(':')[0] + '@s.whatsapp.net' || '';
+  const primaryDigits = normalizeJid(primaryBot);
+  const currentDigits = normalizeJid(botJid);
+  
+  return primaryDigits === currentDigits;
+};
+
 class SubBotManager {
   constructor() {
     this.subbots = new Map();
     this.startingSubbots = new Set();
+    this.initialized = false;
   }
 
   async initializeAll() {
+    if (this.initialized) {
+      console.log(chalk.gray(`💙 Sistema de subbots ya inicializado, omitiendo...`));
+      return;
+    }
+
     const subsPath = './Sessions/subbots';
     if (!fs.existsSync(subsPath)) {
       fs.mkdirSync(subsPath, { recursive: true });
+      this.initialized = true;
       return;
     }
 
@@ -37,11 +65,24 @@ class SubBotManager {
       await this.startSubBot(sessionId);
       await this.delay(5000);
     }
+
+    this.initialized = true;
+    console.log(chalk.cyan(`💙  Sistema de subbots inicializado`));
   }
 
   async startSubBot(id) {
-    if (this.startingSubbots.has(id)) return;
+    if (this.subbots.has(id)) {
+      console.log(chalk.gray(`💙 Subbot ${id} ya existe en subbots, omitiendo...`));
+      return;
+    }
+
+    if (this.startingSubbots.has(id)) {
+      console.log(chalk.gray(`💙 Subbot ${id} ya está iniciando, omitiendo...`));
+      return;
+    }
+
     this.startingSubbots.add(id);
+    console.log(chalk.cyan(`💙 Iniciando subbot ${id}...`));
 
     const sessionFolder = `./Sessions/subbots/${id}`;
     
@@ -100,20 +141,28 @@ class SubBotManager {
           }
 
           delete reintentos[sock.userId || id];
+          this.startingSubbots.delete(id);
           console.log(chalk.green(`💙 Subbot conectado: ${sock.userId}`));
         }
 
         if (connection === 'close') {
           const botId = sock.userId || id;
           const reason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason || 0;
+          
+          if (this.startingSubbots.has(botId)) {
+            console.log(chalk.gray(`💙 Subbot ${botId} ya está iniciando en reconexión, omitiendo...`));
+            return;
+          }
+
           const intentos = reintentos[botId] || 0;
           reintentos[botId] = intentos + 1;
           
           if ([401, 403].includes(reason)) {
             if (intentos < 3) {
               console.log(chalk.yellow(`💙 Subbot ${botId} desconectado (código ${reason}) intento ${intentos}/3 → Reintentando...`));
+              this.startingSubbots.add(botId);
               setTimeout(() => {
-                this.startingSubbots.delete(botId);
+                this.subbots.delete(botId);
                 this.startSubBot(botId);
               }, 5000);
             } else {
@@ -124,20 +173,24 @@ class SubBotManager {
                 console.error(`Error eliminando sesión:`, e);
               }
               delete reintentos[botId];
+              this.startingSubbots.delete(botId);
+              this.subbots.delete(botId);
             }
             return;
           }
 
           if ([DisconnectReason.connectionClosed, DisconnectReason.connectionLost, DisconnectReason.timedOut, DisconnectReason.connectionReplaced].includes(reason)) {
+            this.startingSubbots.add(botId);
             setTimeout(() => {
-              this.startingSubbots.delete(botId);
+              this.subbots.delete(botId);
               this.startSubBot(botId);
             }, 5000);
             return;
           }
           
+          this.startingSubbots.add(botId);
           setTimeout(() => {
-            this.startingSubbots.delete(botId);
+            this.subbots.delete(botId);
             this.startSubBot(botId);
           }, 5000);
         }
@@ -150,7 +203,9 @@ class SubBotManager {
           try {
             const m = await smsg(sock, raw);
             if (m) {
-              main(sock, m, messages);
+              if (shouldProcessCommand(sock, m)) {
+                main(sock, m, messages);
+              }
             }
           } catch (err) {
             console.error(`Error procesando mensaje:`, err.message);
@@ -194,6 +249,10 @@ class SubBotManager {
 
   delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  startHealthCheck() {
+    console.log(chalk.gray(`💙 Health check deshabilitado para evitar reconexiones múltiples`));
   }
 }
 

@@ -229,9 +229,11 @@ async function startBot() {
       
       setTimeout(async () => {
         try {
-          await subBotManager.initializeAll();
-          subBotManager.startHealthCheck();
-          console.log(chalk.cyan(`💙  Sistema de subbots inicializado`));
+          if (!subBotManager.initialized) {
+            await subBotManager.initializeAll();
+            subBotManager.startHealthCheck();
+            console.log(chalk.cyan(`💙  Sistema de subbots inicializado`));
+          }
         } catch (err) {
           console.error(chalk.red(`💙 Error inicializando subbots:`), err.message);
         }

@@ -100,8 +100,6 @@ export default {
               `🌸 *Hatsune Miku Bot - Siempre contigo*`
           }, { quoted: m });
 
-          await subBotManager.startSubBot(sessionId);
-
           setTimeout(() => {
             try {
               if (sock.ws && sock.ws.readyState !== 3) {
