@@ -89,7 +89,10 @@ profile: `╭━━━📝 PERFIL & USUARIO 📝━━━╮
 sockets: `╭━━━⚙️ INFORMACIÓN & CONFIG ⚙️━━━╮
 │ 📡 .ping - Velocidad del bot
 │ ⏱️ .uptime - Tiempo activo
-│  .status - Estado del bot
+│ 📊 .status - Estado del bot
+│ 🤖 .bots - Lista de subbots
+│ 💙 .sub - Vincular subbot
+│ 🗑️ .deletebot - Desvincular subbot
 │ ℹ️ .infobot - Información completa
 │ 📜 .script - Código fuente
 │ 👨‍💻 .staff - Desarrolladores

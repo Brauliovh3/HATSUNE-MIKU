@@ -13,6 +13,7 @@ import os from "os";
 import { smsg } from "./nucleo/message.js";
 import db from "./nucleo/system/database.js";
 import optimizer from './nucleo/system/optimizer.js';
+import subBotManager from './nucleo/subbotManager.js';
 import { exec } from "child_process";
 
 const log = {
@@ -93,7 +94,7 @@ function cleanCache() {
       };
       const sizeMB = getFolderSizeMB(sessionsFolder);
       if (sizeMB > maxCache) {
-        console.log(chalk.yellow(`[ ⚠ ] Sessions ${sizeMB.toFixed(1)}MB — limpiando...`));
+        console.log(chalk.yellow(`⚠ Sessions ${sizeMB.toFixed(1)}MB — limpiando...`));
         const safeDelete = (dir) => {
           for (const file of fs.readdirSync(dir)) {
             const filePath = path.join(dir, file);
@@ -177,7 +178,7 @@ async function startBot() {
     const { qr, connection, lastDisconnect, isNewLogin, receivedPendingNotifications } = update;
     if (qr != 0 && qr != undefined || methodCodeQR) {
       if (opcion == '1' || methodCodeQR) {
-        console.log(chalk.green.bold("[ 💙 ] Escanea este código QR"));
+        console.log(chalk.green.bold("💙 Escanea este código QR"));
         qrcode.generate(qr, { small: true });
       }
     }
@@ -219,12 +220,22 @@ async function startBot() {
     if (connection === "open") {
       reconexion = 0;
       const userName = sock.user.name || "Desconocido";
-      console.log(chalk.green.bold(`[ 💙 ] Conectado a: ${userName}`));
+      console.log(chalk.green.bold(`💙 Conectado a: ${userName}`));
       
       if (!optimizer.active) {
         optimizer.start();
         optimizer.registerSession('owner', 'Owner', { userName });
       }
+      
+      setTimeout(async () => {
+        try {
+          await subBotManager.initializeAll();
+          subBotManager.startHealthCheck();
+          console.log(chalk.cyan(`💙  Sistema de subbots inicializado`));
+        } catch (err) {
+          console.error(chalk.red(`💙 Error inicializando subbots:`), err.message);
+        }
+      }, 10000);
     }
     if (isNewLogin) log.info("Nuevo dispositivo detectado");
     if (receivedPendingNotifications === true) {
@@ -269,7 +280,7 @@ setTimeout(cleanCache, 5 * 60 * 1000);
 
 (async () => {
 global.loadDatabase()
-console.log(chalk.gray('[ 💙 ] Base de datos cargada correctamente.'))
+console.log(chalk.gray('💙 Base de datos cargada correctamente.'))
 await startBot();
 })();
 
