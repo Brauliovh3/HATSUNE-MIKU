@@ -67,14 +67,14 @@ let handler = async (client, m, args, usedPrefix, command) => {
       
       try {
         await client.sendMessage(m.chat, {
-          document: { url: `https://github.com/hgames-apk/files/releases/download/v1.0/${game.file}` },
+          document: { url: `https://github.com/Brauliovh3/BVH3_INDUSTRIES/releases/download/v1.0-hgames/${game.file}` },
           mimetype: 'application/vnd.android.package-archive',
           fileName: game.file,
           caption: `🎮 ${game.name}\n\n💙 Hatsune Miku Bot`
         }, { quoted: m });
       } catch (err) {
         console.error('Error descargando juego:', err);
-        await m.reply(`❌ Error al descargar el juego. El archivo podría no estar disponible.\n\n💡 Intenta más tarde o usa el enlace directo:\nhttps://github.com/hgames-apk/files/releases/download/v1.0/${game.file}`);
+        await m.reply(`❌ Error al descargar el juego. El archivo podría no estar disponible.\n\n💡 Intenta más tarde o usa el enlace directo:\nhttps://github.com/Brauliovh3/BVH3_INDUSTRIES/releases/download/v1.0-hgames/${game.file}`);
       }
       return;
     }
