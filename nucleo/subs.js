@@ -10,16 +10,25 @@ import { smsg } from './message.js';
 import moment from 'moment-timezone';
 
 if (!global.conns) global.conns = []
+const MAX_SUBBOTS = 70
 const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 const userDevicesCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 const groupCache = new NodeCache({ stdTTL: 3600, checkperiod: 300 });
 let reintentos = {}
 const cleanJid = (jid = '') => jid.replace(/:\d+/, '').split('@')[0]
 
-export async function startSubBot(m, client, caption = '', isCode = false, phone = '', chatId = '', commandFlags = {}, isCommand = false) {
+export async function startSubBot(m, client, caption = '', isCode = true, phone = '', chatId = '', commandFlags = {}, isCommand = false) {
   const id = phone || (m?.sender || '').split('@')[0]
   const sessionFolder = `./Sessions/Subs/${id}`
   const senderId = m?.sender
+
+  if (global.conns.length >= MAX_SUBBOTS) {
+    console.log(chalk.red(`[ 💙 ] Límite de ${MAX_SUBBOTS} SUB-BOTs alcanzado. No se puede iniciar: ${id}`))
+    if (m && m.reply) {
+      await m.reply(`❌ Límite de ${MAX_SUBBOTS} SUB-BOTs alcanzado. Elimina algunos antes de agregar más.`)
+    }
+    return null
+  }
 
   if (!fs.existsSync(sessionFolder) && isCommand) {
     fs.mkdirSync(sessionFolder, { recursive: true })
@@ -61,6 +70,7 @@ const sock = makeWASocket({
     setTimeout(async () => {
       try {
         if (!sock.authState.creds.registered) {
+          console.log(chalk.gray(`[ 💙 ] Solicitando código de vinculación para: ${phone}`))
           let codeGen = await sock.requestPairingCode(phone);
           codeGen = codeGen?.match(/.{1,4}/g)?.join("-") || codeGen;
           const msg = await m.reply(caption)
@@ -72,9 +82,14 @@ const sock = makeWASocket({
           await client.sendMessage(chatId, { delete: msgCode.key });
           } catch {}
           }, 60000);
+        } else {
+          console.log(chalk.gray(`[ 💙 ] Sesión ya registrada para: ${phone}`))
         }
       } catch (err) {
         console.error("[ Código Error]", err);
+        if (m && m.reply) {
+          await m.reply(`❌ Error al obtener código de vinculación: ${err.message}`)
+        }
       }
     }, 3000);
   }
