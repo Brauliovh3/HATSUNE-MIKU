@@ -159,17 +159,76 @@ export default async (client, m) => {
     }
 
     if (buttonId.startsWith('waifu_claim_')) {
-      user.waifu.characters.push(user.waifu.pending);
+      const currentWaifu = user.waifu.pending;
+      const waifuName = currentWaifu?.name || 'personaje';
+      const rarityColors = {
+        'común': '⚪',
+        'rara': '🔵',
+        'épica': '🟣',
+        'ultra rara': '🟡',
+        'legendaria': '🔴'
+      };
+      const emoji = rarityColors[currentWaifu?.rarity] || '💙';
+      
+      let msg = `✅ ¡PERSONAJE RECLAMADO! ✅\n\n`;
+      msg += `${emoji} *${waifuName}*\n`;
+      msg += `💎 *${currentWaifu?.rarity?.toUpperCase() || 'COMÚN'}*\n`;
+      msg += `👤 ${userName}\n`;
+      msg += `📊 Total: *${user.waifu.characters.length + 1}* personajes\n\n`;
+      msg += `🔍 Usa *.miwaifu* para ver tu colección completa\n`;
+      
+      user.waifu.characters.push(currentWaifu);
       user.waifu.pending = null;
-      await client.reply(m.chat, `✅ Has reclamado a ${userName} en tu colección.`, m);
+      
+      await client.sendButton(
+        m.chat,
+        msg,
+        '🎮 Sistema de Personajes - Hatsune Miku Bot',
+        currentWaifu?.img || null,
+        [['🏠 Menú', '.menu']],
+        null,
+        null,
+        m
+      );
       return;
     }
 
     if (buttonId.startsWith('waifu_sell_')) {
-      const sellPrice = Math.floor(user.waifu.pending.rarity * 50);
-      user.coins = (user.coins || 0) + sellPrice;
+      const currentWaifu = user.waifu.pending;
+      const SELL_PRICES = { 'común': 10, 'rara': 25, 'épica': 50, 'ultra rara': 100, 'legendaria': 200 };
+      const sellPrice = SELL_PRICES[currentWaifu?.rarity] || 10;
+      
+      if (!user.coin) user.coin = 0;
+      user.coin += sellPrice;
+      
+      const rarityColors = {
+        'común': '⚪',
+        'rara': '🔵',
+        'épica': '🟣',
+        'ultra rara': '🟡',
+        'legendaria': '🔴'
+      };
+      const emoji = rarityColors[currentWaifu?.rarity] || '💙';
+      
+      let msg = `💰 ¡PERSONAJE VENDIDO! 💰\n\n`;
+      msg += `${emoji} *${currentWaifu?.name || 'personaje'}*\n`;
+      msg += `💎 *${currentWaifu?.rarity?.toUpperCase() || 'COMÚN'}*\n`;
+      msg += `💵 *Recibiste:* ${sellPrice} cebollines\n`;
+      msg += `💳 *Total cebollines:* ${user.coin}\n\n`;
+      msg += `🏪 Usa *.tienda* para gastar tus cebollines`;
+      
       user.waifu.pending = null;
-      await client.reply(m.chat, `💰 Has vendido el personaje por ${sellPrice} cebollines.`, m);
+      
+      await client.sendButton(
+        m.chat,
+        msg,
+        '🎮 Sistema de Personajes - Hatsune Miku Bot',
+        currentWaifu?.img || null,
+        [['🏠 Menú', '.menu']],
+        null,
+        null,
+        m
+      );
       return;
     }
   }
