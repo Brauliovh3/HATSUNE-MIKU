@@ -7,15 +7,16 @@ import NodeCache from 'node-cache';
 import main from '../main.js';
 import { smsg } from './message.js';
 
+if (!global.conns) global.conns = [];
+const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
+const userDevicesCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
+const groupCache = new NodeCache({ stdTTL: 3600, checkperiod: 300 });
+let reintentos = {};
+const cleanJid = (jid = '') => jid.replace(/:\d+/, '').split('@')[0];
+
 class SubBotManager {
   constructor() {
     this.subbots = new Map();
-    this.msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
-    this.userDevicesCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
-    this.groupCache = new NodeCache({ stdTTL: 3600, checkperiod: 300 });
-    this.maxRetries = 3;
-    this.baseDelay = 5000;
-    this.maxDelay = 60000;
     this.startingSubbots = new Set();
   }
 
@@ -34,182 +35,136 @@ class SubBotManager {
 
     for (const sessionId of sessions) {
       await this.startSubBot(sessionId);
-      await this.delay(3000);
+      await this.delay(5000);
     }
   }
 
-  async startSubBot(sessionId) {
-    if (this.subbots.has(sessionId)) {
-      return;
-    }
+  async startSubBot(id) {
+    if (this.startingSubbots.has(id)) return;
+    this.startingSubbots.add(id);
 
-    if (this.startingSubbots.has(sessionId)) {
-      return;
-    }
-
-    this.startingSubbots.add(sessionId);
-
-    const sessionFolder = `./Sessions/subbots/${sessionId}`;
+    const sessionFolder = `./Sessions/subbots/${id}`;
     
     try {
       const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
       const { version } = await fetchLatestBaileysVersion();
 
+      console.info = () => {};
+      
       const sock = makeWASocket({
-        version,
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
-        browser: Browsers.ubuntu('Safari'),
+        browser: Browsers.macOS('Chrome'),
         auth: state,
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: true,
         syncFullHistory: false,
         getMessage: async () => '',
-        msgRetryCounterCache: this.msgRetryCounterCache,
-        userDevicesCache: this.userDevicesCache,
-        cachedGroupMetadata: async (jid) => this.groupCache.get(jid),
-        keepAliveIntervalMs: 30000,
-        maxIdleTimeMs: 300000,
-        connectTimeoutMs: 120000,
-        defaultQueryTimeoutMs: 120000,
-        emitOwnEvents: true,
-        fireInitQueries: true,
-        retryRequestDelayMs: 5000,
-        maxMsgRetryCount: 5,
+        msgRetryCounterCache,
+        userDevicesCache,
+        cachedGroupMetadata: async (jid) => groupCache.get(jid),
+        version,
+        keepAliveIntervalMs: 60000,
+        maxIdleTimeMs: 120000,
       });
 
-      sock.userId = sessionId;
-      sock.retryCount = 0;
-      sock.lastConnected = null;
-      sock.isConnected = false;
+      sock.isInit = false;
+      sock.ev.on('creds.update', saveCreds);
 
-      this.setupEventHandlers(sock, sessionId, sessionFolder, state, saveCreds);
-      
-      this.subbots.set(sessionId, sock);
-      console.log(chalk.green(`💙 Subbot ${sessionId} iniciado`));
+      sock.decodeJid = (jid) => {
+        if (!jid) return jid;
+        if (/:\d+@/gi.test(jid)) {
+          let decode = jidDecode(jid) || {};
+          return (decode.user && decode.server && decode.user + '@' + decode.server) || jid;
+        } else return jid;
+      };
 
-    } catch (err) {
-      console.error(chalk.red(`💙 Error iniciando subbot ${sessionId}:`), err.message);
-      this.scheduleReconnect(sessionId);
-    } finally {
-      this.startingSubbots.delete(sessionId);
-    }
-  }
-
-  setupEventHandlers(sock, sessionId, sessionFolder, state, saveCreds) {
-    sock.ev.on('creds.update', saveCreds);
-
-    sock.ev.on('connection.update', async (update) => {
-      const { connection, lastDisconnect, qr, isNewLogin } = update;
-
-      if (connection === 'open') {
-        sock.isConnected = true;
-        sock.retryCount = 0;
-        sock.lastConnected = Date.now();
+      sock.ev.on('connection.update', async ({ connection, lastDisconnect, isNewLogin, qr }) => {
+        if (isNewLogin) sock.isInit = false;
         
-        const cleanId = sock.user?.id?.split(':')[0] || sessionId;
-        sock.userId = cleanId;
-        
-        console.log(chalk.green(`💙 Subbot conectado: ${cleanId}`));
-        
-        this.updateSubBotSettings(cleanId, 'Sub');
-        
-        if (global.db.data) {
-          if (!global.db.data.subbots) global.db.data.subbots = {};
-          global.db.data.subbots[cleanId] = {
-            status: 'connected',
-            connectedAt: new Date().toISOString(),
-            lastPing: Date.now()
-          };
+        if (connection === 'open') {
+          sock.uptime = Date.now();
+          sock.isInit = true;
+          sock.userId = cleanJid(sock.user?.id?.split('@')[0]);
+          const botDir = sock.userId + '@s.whatsapp.net';
+          
+          if (!global.db.data) global.db.data = {};
+          if (!global.db.data.settings) global.db.data.settings = {};
+          if (!global.db.data.settings[botDir]) {
+            global.db.data.settings[botDir] = {};
+          }
+          global.db.data.settings[botDir].type = 'Sub';
+          
+          if (!global.conns.find((c) => c.userId === sock.userId)) {
+            global.conns.push(sock);
+          }
+
+          delete reintentos[sock.userId || id];
+          console.log(chalk.green(`💙 Subbot conectado: ${sock.userId}`));
         }
-      }
 
-      if (connection === 'close') {
-        sock.isConnected = false;
-        const reason = lastDisconnect?.error?.output?.statusCode || 0;
-        
-        const shouldReconnect = this.shouldReconnect(reason, sock.retryCount);
-        
-        if (shouldReconnect) {
-          sock.retryCount++;
-          const delay = Math.min(
-            this.baseDelay * Math.pow(1.5, sock.retryCount),
-            this.maxDelay
-          );
+        if (connection === 'close') {
+          const botId = sock.userId || id;
+          const reason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason || 0;
+          const intentos = reintentos[botId] || 0;
+          reintentos[botId] = intentos + 1;
+          
+          if ([401, 403].includes(reason)) {
+            if (intentos < 3) {
+              console.log(chalk.yellow(`💙 Subbot ${botId} desconectado (código ${reason}) intento ${intentos}/3 → Reintentando...`));
+              setTimeout(() => {
+                this.startingSubbots.delete(botId);
+                this.startSubBot(botId);
+              }, 5000);
+            } else {
+              console.log(chalk.red(`💙 Subbot ${botId} falló tras 3 intentos. Eliminando sesión.`));
+              try {
+                fs.rmSync(sessionFolder, { recursive: true, force: true });
+              } catch (e) {
+                console.error(`Error eliminando sesión:`, e);
+              }
+              delete reintentos[botId];
+            }
+            return;
+          }
+
+          if ([DisconnectReason.connectionClosed, DisconnectReason.connectionLost, DisconnectReason.timedOut, DisconnectReason.connectionReplaced].includes(reason)) {
+            setTimeout(() => {
+              this.startingSubbots.delete(botId);
+              this.startSubBot(botId);
+            }, 5000);
+            return;
+          }
           
           setTimeout(() => {
-            this.reconnectSubBot(sessionId);
-          }, delay);
-        } else {
-          this.subbots.delete(sessionId);
-          console.log(chalk.red(`💙 Eliminando sesión problemática: ${sessionId}`));
-          this.deleteSession(sessionFolder);
+            this.startingSubbots.delete(botId);
+            this.startSubBot(botId);
+          }, 5000);
         }
-      }
-    });
+      });
 
-    sock.ev.on('messages.upsert', async ({ messages, type }) => {
-      if (type !== 'notify') return;
-      
-      for (const raw of messages) {
-        if (!raw.message) continue;
-        
-        try {
-          const m = await smsg(sock, raw);
-          if (m) {
-            main(sock, m, messages);
+      sock.ev.on('messages.upsert', async ({ messages, type }) => {
+        if (type !== 'notify') return;
+        for (const raw of messages) {
+          if (!raw.message) continue;
+          try {
+            const m = await smsg(sock, raw);
+            if (m) {
+              main(sock, m, messages);
+            }
+          } catch (err) {
+            console.error(`Error procesando mensaje:`, err.message);
           }
-        } catch (err) {
-          console.error(`💙 Error procesando mensaje en ${sessionId}:`, err.message);
         }
-      }
-    });
+      });
 
-    sock.ev.on('groups.upsert', async (groups) => {
-      for (const group of groups) {
-        this.groupCache.set(group.id, group);
-      }
-    });
+      this.subbots.set(id, sock);
+      console.log(chalk.green(`💙 Subbot ${id} iniciado`));
 
-    sock.ev.on('group-participants.update', async (update) => {
-      const metadata = await sock.groupMetadata(update.id).catch(() => null);
-      if (metadata) {
-        this.groupCache.set(update.id, metadata);
-      }
-    });
-  }
-
-  shouldReconnect(reason, retryCount) {
-    if (retryCount >= this.maxRetries) return false;
-    
-    const fatalCodes = [401, 403, 500];
-    if (fatalCodes.includes(reason) && retryCount > 3) return false;
-    
-    return true;
-  }
-
-  async reconnectSubBot(sessionId) {
-    const existing = this.subbots.get(sessionId);
-    
-    if (existing) {
-      try {
-        existing.ev.removeAllListeners();
-        if (existing.ws) {
-          existing.ws.close();
-        }
-      } catch {}
-      
-      this.subbots.delete(sessionId);
+    } catch (err) {
+      console.error(chalk.red(`Error iniciando subbot ${id}:`), err.message);
+      this.startingSubbots.delete(id);
     }
-
-    await this.delay(2000);
-    await this.startSubBot(sessionId);
-  }
-
-  scheduleReconnect(sessionId) {
-    setTimeout(() => {
-      this.reconnectSubBot(sessionId);
-    }, this.baseDelay);
   }
 
   async stopSubBot(sessionId) {
@@ -225,67 +180,20 @@ class SubBotManager {
     } catch {}
 
     this.subbots.delete(sessionId);
+    this.startingSubbots.delete(sessionId);
     console.log(chalk.yellow(`💙 Subbot ${sessionId} detenido`));
   }
 
-  deleteSession(sessionFolder) {
-    try {
-      if (fs.existsSync(sessionFolder)) {
-        fs.rmSync(sessionFolder, { recursive: true, force: true });
-      }
-    } catch (err) {
-      console.error(`💙 Error eliminando sesión:`, err.message);
-    }
-  }
-
-  updateSubBotSettings(botId, type) {
-    if (!global.db.data) return;
-    if (!global.db.data.settings) global.db.data.settings = {};
-    
-    const botJid = botId.includes('@') ? botId : botId + '@s.whatsapp.net';
-    if (!global.db.data.settings[botJid]) {
-      global.db.data.settings[botJid] = {};
-    }
-    global.db.data.settings[botJid].type = type;
-  }
-
   getStatus() {
-    const status = {
+    return {
       total: this.subbots.size,
-      connected: 0,
-      disconnected: 0,
-      list: []
+      connected: global.conns?.length || 0,
+      list: global.conns?.map(c => ({ id: c.userId, connected: c.isInit })) || []
     };
-
-    for (const [id, sock] of this.subbots) {
-      const isConnected = sock.isConnected;
-      if (isConnected) status.connected++;
-      else status.disconnected++;
-      
-      status.list.push({
-        id,
-        connected: isConnected,
-        userId: sock.userId,
-        lastConnected: sock.lastConnected,
-        retryCount: sock.retryCount
-      });
-    }
-
-    return status;
   }
 
   delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  startHealthCheck() {
-    setInterval(() => {
-      for (const [id, sock] of this.subbots) {
-        if (!sock.isConnected && sock.retryCount < this.maxRetries) {
-          this.reconnectSubBot(id);
-        }
-      }
-    }, 60000);
   }
 }
 
