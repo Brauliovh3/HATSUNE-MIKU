@@ -27,18 +27,28 @@ export default {
           `⚠️ Para eliminar tu sesión usa:\n` +
           `${usedPrefix}deletebot`);
       } else {
-        return m.reply(`💙 *Sesión existente encontrada*\n\n` +
-          `📱 Número: ${sessionId}\n` +
-          `💤 Estado: Desconectado\n\n` +
-          `💡 Para activar tu subbot usa:\n` +
-          `${usedPrefix}connect ${sessionId}\n\n` +
-          `⚠️ Para eliminar tu sesión usa:\n` +
-          `${usedPrefix}deletebot`);
+        
+        try {
+          await subBotManager.startSubBot(sessionId);
+          return m.reply(`💙 *Reconectando tu subbot...*\n\n📱 Número: ${sessionId}\n⏳ Espera unos segundos y estará listo.`);
+        } catch (e) {
+          return m.reply(`💙 *Sesión existente encontrada*\n\n` +
+            `📱 Número: ${sessionId}\n` +
+            `💤 Estado: Desconectado\n\n` +
+            `💡 Para activar tu subbot usa:\n` +
+            `${usedPrefix}connect ${sessionId}\n\n` +
+            `⚠️ Para eliminar tu sesión usa:\n` +
+            `${usedPrefix}deletebot`);
+        }
       }
     }
 
-    fs.mkdirSync(sessionFolder, { recursive: true });
+    
+    if (pendingSessions.has(sessionId)) {
+      return m.reply(`⏳ Ya hay un proceso de vinculación en curso para *${sessionId}*.\nEspera a que termine o usa ${usedPrefix}deletebot para cancelar.`);
+    }
 
+    fs.mkdirSync(sessionFolder, { recursive: true });
     await m.react('⏳');
 
     try {
@@ -68,7 +78,8 @@ export default {
         saveCreds,
         m,
         client,
-        startTime: Date.now()
+        startTime: Date.now(),
+        codeSent: false
       });
 
       sock.ev.on('creds.update', saveCreds);
@@ -76,22 +87,40 @@ export default {
       sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
         const pending = pendingSessions.get(sessionId);
-        
         if (!pending) return;
 
         if (connection === 'open') {
           pendingSessions.delete(sessionId);
-          
-          const cleanId = sock.user?.id?.split(':')[0] || sessionId;
+
+          const cleanId = sock.user?.id?.split(':')[0]?.split('@')[0] || sessionId;
           const userName = sock.user?.name || 'Usuario';
+
+          console.log(chalk.green(`💙 Subbot vinculado exitosamente: ${cleanId}`));
+
           
-          console.log(chalk.green(`💙 Nuevo subbot vinculado: ${cleanId}`));
+          try {
+            sock.ev.removeAllListeners();
+            if (sock.ws && sock.ws.readyState !== 3) {
+              sock.ws.close();
+            }
+          } catch {}
+
+          
+          setTimeout(async () => {
+            try {
+              console.log(chalk.cyan(`💙 Iniciando sesión permanente para: ${sessionId}`));
+              await subBotManager.startSubBot(sessionId);
+            } catch (err) {
+              console.error(chalk.red(`💙 Error iniciando subbot permanente ${sessionId}:`), err.message);
+            }
+          }, 3000);
 
           await client.sendMessage(m.chat, {
             text: `✅ *¡VINCULACIÓN EXITOSA!* ✅\n\n` +
               `💙 ¡Bienvenido, ${userName}!\n\n` +
               `📱 *Tu número:* ${cleanId}\n` +
-              `🤖 *Tu subbot está ahora activo*\n\n` +
+              `🤖 *Tu subbot está activándose...*\n\n` +
+              `⏳ En unos segundos estará 100% operativo.\n\n` +
               `💡 *Comandos disponibles:*\n` +
               `• Escribe en cualquier chat donde esté tu subbot\n` +
               `• Usa los comandos normalmente\n\n` +
@@ -100,18 +129,12 @@ export default {
               `🌸 *Hatsune Miku Bot - Siempre contigo*`
           }, { quoted: m });
 
-          setTimeout(() => {
-            try {
-              if (sock.ws && sock.ws.readyState !== 3) {
-                sock.ws.close();
-              }
-            } catch {}
-          }, 10000);
+          return;
         }
 
         if (connection === 'close') {
           const reason = lastDisconnect?.error?.output?.statusCode || 0;
-          
+
           if (reason === 401 || reason === 403) {
             pendingSessions.delete(sessionId);
             try {
@@ -119,19 +142,23 @@ export default {
                 fs.rmSync(sessionFolder, { recursive: true, force: true });
               }
             } catch {}
+            await client.sendMessage(m.chat, {
+              text: `❌ *Error de autenticación (${reason})*\n\nNo se pudo vincular. Intenta nuevamente con ${usedPrefix}sub`
+            }, { quoted: m }).catch(() => {});
           }
         }
       });
 
+      
       setTimeout(async () => {
         try {
           const pending = pendingSessions.get(sessionId);
           if (!pending) return;
-          
+
           if (!state.creds.registered) {
             const code = await sock.requestPairingCode(phoneNumber.replace(/\D/g, ''));
             const formattedCode = code?.match(/.{1,4}/g)?.join("-") || code;
-            
+
             const instructions = `💙 *VINCULA TU WHATSAPP* 💙\n\n` +
               `*Sigue estos pasos:*\n\n` +
               `1️⃣ Abre *WhatsApp* en tu teléfono\n` +
@@ -147,15 +174,15 @@ export default {
               `🌸 *Esperando código...*`;
 
             await client.sendMessage(m.chat, { text: instructions }, { quoted: m });
-
             await new Promise(resolve => setTimeout(resolve, 1500));
+            await client.sendMessage(m.chat, { text: formattedCode }, { quoted: m });
 
-            await client.sendMessage(m.chat, {
-              text: formattedCode
-            }, { quoted: m });
-
-            pending.codeSent = true;
-            pending.code = formattedCode;
+            
+            const p = pendingSessions.get(sessionId);
+            if (p) {
+              p.codeSent = true;
+              p.code = formattedCode;
+            }
           }
         } catch (err) {
           console.error('Error generando código:', err);
@@ -169,19 +196,28 @@ export default {
         }
       }, 4000);
 
+     
       setTimeout(() => {
         const pending = pendingSessions.get(sessionId);
-        if (pending && !pending.codeSent) {
-          pendingSessions.delete(sessionId);
-          m.reply(`⏰ *Tiempo de espera agotado*\n\n` +
-            `El proceso de vinculación expiró.\n` +
-            `Intenta nuevamente con: ${usedPrefix}sub`);
-          try {
-            if (fs.existsSync(sessionFolder)) {
-              fs.rmSync(sessionFolder, { recursive: true, force: true });
-            }
-          } catch {}
-        }
+        if (!pending) return; 
+
+        pendingSessions.delete(sessionId);
+
+        
+        try {
+          sock.ev.removeAllListeners();
+          if (sock.ws && sock.ws.readyState !== 3) sock.ws.close();
+        } catch {}
+
+        m.reply(`⏰ *Tiempo de espera agotado*\n\n` +
+          `El proceso de vinculación expiró.\n` +
+          `Intenta nuevamente con: ${usedPrefix}sub`);
+
+        try {
+          if (fs.existsSync(sessionFolder)) {
+            fs.rmSync(sessionFolder, { recursive: true, force: true });
+          }
+        } catch {}
       }, 120000);
 
     } catch (err) {
