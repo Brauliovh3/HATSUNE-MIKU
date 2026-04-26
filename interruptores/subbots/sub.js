@@ -48,14 +48,13 @@ export default {
     await m.react('⏳');
 
     
-    await client.sendMessage(privatChat, {
+    await client.sendMessage(m.chat, {
       text:
         `╭━━━━━━━━━━━━━━━━━╮\n` +
         `│  💙 *HATSUNE MIKU*  │\n` +
         `╰━━━━━━━━━━━━━━━━━╯\n\n` +
         `🔐 Iniciando vinculación...\n\n` +
-        `📲 Te enviaré el código aquí en tu *chat privado*\n` +
-        `✨ Solo tú podrás verlo`
+        `⏳ Generando código...`
     }, { quoted: m });
 
     let sock = null;
@@ -106,7 +105,7 @@ export default {
           }, 3000);
 
           
-          await client.sendMessage(privatChat, {
+          await client.sendMessage(m.chat, {
             text:
               `╭━━━━━━━━━━━━━━━━━╮\n` +
               `│  💙 *HATSUNE MIKU*  │\n` +
@@ -117,7 +116,7 @@ export default {
               `🤖 Tu subbot está activándose...\n` +
               `⏳ En unos segundos estará listo\n\n` +
               `⚠️ Para desvincular: *${usedPrefix}deletebot*`
-          });
+          }, { quoted: m });
 
           
           await m.react('✅');
@@ -129,7 +128,7 @@ export default {
           console.log(chalk.red(`💙 Socket pairing ${sessionId} cerrado. Razón: ${reason}`));
           finish(false);
           await m.react('❌');
-          await client.sendMessage(privatChat, {
+          await client.sendMessage(m.chat, {
             text:
               `╭━━━━━━━━━━━━━━━━━╮\n` +
               `│  💙 *HATSUNE MIKU*  │\n` +
@@ -190,7 +189,7 @@ export default {
           console.error('Error generando código:', err.message);
           finish(false);
           await m.react('❌');
-          await client.sendMessage(privatChat, {
+          await client.sendMessage(m.chat, {
             text:
               `╭━━━━━━━━━━━━━━━━━╮\n` +
               `│  💙 *HATSUNE MIKU*  │\n` +
@@ -207,7 +206,7 @@ export default {
         if (done) return;
         finish(false);
         m.react('⏰');
-        client.sendMessage(privatChat, {
+        client.sendMessage(m.chat, {
           text:
             `╭━━━━━━━━━━━━━━━━━╮\n` +
             `│  💙 *HATSUNE MIKU*  │\n` +
