@@ -48,13 +48,13 @@ export default {
     await m.react('⏳');
 
     
-    await client.sendMessage(m.chat, {
+    await client.sendMessage(privatChat, {
       text:
         `╭━━━━━━━━━━━━━━━━━╮\n` +
         `│  💙 *HATSUNE MIKU*  │\n` +
         `╰━━━━━━━━━━━━━━━━━╯\n\n` +
         `🔐 Iniciando vinculación...\n\n` +
-        `📲 Te enviaré el código en tu *chat privado*\n` +
+        `📲 Te enviaré el código aquí en tu *chat privado*\n` +
         `✨ Solo tú podrás verlo`
     }, { quoted: m });
 
@@ -148,7 +148,7 @@ export default {
           tries++;
           if (done)                       { clearInterval(check); return reject(new Error('Cancelado')); }
           if (sock?.ws?.readyState === 1) { clearInterval(check); return resolve(); }
-          if (tries > 30)                 { clearInterval(check); return reject(new Error('WS no abrió')); }
+          if (tries > 60)                 { clearInterval(check); return reject(new Error('WS no abrió')); }
         }, 500);
       });
 
@@ -166,7 +166,7 @@ export default {
           if (done) return;
 
          
-          await client.sendMessage(privatChat, {
+          await client.sendMessage(m.chat, {
             text:
               `╭━━━━━━━━━━━━━━━━━╮\n` +
               `│  💙 *HATSUNE MIKU*  │\n` +
@@ -178,10 +178,10 @@ export default {
               `4️⃣ *Vincular con número*\n` +
               `5️⃣ Ingresa el código de abajo\n\n` +
               `⚠️ Expira en *60 segundos*`
-          });
+          }, { quoted: m });
 
           
-          await client.sendMessage(privatChat, {
+          await client.sendMessage(m.chat, {
             text: `*${formattedCode}*`
           });
 
