@@ -12,15 +12,13 @@ const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 const userDevicesCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 const groupCache = new NodeCache({ stdTTL: 3600, checkperiod: 300 });
 
-
-const reintentos = new Map();
+const reintentos = new Map(); 
 
 const cleanJid = (jid = '') => jid.replace(/:\d+/, '').split('@')[0];
 
 const normalizeJid = (jid) => {
   if (!jid) return '';
-  const clean = String(jid).split(':')[0].replace(/\D/g, '');
-  return clean;
+  return String(jid).split(':')[0].replace(/\D/g, '');
 };
 
 const shouldProcessCommand = (sock, m) => {
@@ -29,21 +27,19 @@ const shouldProcessCommand = (sock, m) => {
   const primaryBot = chat?.primaryBot;
   if (!primaryBot) return true;
   const botJid = sock.user?.id?.split(':')[0] + '@s.whatsapp.net' || '';
-  const primaryDigits = normalizeJid(primaryBot);
-  const currentDigits = normalizeJid(botJid);
-  return primaryDigits === currentDigits;
+  return normalizeJid(primaryBot) === normalizeJid(botJid);
 };
 
 class SubBotManager {
   constructor() {
-    this.subbots = new Map();       
-    this.startingSubbots = new Set(); 
+    this.subbots = new Map();
+    this.startingSubbots = new Set();
     this.initialized = false;
   }
 
   async initializeAll() {
     if (this.initialized) {
-      console.log(chalk.gray(`💙 Sistema de subbots ya inicializado, omitiendo...`));
+      console.log(chalk.gray('💙 Sistema de subbots ya inicializado, omitiendo...'));
       return;
     }
 
@@ -54,6 +50,7 @@ class SubBotManager {
       return;
     }
 
+    
     const sessions = fs.readdirSync(subsPath).filter(dir => {
       return fs.existsSync(path.join(subsPath, dir, 'creds.json'));
     });
@@ -66,12 +63,12 @@ class SubBotManager {
     }
 
     this.initialized = true;
-    console.log(chalk.cyan(`💙 Sistema de subbots inicializado`));
+    console.log(chalk.cyan('💙 Sistema de subbots inicializado'));
   }
 
   async startSubBot(id) {
-    
-    const sessionId = String(id).replace(/\D/g, '') || id;
+   
+    const sessionId = String(id).trim();
     const sessionFolder = `./Sessions/subbots/${sessionId}`;
 
     if (this.subbots.has(sessionId)) {
@@ -84,6 +81,7 @@ class SubBotManager {
       return;
     }
 
+    
     if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
       console.log(chalk.yellow(`💙 No se encontró sesión para ${sessionId}, omitiendo...`));
       return;
@@ -114,7 +112,7 @@ class SubBotManager {
       });
 
       sock.isInit = false;
-      sock._sessionId = sessionId; 
+      sock._sessionId = sessionId;
       sock.ev.on('creds.update', saveCreds);
 
       sock.decodeJid = (jid) => {
@@ -135,27 +133,21 @@ class SubBotManager {
           sock.userId = cleanJid(sock.user?.id || '');
           const botDir = sock.userId + '@s.whatsapp.net';
 
-         
           if (!global.db.data) global.db.data = {};
           if (!global.db.data.settings) global.db.data.settings = {};
           if (!global.db.data.settings[botDir]) global.db.data.settings[botDir] = {};
           global.db.data.settings[botDir].type = 'Sub';
 
          
-          const alreadyInConns = global.conns.find(c => c._sessionId === sessionId || c.userId === sock.userId);
-          if (!alreadyInConns) {
-            global.conns.push(sock);
+          const idx = global.conns.findIndex(c => c._sessionId === sessionId || c.userId === sock.userId);
+          if (idx !== -1) {
+            global.conns[idx] = sock;
           } else {
-            
-            const idx = global.conns.findIndex(c => c._sessionId === sessionId || c.userId === sock.userId);
-            if (idx !== -1) global.conns[idx] = sock;
+            global.conns.push(sock);
           }
 
-          
           reintentos.delete(sessionId);
           this.startingSubbots.delete(sessionId);
-
-          
           this.subbots.set(sessionId, sock);
 
           console.log(chalk.green(`💙 Subbot conectado: ${sock.userId} (sesión: ${sessionId})`));
@@ -175,44 +167,44 @@ class SubBotManager {
 
           
           if (this.startingSubbots.has(sessionId)) {
-            console.log(chalk.gray(`💙 Subbot ${sessionId} ya está reiniciando, omitiendo reconexión duplicada`));
+            console.log(chalk.gray(`💙 Subbot ${sessionId} ya está reiniciando, omitiendo duplicado`));
             return;
           }
 
           
-          if ([401, 403].includes(reason)) {
-            const intentos = reintentos.get(sessionId) || 0;
-            if (intentos >= 3) {
-              console.log(chalk.red(`💙 Subbot ${sessionId} falló 3 veces con error ${reason}. Eliminando sesión.`));
-              try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
-              reintentos.delete(sessionId);
-              this.startingSubbots.delete(sessionId);
-              return;
-            }
-            reintentos.set(sessionId, intentos + 1);
-            console.log(chalk.yellow(`💙 Subbot ${sessionId} reintento ${intentos + 1}/3 por error ${reason}...`));
-          }
-
-          
-          if (reason === DisconnectReason.loggedOut) {
-            console.log(chalk.red(`💙 Subbot ${sessionId} cerró sesión. Eliminando.`));
+          if (reason === 401 || reason === 403 || reason === DisconnectReason.loggedOut) {
+            console.log(chalk.red(`💙 Subbot ${sessionId} sesión inválida (${reason}). Eliminando carpeta.`));
             try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
             reintentos.delete(sessionId);
             this.startingSubbots.delete(sessionId);
             return;
           }
 
-         
-          const intentoActual = reintentos.get(sessionId) || 0;
-          const delay = Math.min(5000 * (intentoActual + 1), 30000); 
+          if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
+            console.log(chalk.gray(`💙 Carpeta de ${sessionId} ya no existe, cancelando reconexión.`));
+            reintentos.delete(sessionId);
+            return;
+          }
 
-          console.log(chalk.cyan(`💙 Reconectando ${sessionId} en ${delay / 1000}s... (intento ${intentoActual + 1})`));
+          
+          const intentoActual = reintentos.get(sessionId) || 0;
+          const delayMs = Math.min(5000 * (intentoActual + 1), 30000);
+
+          console.log(chalk.cyan(`💙 Reconectando ${sessionId} en ${delayMs / 1000}s... (intento ${intentoActual + 1})`));
+          reintentos.set(sessionId, intentoActual + 1);
           this.startingSubbots.add(sessionId);
 
           setTimeout(async () => {
+           
+            if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
+              console.log(chalk.gray(`💙 Sesión ${sessionId} eliminada durante espera, cancelando.`));
+              this.startingSubbots.delete(sessionId);
+              reintentos.delete(sessionId);
+              return;
+            }
             this.startingSubbots.delete(sessionId);
             await this.startSubBot(sessionId);
-          }, delay);
+          }, delayMs);
         }
       });
 
@@ -231,7 +223,6 @@ class SubBotManager {
         }
       });
 
-      
       this.subbots.set(sessionId, sock);
       console.log(chalk.green(`💙 Subbot ${sessionId} iniciado, esperando conexión...`));
 
@@ -241,31 +232,32 @@ class SubBotManager {
       this.subbots.delete(sessionId);
 
      
-      const intentoActual = reintentos.get(sessionId) || 0;
-      if (intentoActual < 5) {
-        reintentos.set(sessionId, intentoActual + 1);
-        const delay = Math.min(10000 * (intentoActual + 1), 60000);
-        console.log(chalk.yellow(`💙 Reintentando arranque de ${sessionId} en ${delay / 1000}s...`));
-        setTimeout(() => this.startSubBot(sessionId), delay);
+      if (fs.existsSync(sessionFolder) && fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
+        const intentoActual = reintentos.get(sessionId) || 0;
+        if (intentoActual < 5) {
+          reintentos.set(sessionId, intentoActual + 1);
+          const delayMs = Math.min(10000 * (intentoActual + 1), 60000);
+          console.log(chalk.yellow(`💙 Reintentando arranque de ${sessionId} en ${delayMs / 1000}s...`));
+          setTimeout(() => this.startSubBot(sessionId), delayMs);
+        }
       }
     }
   }
 
   async stopSubBot(sessionId) {
     const sock = this.subbots.get(sessionId);
-    if (!sock) return;
-
-    try {
-      sock.ev.removeAllListeners();
-      if (sock.ws) sock.ws.close();
-      sock.isInit = false;
-    } catch {}
+    if (sock) {
+      try {
+        sock.ev.removeAllListeners();
+        if (sock.ws) sock.ws.close();
+        sock.isInit = false;
+      } catch {}
+    }
 
     this.subbots.delete(sessionId);
     this.startingSubbots.delete(sessionId);
     reintentos.delete(sessionId);
 
-   
     const idx = global.conns.findIndex(c => c._sessionId === sessionId);
     if (idx !== -1) global.conns.splice(idx, 1);
 
@@ -285,7 +277,7 @@ class SubBotManager {
   }
 
   startHealthCheck() {
-    console.log(chalk.gray(`💙 Health check deshabilitado para evitar reconexiones múltiples`));
+    console.log(chalk.gray('💙 Health check deshabilitado para evitar reconexiones múltiples'));
   }
 }
 
