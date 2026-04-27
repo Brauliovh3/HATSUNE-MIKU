@@ -117,12 +117,12 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
         
         if (categoryBanner.includes('.mp4') || categoryBanner.includes('.webm')) {
           const ptvBuffer = await toVideoNote(categoryBanner);
-          await client.sendMessage(m.chat, {
+          const ptvMsg = await client.sendMessage(m.chat, {
             video: ptvBuffer,
             ptv: true,
             mimetype: 'video/mp4'
           }, { quoted: m });
-          
+
           await client.sendMessage(m.chat, {
             text: messageContent,
             contextInfo: {
@@ -134,7 +134,7 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
                 newsletterName: canalName
               }
             }
-          }, { quoted: m });
+          }, { quoted: ptvMsg });
         } else {
           await client.sendMessage(m.chat, {
             text: messageContent,
@@ -160,20 +160,18 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
         }
       } else {
         
-        if (mainMenuImage.includes('.mp4') || mainMenuImage.includes('.webm') || mainMenuImage.includes('.gif')) {
-          const ptvBuffer = await toVideoNote(mainMenuImage);
-          await client.sendMessage(m.chat, {
-            video: ptvBuffer,
-            ptv: true,
-            mimetype: 'video/mp4'
-          }, { quoted: m });
-        }
+        const ptvBuffer = await toVideoNote(mainMenuImage);
 
         await client.sendMessage(m.chat, {
-          text: messageContent,
+          video: ptvBuffer,
+          mimetype: 'video/mp4',
+          caption: messageContent,
           footer: '💙 Hatsune Miku Bot',
           buttons: buttons,
           headerType: 4,
+          gifPlayback: false,
+          width: 480,
+          height: 480,
           contextInfo: {
             mentionedJid: [m.sender],
             isForwarded: true,
