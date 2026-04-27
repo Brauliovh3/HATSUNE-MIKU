@@ -83,71 +83,62 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
       
       if (cat) {
         
-        await client.sendMessage(m.chat, categoryBanner.includes('.mp4') || categoryBanner.includes('.webm') ? {
-          video: { url: categoryBanner },
-          gifPlayback: true,
-          caption: messageContent,
-          contextInfo: {
-            mentionedJid: [m.sender],
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: canalId,
-              serverMessageId: '',
-              newsletterName: canalName
+        if (categoryBanner.includes('.mp4') || categoryBanner.includes('.webm')) {
+          await client.sendMessage(m.chat, {
+            video: { url: categoryBanner },
+            gifPlayback: true,
+            caption: '',
+            mimetype: 'video/mp4'
+          }, { quoted: m });
+          
+          await client.sendMessage(m.chat, {
+            text: messageContent,
+            contextInfo: {
+              mentionedJid: [m.sender],
+              isForwarded: true,
+              forwardedNewsletterMessageInfo: {
+                newsletterJid: canalId,
+                serverMessageId: '',
+                newsletterName: canalName
+              }
             }
-          }
-        } : {
-          text: messageContent,
-          contextInfo: {
-            mentionedJid: [m.sender],
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: canalId,
-              serverMessageId: '',
-              newsletterName: canalName
-            },
-            externalAdReply: {
-              title: botname,
-              body: `${namebot}, © 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ) `,
-              showAdAttribution: false,
-              thumbnailUrl: categoryBanner,
-              mediaType: 1,
-              previewType: 0,
-              renderLargerThumbnail: true
+          }, { quoted: m });
+        } else {
+          await client.sendMessage(m.chat, {
+            text: messageContent,
+            contextInfo: {
+              mentionedJid: [m.sender],
+              isForwarded: true,
+              forwardedNewsletterMessageInfo: {
+                newsletterJid: canalId,
+                serverMessageId: '',
+                newsletterName: canalName
+              },
+              externalAdReply: {
+                title: botname,
+                body: `${namebot}, © 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ) `,
+                showAdAttribution: false,
+                thumbnailUrl: categoryBanner,
+                mediaType: 1,
+                previewType: 0,
+                renderLargerThumbnail: true
+              }
             }
-          }
-        }, { quoted: m });
+          }, { quoted: m });
+        }
       } else {
         
-         await client.sendMessage(m.chat, mainMenuImage.includes('.mp4') || mainMenuImage.includes('.webm') || mainMenuImage.includes('.gif') ? {
-          video: { url: mainMenuImage },
-          gifPlayback: true,
-          caption: messageContent,
-          footer: '💙 Hatsune Miku Bot',
-          buttons: buttons,
-          headerType: 4,
-          mimetype: 'video/mp4',
-          contextInfo: {
-            mentionedJid: [m.sender],
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: canalId,
-              serverMessageId: '',
-              newsletterName: canalName
-            },
-            externalAdReply: {
-              title: botname,
-              body: `${namebot}, © 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ) `,
-              showAdAttribution: false,
-              thumbnailUrl: categoryBanner,
-              mediaType: 2,
-              previewType: 0,
-              renderLargerThumbnail: true
-            }
-          }
-        } : {
-          image: { url: mainMenuImage },
-          caption: messageContent,
+        if (mainMenuImage.includes('.mp4') || mainMenuImage.includes('.webm') || mainMenuImage.includes('.gif')) {
+          await client.sendMessage(m.chat, {
+            video: { url: mainMenuImage },
+            gifPlayback: true,
+            caption: '',
+            mimetype: 'video/mp4'
+          }, { quoted: m });
+        }
+
+        await client.sendMessage(m.chat, {
+          text: messageContent,
           footer: '💙 Hatsune Miku Bot',
           buttons: buttons,
           headerType: 4,
