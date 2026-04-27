@@ -47,8 +47,8 @@ export default {
   category: 'subbots',
   run: async (client, m, args, usedPrefix, command) => {
     const isQR = /^(qr)$/i.test(command);
-    const rtx = '💙 *HATSUNE MIKU* 💙\n\n`💌` Vincula tu *cuenta* usando el *codigo.*\n\n> 💮 Sigue las *instrucciones*\n\n*›* Click en los *3 puntos*\n*›* Toque *dispositivos vinculados*\n*›* Vincular *nuevo dispositivo*\n*›* Selecciona *Vincular con el número de teléfono*\n\n💙 *`Importante`*\n>📛 Este *Código* solo funciona en el *número que lo solicito*';
-    const rtx2 = '💙 *HATSUNE MIKU* 💙\n\n`💌` Vincula tu *cuenta* usando *codigo qr.*\n\n> 💮 Sigue las *instrucciones*\n\n*›* Click en los *3 puntos*\n*›* Toque *dispositivos vinculados*\n*›* Vincular *nuevo dispositivo*\n*›* Escanea el código *QR.*\n\n>💙 Recuerda que no es recomendable usar tu cuenta principal para registrar un socket.';
+    const rtx = '💙 *HATSUNE MIKU* 💙\n\n`💌` Vincula tu *cuenta* usando el *codigo.*\n\n> 💮 Sigue las *instrucciones*\n\n*›* Click en los *3 puntos*\n*›* Toque *dispositivos vinculados*\n*›* Vincular *nuevo dispositivo*\n*›* Selecciona *Vincular con el número de teléfono*\n\n💙 *`Importante`*\n> 📛 Este *Código* solo funciona en el *número que lo solicito*';
+    const rtx2 = '💙 *HATSUNE MIKU* 💙\n\n`💌` Vincula tu *cuenta* usando *codigo qr.*\n\n> 💮 Sigue las *instrucciones*\n\n*›* Click en los *3 puntos*\n*›* Toque *dispositivos vinculados*\n*›* Vincular *nuevo dispositivo*\n*›* Escanea el código *QR.*\n\n> 💙 Recuerda que no es recomendable usar tu cuenta principal para registrar un socket.';
     const caption = isQR ? rtx2 : rtx;
     if (!global.db.data.users[m.sender]) global.db.data.users[m.sender] = {};
     const lastSubTime = global.db.data.users[m.sender].Subs || 0;
@@ -117,25 +117,29 @@ export default {
       try { if (sock?.ws?.readyState !== 3) sock?.ws?.close(); } catch {}
     };
 
+    const closeSocket = () => {
+      try { sock?.ev?.removeAllListeners(); } catch {}
+      try { if (sock?.ws?.readyState !== 3) sock?.ws?.close(); } catch {}
+    };
+
     try {
       const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
       const { version }          = await fetchLatestBaileysVersion();
+      const logger               = pino({ level: 'silent' });
 
       sock = makeWASocket({
         version,
-        logger: pino({ level: 'silent' }),
+        logger,
         printQRInTerminal: isQR,
         browser: Browsers.macOS('Chrome'),
         auth: {
           creds: state.creds,
-          keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
+          keys: makeCacheableSignalKeyStore(state.keys, logger),
         },
         markOnlineOnConnect: false,
         generateHighQualityLinkPreview: true,
         syncFullHistory: false,
         getMessage: async () => '',
-        msgRetryCounterCache,
-        userDevicesCache,
         keepAliveIntervalMs: 45000,
         maxIdleTimeMs: 60000,
       });
@@ -163,19 +167,19 @@ export default {
           finish(true);
           global.db.data.users[m.sender].Subs = new Date() * 1;
 
-          setTimeout(async () => {
-            try { await subBotManager.startSubBot(sessionId); }
-            catch (e) { console.error(chalk.red(`Error iniciando subbot ${sessionId}:`), e.message); }
-          }, 3000);
-
-          
           await client.sendMessage(m.chat, {
             text: `💙 *HATSUNE MIKU* 💙\n\n✅ ¡Vinculación exitosa!\n\n👤 ${userName}\n📱 ${cleanId}\n\n🤖 Tu subbot está activándose...\n⏳ En unos segundos estará listo\n\n⚠️ Para desvincular: *${usedPrefix}deletebot*`,
             ...global.miku
           }, { quoted: m });
 
-          
           await m.react('✅');
+
+          closeSocket();
+
+          setTimeout(async () => {
+            try { await subBotManager.startSubBot(sessionId); }
+            catch (e) { console.error(chalk.red(`Error iniciando subbot ${sessionId}:`), e.message); }
+          }, 10000);
         }
 
         if (connection === 'close') {
@@ -197,20 +201,22 @@ export default {
           await new Promise(r => setTimeout(r, 3000));
           if (done) return;
 
-          const code          = await sock.requestPairingCode(phoneNumber);
-          const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
+          if (!state.creds.registered) {
+            const code          = await sock.requestPairingCode(phoneNumber);
+            const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
 
-          if (done) return;
+            if (done) return;
 
-          await client.sendMessage(m.chat, {
-            text: caption,
-            ...global.miku
-          }, { quoted: m });
+            await client.sendMessage(m.chat, {
+              text: caption,
+              ...global.miku
+            }, { quoted: m });
 
-          await client.sendMessage(m.chat, {
-            text: `💙 *${formattedCode}*`,
-            ...global.miku
-          });
+            await client.sendMessage(m.chat, {
+              text: `💙 *${formattedCode}*`,
+              ...global.miku
+            });
+          }
 
         } catch (err) {
           if (done) return;
