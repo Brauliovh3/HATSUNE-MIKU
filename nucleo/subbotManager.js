@@ -1,4 +1,4 @@
-import { Browsers, makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, DisconnectReason, jidDecode } from '@whiskeysockets/baileys';
+import { Browsers, makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, DisconnectReason, jidDecode, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import fs from 'fs';
 import path from 'path';
@@ -29,9 +29,7 @@ const shouldProcessCommand = (sock, m) => {
   return normalizeJid(primaryBot) === normalizeJid(botJid);
 };
 
-
 const removeFromConns = (sessionId) => {
-  
   for (let i = global.conns.length - 1; i >= 0; i--) {
     if (global.conns[i]?._sessionId === sessionId) {
       global.conns.splice(i, 1);
@@ -41,7 +39,6 @@ const removeFromConns = (sessionId) => {
 
 const upsertConn = (sock, sessionId) => {
   removeFromConns(sessionId);
-  
   const userId = sock.userId;
   if (userId) {
     for (let i = global.conns.length - 1; i >= 0; i--) {
@@ -54,9 +51,9 @@ const upsertConn = (sock, sessionId) => {
 
 class SubBotManager {
   constructor() {
-    this.subbots        = new Map();   
-    this.startingSubbots = new Set(); 
-    this.initialized    = false;
+    this.subbots         = new Map();
+    this.startingSubbots = new Set();
+    this.initialized     = false;
   }
 
   async initializeAll() {
@@ -83,7 +80,7 @@ class SubBotManager {
   }
 
   async startSubBot(id) {
-    const sessionId    = String(id).trim();
+    const sessionId     = String(id).trim();
     const sessionFolder = `./Sessions/subbots/${sessionId}`;
 
     if (this.subbots.has(sessionId)) {
@@ -106,11 +103,16 @@ class SubBotManager {
       const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
       const { version } = await fetchLatestBaileysVersion();
 
-      const sock = makeWASocket({
-        logger: pino({ level: 'silent' }),
+      const logger = pino({ level: 'silent' });
+
+      const connectionOptions = {
+        logger,
         printQRInTerminal: false,
         browser: Browsers.macOS('Chrome'),
-        auth: state,
+        auth: {
+          creds: state.creds,
+          keys: makeCacheableSignalKeyStore(state.keys, logger),
+        },
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: true,
         syncFullHistory: false,
@@ -119,12 +121,14 @@ class SubBotManager {
         userDevicesCache,
         cachedGroupMetadata: async (jid) => groupCache.get(jid),
         version,
-        keepAliveIntervalMs: 60000,
-        maxIdleTimeMs: 120000,
-      });
+        keepAliveIntervalMs: 45000,
+        maxIdleTimeMs: 60000,
+      };
 
-      sock.isInit      = false;
-      sock._sessionId  = sessionId;
+      let sock = makeWASocket(connectionOptions);
+      sock.isInit     = false;
+      sock._sessionId = sessionId;
+
       sock.ev.on('creds.update', saveCreds);
 
       sock.decodeJid = (jid) => {
@@ -136,93 +140,162 @@ class SubBotManager {
         return jid;
       };
 
-      sock.ev.on('connection.update', async ({ connection, lastDisconnect, isNewLogin }) => {
-        if (isNewLogin) sock.isInit = false;
+      const reconectar = async () => {
+        const oldChats = sock.chats;
+        try { sock.ws.close(); } catch {}
+        sock.ev.removeAllListeners();
 
-       
-        if (connection === 'open') {
-          sock.uptime  = Date.now();
-          sock.isInit  = true;
-          sock.userId  = cleanJid(sock.user?.id || '');
-          const botDir = sock.userId + '@s.whatsapp.net';
-
-          if (!global.db.data)                       global.db.data           = {};
-          if (!global.db.data.settings)              global.db.data.settings  = {};
-          if (!global.db.data.settings[botDir])      global.db.data.settings[botDir] = {};
-          global.db.data.settings[botDir].type = 'Sub';
-
-          upsertConn(sock, sessionId);   
-          reintentos.delete(sessionId);
-          this.startingSubbots.delete(sessionId);
-          this.subbots.set(sessionId, sock);
-
-          console.log(chalk.green(`💙 Subbot conectado: ${sock.userId} (sesión: ${sessionId})`));
-        }
-
-        
-        if (connection === 'close') {
-          const reason = lastDisconnect?.error?.output?.statusCode
-            ?? lastDisconnect?.error?.output?.payload?.statusCode
-            ?? 0;
-
-          console.log(chalk.yellow(`💙 Subbot ${sessionId} desconectado. Razón: ${reason}`));
-
-          
-          this.subbots.delete(sessionId);
-          removeFromConns(sessionId);   
-
-          if (this.startingSubbots.has(sessionId)) {
-            console.log(chalk.gray(`💙 ${sessionId} ya está reiniciando, omitiendo duplicado`));
-            return;
+        sock = makeWASocket({ ...connectionOptions }, { chats: oldChats });
+        sock.isInit     = false;
+        sock._sessionId = sessionId;
+        sock.ev.on('creds.update', saveCreds);
+        sock.decodeJid = (jid) => {
+          if (!jid) return jid;
+          if (/:\d+@/gi.test(jid)) {
+            const decode = jidDecode(jid) || {};
+            return (decode.user && decode.server && `${decode.user}@${decode.server}`) || jid;
           }
+          return jid;
+        };
+        attachEvents(sock);
+      };
 
-         
-          if (reason === 401 || reason === 403 || reason === DisconnectReason.loggedOut) {
-            console.log(chalk.red(`💙 Subbot ${sessionId} sesión inválida (${reason}). Eliminando.`));
-            try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
+      const attachEvents = (sock) => {
+
+        sock.ev.on('connection.update', async ({ connection, lastDisconnect, isNewLogin }) => {
+          if (isNewLogin) sock.isInit = false;
+
+          if (connection === 'open') {
+            sock.uptime  = Date.now();
+            sock.isInit  = true;
+            sock.userId  = cleanJid(sock.user?.id || '');
+            const botDir = sock.userId + '@s.whatsapp.net';
+
+            if (!global.db.data)                       global.db.data          = {};
+            if (!global.db.data.settings)              global.db.data.settings = {};
+            if (!global.db.data.settings[botDir])      global.db.data.settings[botDir] = {};
+            global.db.data.settings[botDir].type = 'Sub';
+
+            upsertConn(sock, sessionId);
             reintentos.delete(sessionId);
-            return;
+            this.startingSubbots.delete(sessionId);
+            this.subbots.set(sessionId, sock);
+
+            console.log(chalk.green(`💙 Subbot conectado: ${sock.userId} (sesión: ${sessionId})`));
           }
 
-          
-          if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
-            console.log(chalk.gray(`💙 Carpeta ${sessionId} eliminada, cancelando reconexión.`));
-            reintentos.delete(sessionId);
-            return;
-          }
+          if (connection === 'close') {
+            const reason = lastDisconnect?.error?.output?.statusCode
+              ?? lastDisconnect?.error?.output?.payload?.statusCode
+              ?? 0;
 
-        
-          const intento  = reintentos.get(sessionId) || 0;
-          const delayMs  = Math.min(5000 * (intento + 1), 30000);
-          console.log(chalk.cyan(`💙 Reconectando ${sessionId} en ${delayMs / 1000}s... (intento ${intento + 1})`));
-          reintentos.set(sessionId, intento + 1);
-          this.startingSubbots.add(sessionId);
+            console.log(chalk.yellow(`💙 Subbot ${sessionId} desconectado. Razón: ${reason}`));
 
-          setTimeout(async () => {
-            if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
-              console.log(chalk.gray(`💙 ${sessionId} eliminado durante espera, cancelando.`));
-              this.startingSubbots.delete(sessionId);
+            this.subbots.delete(sessionId);
+            removeFromConns(sessionId);
+
+            if (reason === 401 || reason === 405) {
+              console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) cerrado. Credenciales no válidas (${reason}).\n└──────────────────────────────────┘`));
+              try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
               reintentos.delete(sessionId);
+              this.startingSubbots.delete(sessionId);
               return;
             }
-            this.startingSubbots.delete(sessionId);
-            await this.startSubBot(sessionId);
-          }, delayMs);
-        }
-      });
 
-      sock.ev.on('messages.upsert', async ({ messages, type }) => {
-        if (type !== 'notify') return;
-        for (const raw of messages) {
-          if (!raw.message) continue;
-          try {
-            const m = await smsg(sock, raw);
-            if (m && shouldProcessCommand(sock, m)) main(sock, m, messages);
-          } catch (err) {
-            console.error(`Error en subbot ${sessionId}:`, err.message);
+            if (reason === 403 || reason === DisconnectReason.loggedOut) {
+              console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) cerrado o cuenta suspendida (${reason}). Eliminando.\n└──────────────────────────────────┘`));
+              try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
+              reintentos.delete(sessionId);
+              this.startingSubbots.delete(sessionId);
+              return;
+            }
+
+            if (reason === 440) {
+              console.log(chalk.bold.magentaBright(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) reemplazado por otra sesión activa.\n└──────────────────────────────────┘`));
+              reintentos.delete(sessionId);
+              this.startingSubbots.delete(sessionId);
+              return;
+            }
+
+            if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
+              console.log(chalk.gray(`💙 Carpeta ${sessionId} eliminada, cancelando reconexión.`));
+              reintentos.delete(sessionId);
+              this.startingSubbots.delete(sessionId);
+              return;
+            }
+
+            if ([428, 408, 500, 515].includes(reason)) {
+              const etiqueta = {
+                428: 'cierre inesperado',
+                408: 'pérdida de conexión',
+                500: 'conexión perdida',
+                515: 'reinicio requerido',
+              }[reason];
+
+              console.log(chalk.bold.magentaBright(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) ${etiqueta}. Razón: ${reason}. Reconectando...\n└──────────────────────────────────┘`));
+
+              if (this.startingSubbots.has(sessionId)) return;
+              this.startingSubbots.add(sessionId);
+
+              try {
+                await reconectar();
+              } catch (err) {
+                console.error(chalk.red(`💙 Error reconectando ${sessionId}:`), err.message);
+                this.startingSubbots.delete(sessionId);
+              }
+              return;
+            }
+
+            if (this.startingSubbots.has(sessionId)) {
+              console.log(chalk.gray(`💙 ${sessionId} ya está reiniciando, omitiendo duplicado`));
+              return;
+            }
+
+            const intento = reintentos.get(sessionId) || 0;
+            const delayMs = Math.min(5000 * (intento + 1), 30000);
+            console.log(chalk.cyan(`💙 Reconectando ${sessionId} en ${delayMs / 1000}s... (intento ${intento + 1})`));
+            reintentos.set(sessionId, intento + 1);
+            this.startingSubbots.add(sessionId);
+
+            setTimeout(async () => {
+              if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
+                console.log(chalk.gray(`💙 ${sessionId} eliminado durante espera, cancelando.`));
+                this.startingSubbots.delete(sessionId);
+                reintentos.delete(sessionId);
+                return;
+              }
+              this.startingSubbots.delete(sessionId);
+              await this.startSubBot(sessionId);
+            }, delayMs);
           }
-        }
-      });
+        });
+
+        const healthInterval = setInterval(() => {
+          if (!sock.user) {
+            console.log(chalk.gray(`💙 Health check: ${sessionId} sin usuario activo, limpiando...`));
+            clearInterval(healthInterval);
+            try { sock.ws.close(); } catch {}
+            sock.ev.removeAllListeners();
+            removeFromConns(sessionId);
+            this.subbots.delete(sessionId);
+          }
+        }, 60000);
+
+        sock.ev.on('messages.upsert', async ({ messages, type }) => {
+          if (type !== 'notify') return;
+          for (const raw of messages) {
+            if (!raw.message) continue;
+            try {
+              const m = await smsg(sock, raw);
+              if (m && shouldProcessCommand(sock, m)) main(sock, m, messages);
+            } catch (err) {
+              console.error(`Error en subbot ${sessionId}:`, err.message);
+            }
+          }
+        });
+      };
+
+      attachEvents(sock);
 
       this.subbots.set(sessionId, sock);
       console.log(chalk.green(`💙 Subbot ${sessionId} iniciado, esperando conexión...`));
@@ -259,11 +332,9 @@ class SubBotManager {
   }
 
   getStatus() {
-    
     for (let i = global.conns.length - 1; i >= 0; i--) {
       const c = global.conns[i];
       if (!c || !c._sessionId) { global.conns.splice(i, 1); continue; }
-      
       if (!this.subbots.has(c._sessionId)) global.conns.splice(i, 1);
     }
     return {
@@ -276,7 +347,7 @@ class SubBotManager {
   delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   startHealthCheck() {
-    console.log(chalk.gray('💙 Health check deshabilitado para evitar reconexiones múltiples'));
+    console.log(chalk.gray('💙 Health check por socket activo (intervalo de 60s por subbot)'));
   }
 }
 

@@ -1,4 +1,5 @@
-import { makeWASocket, useMultiFileAuthState, Browsers, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
+import { makeWASocket, useMultiFileAuthState, Browsers, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
+import NodeCache from 'node-cache';
 import pino from 'pino';
 import fs from 'fs';
 import path from 'path';
@@ -6,6 +7,8 @@ import chalk from 'chalk';
 import subBotManager from '../../nucleo/subbotManager.js';
 
 const pendingSessions = new Map();
+const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
+const userDevicesCache  = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 
 const cleanFolder = (folder) => {
   try { if (fs.existsSync(folder)) fs.rmSync(folder, { recursive: true, force: true }); } catch {}
@@ -49,12 +52,7 @@ export default {
 
     
     await client.sendMessage(m.chat, {
-      text:
-        `╭━━━━━━━━━━━━━━━━━╮\n` +
-        `│  💙 *HATSUNE MIKU*  │\n` +
-        `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-        `🔐 Iniciando vinculación...\n\n` +
-        `⏳ Generando código...`
+      text: `Iniciando vinculación...`
     }, { quoted: m });
 
     let sock = null;
@@ -77,15 +75,19 @@ export default {
         version,
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
-        browser: Browsers.ubuntu('Safari'),
-        auth: state,
-        markOnlineOnConnect: false,
-        generateHighQualityLinkPreview: false,
+        browser: Browsers.macOS('Chrome'),
+        auth: {
+          creds: state.creds,
+          keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
+        },
+        markOnlineOnConnect: true,
+        generateHighQualityLinkPreview: true,
         syncFullHistory: false,
         getMessage: async () => '',
-        keepAliveIntervalMs: 30000,
-        connectTimeoutMs: 60000,
-        defaultQueryTimeoutMs: 60000,
+        msgRetryCounterCache,
+        userDevicesCache,
+        keepAliveIntervalMs: 45000,
+        maxIdleTimeMs: 60000,
       });
 
       pendingSessions.set(sessionId, { sock, startTime: Date.now() });
@@ -95,7 +97,7 @@ export default {
         if (connection === 'open') {
           const cleanId  = sock.user?.id?.split(':')[0]?.split('@')[0] || sessionId;
           const userName = sock.user?.name || 'Usuario';
-          console.log(chalk.green(`💙 Subbot vinculado: ${cleanId}`));
+          console.log(chalk.green(`Subbot vinculado: ${cleanId}`));
 
           finish(true);
 
@@ -106,16 +108,7 @@ export default {
 
           
           await client.sendMessage(m.chat, {
-            text:
-              `╭━━━━━━━━━━━━━━━━━╮\n` +
-              `│  💙 *HATSUNE MIKU*  │\n` +
-              `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-              `✅ *¡Vinculación exitosa!*\n\n` +
-              `👤 ${userName}\n` +
-              `📱 ${cleanId}\n\n` +
-              `🤖 Tu subbot está activándose...\n` +
-              `⏳ En unos segundos estará listo\n\n` +
-              `⚠️ Para desvincular: *${usedPrefix}deletebot*`
+            text: `¡Vinculación exitosa!\n\n${userName}\n${cleanId}\n\nTu subbot está activándose...\nEn unos segundos estará listo\n\nPara desvincular: *${usedPrefix}deletebot*`
           }, { quoted: m });
 
           
@@ -125,17 +118,11 @@ export default {
         if (connection === 'close') {
           if (done) return;
           const reason = lastDisconnect?.error?.output?.statusCode ?? 0;
-          console.log(chalk.red(`💙 Socket pairing ${sessionId} cerrado. Razón: ${reason}`));
+          console.log(chalk.red(`Socket pairing ${sessionId} cerrado. Razón: ${reason}`));
           finish(false);
           await m.react('❌');
           await client.sendMessage(m.chat, {
-            text:
-              `╭━━━━━━━━━━━━━━━━━╮\n` +
-              `│  💙 *HATSUNE MIKU*  │\n` +
-              `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-              `❌ *Vinculación fallida*\n\n` +
-              `⚠️ Código: ${reason}\n\n` +
-              `💡 Intenta de nuevo con:\n*${usedPrefix}sub*`
+            text: `Vinculación fallida\n\nCódigo: ${reason}\n\nIntenta de nuevo con: *${usedPrefix}sub*`
           }).catch(() => {});
         }
       });
@@ -166,17 +153,7 @@ export default {
 
          
           await client.sendMessage(m.chat, {
-            text:
-              `╭━━━━━━━━━━━━━━━━━╮\n` +
-              `│  💙 *HATSUNE MIKU*  │\n` +
-              `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-              `🔐 *Pasos para vincular:*\n\n` +
-              `1️⃣ WhatsApp → *3 puntos* (⋮)\n` +
-              `2️⃣ *Dispositivos vinculados*\n` +
-              `3️⃣ *Vincular un dispositivo*\n` +
-              `4️⃣ *Vincular con número*\n` +
-              `5️⃣ Ingresa el código de abajo\n\n` +
-              `⚠️ Expira en *60 segundos*`
+            text: `╭━━━━━━━━━━━━━━━━━╮\n│  💙 *HATSUNE MIKU*  │\n╰━━━━━━━━━━━━━━━━━╯\n\nPasos para vincular:\n\n1️⃣ WhatsApp → 3 puntos (⋮)\n2️⃣ Dispositivos vinculados\n3️⃣ Vincular un dispositivo\n4️⃣ Vincular con número\n5️⃣ Ingresa el código de abajo\n\nExpira en 60 segundos`
           }, { quoted: m });
 
           
@@ -190,13 +167,7 @@ export default {
           finish(false);
           await m.react('❌');
           await client.sendMessage(m.chat, {
-            text:
-              `╭━━━━━━━━━━━━━━━━━╮\n` +
-              `│  💙 *HATSUNE MIKU*  │\n` +
-              `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-              `❌ *Error al generar código*\n\n` +
-              `${err.message}\n\n` +
-              `💡 Intenta de nuevo con: *${usedPrefix}sub*`
+            text: `Error al generar código\n\n${err.message}\n\nIntenta de nuevo con: *${usedPrefix}sub*`
           }).catch(() => {});
         }
       })();
@@ -207,13 +178,7 @@ export default {
         finish(false);
         m.react('⏰');
         client.sendMessage(m.chat, {
-          text:
-            `╭━━━━━━━━━━━━━━━━━╮\n` +
-            `│  💙 *HATSUNE MIKU*  │\n` +
-            `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-            `⏰ *Tiempo agotado*\n\n` +
-            `La vinculación expiró.\n` +
-            `💡 Intenta de nuevo con: *${usedPrefix}sub*`
+          text: `Tiempo agotado\n\nLa vinculación expiró.\nIntenta de nuevo con: *${usedPrefix}sub*`
         }).catch(() => {});
       }, 120000);
 
