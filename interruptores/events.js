@@ -92,15 +92,7 @@ export default async (client, m) => {
         if (!validJid || typeof validJid !== 'string' || !validJid.includes('@')) {
           continue;
         }
-
-        // Convertir LID a JID real si es necesario
-        if (validJid.endsWith('@lid')) {
-          try {
-            const realJid = client.findJidByLid ? client.findJidByLid(validJid) : null;
-            if (realJid) validJid = realJid;
-          } catch {}
-        }
-
+        
         const phone = validJid.split('@')[0];
         
         let pp = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg';
