@@ -42,8 +42,12 @@ export default {
       return m.reply(`💙 Debes esperar *${msToTime(remainingTime)}* antes de volver a pescar.`)
     }
 
-    const rod = FISHING_RODS[user.fishingRod]
-    const bonus = rod.bonus
+    const rod = FISHING_RODS[user.fishingRod] || FISHING_RODS.basic
+    let bonus = rod.bonus
+    
+    if (user.fishingBait) bonus += user.fishingBait
+    if (user.fishingNet) bonus += 15
+    if (user.fishingRing) bonus += 20
     
     const rand = Math.random() * 100
     let rarity

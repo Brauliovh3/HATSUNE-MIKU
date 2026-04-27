@@ -2,8 +2,9 @@ export const menuObject = {
 economia: `╭━━━💰 ECONOMÍA & RPG 💰━━━╮
 │ 💼 .work - Trabajar y ganar dinero
 │ ⛏️ .mine - Minar recursos valiosos
-│ 🎰 .slot - Máquina tragamonedas
+│ 🎰 .slot - Máquina tragamondas
 │ 🎲 .ruleta - Ruleta rusa por apuestas
+│ 🛒 .comprar - Comprar artículos
 │ 💸 .steal - Robar dinero a usuarios
 │ 💰 .withdraw - Retirar del banco
 │ 🎫 .weekly - Regalo semanal especial
@@ -21,6 +22,8 @@ gacha: `╭━━━🎯 GACHA & WAIFUS 🎯━━━╮
 │ 🛒 .v - Vender personaje
 │ 👥 .coleccion - Colección RPG
 │ 🎨 .gallery - Galería con imágenes
+│ 🐟 .pescar - Pescar peces
+│ 🎣 .pescaderia - Tienda de pesca
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 downloads: `╭━━━📥 DESCARGAS 📥━━━╮
 │ 🎵 .play - Música/video de YouTube
