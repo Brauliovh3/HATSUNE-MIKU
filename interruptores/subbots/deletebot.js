@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import chalk from 'chalk';
 
 export default {
   command: ['deletebot', 'delbot', 'desvincular'],
@@ -37,20 +38,26 @@ export default {
         }
       }
 
-      await client.sendMessage(m.chat, {
-        text: `✅ *DESVINCULACIÓN COMPLETADA* ✅\n\n` +
-          `📱 Número: ${phoneNumber}\n` +
-          `🗑️ Sesión eliminada correctamente\n\n` +
-          `💡 *¿Quieres vincularte de nuevo?*\n` +
-          `Usa: ${usedPrefix}sub\n\n` +
-          `🌸 *Hatsune Miku Bot*`
-      }, { quoted: m });
+      try {
+        await client.sendMessage(m.chat, {
+          text: `✅ *DESVINCULACIÓN COMPLETADA* ✅\n\n` +
+            `📱 Número: ${phoneNumber}\n` +
+            `🗑️ Sesión eliminada correctamente\n\n` +
+            `💡 *¿Quieres vincularte de nuevo?*\n` +
+            `Usa: ${usedPrefix}sub\n\n` +
+            `🌸 *Hatsune Miku Bot*`
+        }, { quoted: m });
+      } catch (e) {
+        console.log(chalk.gray('💙 Mensaje de confirmación no enviado (conexión cerrada)'));
+      }
 
     } catch (err) {
       console.error('Error en deletebot:', err);
-      await m.reply(`❌ *Error al eliminar sesión*\n\n` +
-        `${err.message}\n\n` +
-        `💡 Intenta nuevamente o contacta al soporte.`);
+      try {
+        await m.reply(`❌ *Error al eliminar sesión*\n\n` +
+          `${err.message}\n\n` +
+          `💡 Intenta nuevamente o contacta al soporte.`);
+      } catch (e) {}
     }
   }
 };
