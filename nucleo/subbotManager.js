@@ -73,7 +73,7 @@ class SubBotManager {
     console.log(chalk.cyan(`💙 Iniciando ${sessions.length} subbots...`));
     for (const sessionId of sessions) {
       await this.startSubBot(sessionId);
-      await this.delay(5000);
+      await this.delay(2000);
     }
     this.initialized = true;
     console.log(chalk.cyan('💙 Sistema de subbots inicializado'));
@@ -84,20 +84,16 @@ class SubBotManager {
     const sessionFolder = `./Sessions/subbots/${sessionId}`;
 
     if (this.subbots.has(sessionId)) {
-      console.log(chalk.gray(`💙 Subbot ${sessionId} ya existe, omitiendo...`));
       return;
     }
     if (this.startingSubbots.has(sessionId)) {
-      console.log(chalk.gray(`💙 Subbot ${sessionId} ya está iniciando, omitiendo...`));
       return;
     }
     if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
-      console.log(chalk.yellow(`💙 Sin sesión para ${sessionId}, omitiendo...`));
       return;
     }
 
     this.startingSubbots.add(sessionId);
-    console.log(chalk.cyan(`💙 Iniciando subbot ${sessionId}...`));
 
     try {
       const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
@@ -121,8 +117,10 @@ class SubBotManager {
         userDevicesCache,
         cachedGroupMetadata: async (jid) => groupCache.get(jid),
         version,
-        keepAliveIntervalMs: 45000,
-        maxIdleTimeMs: 60000,
+        keepAliveIntervalMs: 25000,
+        maxIdleTimeMs: 40000,
+        connectTimeoutMs: 30000,
+        defaultQueryTimeoutMs: 30000,
       };
 
       let sock = makeWASocket(connectionOptions);
@@ -189,24 +187,23 @@ class SubBotManager {
               ?? lastDisconnect?.error?.output?.payload?.statusCode
               ?? 0;
 
-            console.log(chalk.yellow(`💙 Subbot ${sessionId} desconectado. Razón: ${reason}`));
 
             this.subbots.delete(sessionId);
             removeFromConns(sessionId);
 
             if (reason === 401 || reason === 405) {
               const intento = reintentos.get(sessionId) || 0;
-              if (intento >= 3) {
+              if (intento >= 5) {
                 console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) cerrado. Credenciales no válidas después de ${intento} intentos (${reason}). Eliminando sesión.\n└──────────────────────────────────┘`));
                 try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
                 reintentos.delete(sessionId);
                 this.startingSubbots.delete(sessionId);
                 return;
               }
-              console.log(chalk.yellow(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) credenciales inválidas (${reason}). Reintentando (${intento + 1}/3)...\n└──────────────────────────────────┘`));
+              console.log(chalk.yellow(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) credenciales inválidas (${reason}). Reintentando (${intento + 1}/5)...\n└──────────────────────────────────┘`));
               reintentos.set(sessionId, intento + 1);
               this.startingSubbots.add(sessionId);
-              const delayMs = 10000 * (intento + 1);
+              const delayMs = 5000 * (intento + 1);
               setTimeout(async () => {
                 this.startingSubbots.delete(sessionId);
                 if (fs.existsSync(sessionFolder) && fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
@@ -232,7 +229,6 @@ class SubBotManager {
             }
 
             if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
-              console.log(chalk.gray(`💙 Carpeta ${sessionId} eliminada, cancelando reconexión.`));
               reintentos.delete(sessionId);
               this.startingSubbots.delete(sessionId);
               return;
@@ -261,19 +257,16 @@ class SubBotManager {
             }
 
             if (this.startingSubbots.has(sessionId)) {
-              console.log(chalk.gray(`💙 ${sessionId} ya está reiniciando, omitiendo duplicado`));
               return;
             }
 
             const intento = reintentos.get(sessionId) || 0;
-            const delayMs = Math.min(5000 * (intento + 1), 30000);
-            console.log(chalk.cyan(`💙 Reconectando ${sessionId} en ${delayMs / 1000}s... (intento ${intento + 1})`));
+            const delayMs = Math.min(3000 * (intento + 1), 15000);
             reintentos.set(sessionId, intento + 1);
             this.startingSubbots.add(sessionId);
 
             setTimeout(async () => {
               if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
-                console.log(chalk.gray(`💙 ${sessionId} eliminado durante espera, cancelando.`));
                 this.startingSubbots.delete(sessionId);
                 reintentos.delete(sessionId);
                 return;
@@ -286,14 +279,13 @@ class SubBotManager {
 
         const healthInterval = setInterval(() => {
           if (!sock.user) {
-            console.log(chalk.gray(`💙 Health check: ${sessionId} sin usuario activo, limpiando...`));
             clearInterval(healthInterval);
             try { sock.ws.close(); } catch {}
             sock.ev.removeAllListeners();
             removeFromConns(sessionId);
             this.subbots.delete(sessionId);
           }
-        }, 60000);
+        }, 30000);
 
         sock.ev.on('messages.upsert', async ({ messages, type }) => {
           if (type !== 'notify') return;
@@ -312,7 +304,6 @@ class SubBotManager {
       attachEvents(sock);
 
       this.subbots.set(sessionId, sock);
-      console.log(chalk.green(`💙 Subbot ${sessionId} iniciado, esperando conexión...`));
 
     } catch (err) {
       console.error(chalk.red(`Error iniciando subbot ${sessionId}:`), err.message);
@@ -324,7 +315,6 @@ class SubBotManager {
         if (intento < 5) {
           reintentos.set(sessionId, intento + 1);
           const delayMs = Math.min(10000 * (intento + 1), 60000);
-          console.log(chalk.yellow(`💙 Reintentando ${sessionId} en ${delayMs / 1000}s...`));
           setTimeout(() => this.startSubBot(sessionId), delayMs);
         }
       }
@@ -361,8 +351,6 @@ class SubBotManager {
   delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   startHealthCheck() {
-    console.log(chalk.gray('💙 Health check global activo (intervalo de 120s)'));
-    
     setInterval(async () => {
       const subsPath = './Sessions/subbots';
       if (!fs.existsSync(subsPath)) return;
@@ -376,12 +364,11 @@ class SubBotManager {
         
         if (!sock || !sock.isInit) {
           if (!this.startingSubbots.has(sessionId)) {
-            console.log(chalk.yellow(`💙 Subbot ${sessionId} inactivo, reconectando...`));
             await this.startSubBot(sessionId);
           }
         }
       }
-    }, 120000);
+    }, 60000);
   }
 }
 
