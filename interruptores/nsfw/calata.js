@@ -68,9 +68,9 @@ Un *administrador* puede activarlo con el comando:
 » *${usedPrefix}nsfw on*`,
           m,
           global.miku
-        )
+        );
       }
-
+      
       await m.react('🕒')
       const image = await getCalataImage()
       await client.sendMessage(
