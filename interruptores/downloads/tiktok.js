@@ -557,18 +557,80 @@ async function combineImageAndAudioToVideo(conn, chat, m, tiktokUrl, caption) {
     const searchData = await searchResponse.json()
     console.log('TikVid search response:', JSON.stringify(searchData))
     
-    if (!searchData?.data?.videoUrl && !searchData?.video_url) {
+    const data = searchData?.data || searchData
+    
+    let videoUrl = data?.videoUrl || data?.video_url || data?.video
+    
+    if (!videoUrl && data?.images?.length > 0 && data?.music) {
+      console.log('TikVid devolvio imagenes + musica, intentando convertir...')
+      
+      const imageUrl = data.images[0]
+      const audioUrl = data.music
+      
+      const convertResponse = await fetch('https://s3.tik-cdn.com/api/json/convert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': '*/*',
+          'Origin': 'https://tikvid.io',
+          'Referer': 'https://tikvid.io/'
+        },
+        body: new URLSearchParams({
+          imageUrl: imageUrl,
+          audioUrl: audioUrl,
+          token: TIKVID_TOKEN,
+          exp: TIKVID_EXP
+        })
+      })
+      
+      const convertData = await convertResponse.json()
+      console.log('TikVid convert response:', JSON.stringify(convertData))
+      
+      videoUrl = convertData?.video_url || convertData?.url || convertData?.data?.video_url
+    }
+    
+    if (!videoUrl && data?.image_data) {
+      console.log('TikVid devolvio image_data (base64), decodificando...')
+      
+      try {
+        const imageUrl = Buffer.from(data.image_data, 'base64').toString('utf8')
+        const audioUrl = data.music || data.audio
+        
+        if (imageUrl && audioUrl) {
+          const convertResponse = await fetch('https://s3.tik-cdn.com/api/json/convert', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': '*/*',
+              'Origin': 'https://tikvid.io',
+              'Referer': 'https://tikvid.io/'
+            },
+            body: new URLSearchParams({
+              imageUrl: imageUrl,
+              audioUrl: audioUrl,
+              token: TIKVID_TOKEN,
+              exp: TIKVID_EXP
+            })
+          })
+          
+          const convertData = await convertResponse.json()
+          console.log('TikVid convert response:', JSON.stringify(convertData))
+          
+          videoUrl = convertData?.video_url || convertData?.url || convertData?.data?.video_url
+        }
+      } catch (e) {
+        console.log('Error decodificando image_data:', e.message)
+      }
+    }
+    
+    if (!videoUrl) {
       console.log('TikVid no devolvió video, intentando con imágenes...')
       return false
     }
     
-    const videoUrl = searchData?.data?.videoUrl || searchData?.video_url
-    if (!videoUrl) {
-      console.log('No se encontró URL de video en respuesta de TikVid')
-      return false
-    }
-    
-    console.log('Video encontrado, descargando...')
+    console.log('Video encontrado:', videoUrl, 'descargando...')
     const videoBuffer = await safeBuffer(videoUrl, 90000)
     
     if (!videoBuffer?.buffer) {
