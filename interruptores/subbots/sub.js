@@ -77,10 +77,6 @@ export default {
     const phoneNumber   = normalizePhoneForPairing(rawPhone);
     const sessionId     = rawPhone;
     const sessionFolder = `./Sessions/subbots/${sessionId}`;
-<<<<<<< HEAD
-=======
-    const privatChat    = rawPhone + '@s.whatsapp.net';
->>>>>>> 8891118920c9db2f2a76d9d33896359c2957bfb6
 
     if (fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
       if (subBotManager.subbots?.has(sessionId)) {
@@ -108,26 +104,11 @@ export default {
 
     await m.react('⏳');
 
-<<<<<<< HEAD
-    await client.sendMessage(m.chat, {
-      text:
-        `╭━━━━━━━━━━━━━━━━━╮\n` +
-        `│  💙 *HATSUNE MIKU*  │\n` +
-        `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-        `🔐 Iniciando vinculación...\n\n` +
-        `⏳ Generando código...`
-    }, { quoted: m });
-
-
     let done            = false;   
     let codeRequested   = false;   
     let reconnecting    = false; 
     let reconnectCount  = 0;
     const MAX_RECONNECT = 5;
-=======
-    let sock = null;
-    let done = false;
->>>>>>> 8891118920c9db2f2a76d9d33896359c2957bfb6
 
     const finish = (success) => {
       if (done) return;
@@ -136,31 +117,16 @@ export default {
       if (!success) cleanFolder(sessionFolder);
     };
 
-<<<<<<< HEAD
-
     const silentClose = (s) => {
       try { s?.ev?.removeAllListeners(); } catch {}
       try { if (s?.ws?.readyState !== 3) s?.ws?.close(); } catch {}
     };
 
-
     const buildSocket = async () => {
       const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
       const { version }          = await fetchLatestBaileysVersion();
-      const sock = makeWASocket({
-=======
-    const closeSocket = () => {
-      try { sock?.ev?.removeAllListeners(); } catch {}
-      try { if (sock?.ws?.readyState !== 3) sock?.ws?.close(); } catch {}
-    };
-
-    try {
-      const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
-      const { version }          = await fetchLatestBaileysVersion();
       const logger               = pino({ level: 'silent' });
-
-      sock = makeWASocket({
->>>>>>> 8891118920c9db2f2a76d9d33896359c2957bfb6
+      const sock = makeWASocket({
         version,
         logger,
         printQRInTerminal: isQR,
@@ -173,30 +139,32 @@ export default {
         generateHighQualityLinkPreview: true,
         syncFullHistory: false,
         getMessage: async () => '',
-<<<<<<< HEAD
         keepAliveIntervalMs: 30_000,
         connectTimeoutMs:    60_000,
         defaultQueryTimeoutMs: 60_000,
-=======
-        keepAliveIntervalMs: 45000,
-        maxIdleTimeMs: 60000,
->>>>>>> 8891118920c9db2f2a76d9d33896359c2957bfb6
       });
       sock.ev.on('creds.update', saveCreds);
       return sock;
     };
 
-<<<<<<< HEAD
     try {
       let sock = await buildSocket();
       pendingSessions.set(sessionId, { sock, startTime: Date.now() });
 
-
       const attachEvents = (currentSock) => {
-
-        currentSock.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
+        currentSock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
           if (done) return;
 
+          if (qr && isQR) {
+            if (done) return;
+            const qrBuffer = await qrcode.toBuffer(qr);
+            await client.sendMessage(m.chat, {
+              image: qrBuffer,
+              caption: caption,
+              ...global.miku
+            }, { quoted: m });
+            return;
+          }
 
           if (connection === 'open') {
             const cleanId  = currentSock.user?.id?.split(':')[0]?.split('@')[0] || sessionId;
@@ -204,6 +172,7 @@ export default {
             console.log(chalk.green(`💙 Subbot vinculado: ${cleanId}`));
 
             finish(true);
+            global.db.data.users[m.sender].Subs = new Date() * 1;
 
             setTimeout(async () => {
               try { await subBotManager.startSubBot(sessionId); }
@@ -211,22 +180,13 @@ export default {
             }, 3000);
 
             await client.sendMessage(m.chat, {
-              text:
-                `╭━━━━━━━━━━━━━━━━━╮\n` +
-                `│  💙 *HATSUNE MIKU*  │\n` +
-                `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-                `✅ *¡Vinculación exitosa!*\n\n` +
-                `👤 ${userName}\n` +
-                `📱 ${cleanId}\n\n` +
-                `🤖 Tu subbot está activándose...\n` +
-                `⏳ En unos segundos estará listo\n\n` +
-                `⚠️ Para desvincular: *${usedPrefix}deletebot*`
+              text: `💙 *HATSUNE MIKU* 💙\n\n✅ ¡Vinculación exitosa!\n\n👤 ${userName}\n📱 ${cleanId}\n\n🤖 Tu subbot está activándose...\n⏳ En unos segundos estará listo\n\n⚠️ Para desvincular: *${usedPrefix}deletebot*`,
+              ...global.miku
             }, { quoted: m });
 
             await m.react('✅');
             return;
           }
-
 
           if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode
@@ -235,24 +195,17 @@ export default {
 
             console.log(chalk.yellow(`💙 Socket pairing ${sessionId} cerrado. Razón: ${reason}`));
 
-
             if (PERMANENT_ERRORS.has(reason)) {
               console.log(chalk.red(`💙 Error permanente (${reason}) en pairing ${sessionId}. Cancelando.`));
               finish(false);
               silentClose(currentSock);
               await m.react('❌');
               await client.sendMessage(m.chat, {
-                text:
-                  `╭━━━━━━━━━━━━━━━━━╮\n` +
-                  `│  💙 *HATSUNE MIKU*  │\n` +
-                  `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-                  `❌ *Vinculación fallida*\n\n` +
-                  `⚠️ Código: ${reason}\n\n` +
-                  `💡 Intenta de nuevo con:\n*${usedPrefix}sub*`
+                text: `💙 *HATSUNE MIKU* 💙\n\n❌ Vinculación fallida\n\n⚠️ Código: ${reason}\n\n💡 Intenta de nuevo con: *${usedPrefix}sub*`,
+                ...global.miku
               }).catch(() => {});
               return;
             }
-
 
             if (!codeRequested) {
               console.log(chalk.red(`💙 Pairing ${sessionId} cerrado antes de pedir código (${reason}). Cancelando.`));
@@ -260,17 +213,11 @@ export default {
               silentClose(currentSock);
               await m.react('❌');
               await client.sendMessage(m.chat, {
-                text:
-                  `╭━━━━━━━━━━━━━━━━━╮\n` +
-                  `│  💙 *HATSUNE MIKU*  │\n` +
-                  `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-                  `❌ *Error al conectar*\n\n` +
-                  `⚠️ Código: ${reason}\n\n` +
-                  `💡 Intenta de nuevo con:\n*${usedPrefix}sub*`
+                text: `💙 *HATSUNE MIKU* 💙\n\n❌ Error al conectar\n\n⚠️ Código: ${reason}\n\n💡 Intenta de nuevo con: *${usedPrefix}sub*`,
+                ...global.miku
               }).catch(() => {});
               return;
             }
-
 
             if (reconnecting || reconnectCount >= MAX_RECONNECT) {
               if (reconnectCount >= MAX_RECONNECT) {
@@ -279,13 +226,8 @@ export default {
                 silentClose(currentSock);
                 await m.react('❌');
                 await client.sendMessage(m.chat, {
-                  text:
-                    `╭━━━━━━━━━━━━━━━━━╮\n` +
-                    `│  💙 *HATSUNE MIKU*  │\n` +
-                    `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-                    `❌ *Vinculación fallida*\n\n` +
-                    `No se pudo establecer conexión tras ${MAX_RECONNECT} intentos.\n\n` +
-                    `💡 Intenta de nuevo con:\n*${usedPrefix}sub*`
+                  text: `💙 *HATSUNE MIKU* 💙\n\n❌ Vinculación fallida\n\nNo se pudo establecer conexión tras ${MAX_RECONNECT} intentos.\n\n💡 Intenta de nuevo con: *${usedPrefix}sub*`,
+                  ...global.miku
                 }).catch(() => {});
               }
               return;
@@ -305,7 +247,6 @@ export default {
               if (done) return;
               reconnecting = false;
 
-
               if (!fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
                 console.log(chalk.gray(`💙 Carpeta ${sessionId} eliminada durante espera, cancelando.`));
                 finish(false);
@@ -313,7 +254,6 @@ export default {
               }
 
               try {
-
                 sock = await buildSocket();
                 pendingSessions.set(sessionId, { sock, startTime: Date.now() });
                 attachEvents(sock);
@@ -329,7 +269,6 @@ export default {
 
       attachEvents(sock);
 
-
       const waitForWS = () => new Promise((resolve, reject) => {
         let tries = 0;
         const check = setInterval(() => {
@@ -340,89 +279,24 @@ export default {
         }, 500);
       });
 
-
-=======
-      sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
-        if (qr && isQR) {
-          if (done) return;
-          const qrBuffer = await qrcode.toBuffer(qr);
-          await client.sendMessage(m.chat, {
-            image: qrBuffer,
-            caption: caption,
-            ...global.miku
-          }, { quoted: m });
-          return;
-        }
-
-        if (connection === 'open') {
-          const cleanId  = sock.user?.id?.split(':')[0]?.split('@')[0] || sessionId;
-          const userName = sock.user?.name || 'Usuario';
-          console.log(chalk.green(`Subbot vinculado: ${cleanId}`));
-
-          finish(true);
-          global.db.data.users[m.sender].Subs = new Date() * 1;
-
-          await client.sendMessage(m.chat, {
-            text: `💙 *HATSUNE MIKU* 💙\n\n✅ ¡Vinculación exitosa!\n\n👤 ${userName}\n📱 ${cleanId}\n\n🤖 Tu subbot está activándose...\n⏳ En unos segundos estará listo\n\n⚠️ Para desvincular: *${usedPrefix}deletebot*`,
-            ...global.miku
-          }, { quoted: m });
-
-          await m.react('✅');
-
-          closeSocket();
-
-          setTimeout(async () => {
-            try { await subBotManager.startSubBot(sessionId); }
-            catch (e) { console.error(chalk.red(`Error iniciando subbot ${sessionId}:`), e.message); }
-          }, 10000);
-        }
-
-        if (connection === 'close') {
-          if (done) return;
-          const reason = lastDisconnect?.error?.output?.statusCode ?? 0;
-          console.log(chalk.red(`Socket pairing ${sessionId} cerrado. Razón: ${reason}`));
-          finish(false);
-          await m.react('❌');
-          await client.sendMessage(m.chat, {
-            text: `💙 *HATSUNE MIKU* 💙\n\n❌ Vinculación fallida\n\n⚠️ Código: ${reason}\n\n💡 Intenta de nuevo con: *${usedPrefix}sub*`,
-            ...global.miku
-          }).catch(() => {});
-        }
-      });
-
->>>>>>> 8891118920c9db2f2a76d9d33896359c2957bfb6
       ;(async () => {
         if (isQR) return;
         try {
-          await new Promise(r => setTimeout(r, 3000));
+          await waitForWS();
           if (done) return;
 
+          await new Promise(r => setTimeout(r, 1500));
+          if (done) return;
+
+          const { state } = await useMultiFileAuthState(sessionFolder);
           if (!state.creds.registered) {
             const code          = await sock.requestPairingCode(phoneNumber);
             const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
 
             if (done) return;
 
-<<<<<<< HEAD
-          codeRequested = true; 
-          if (done) return;
+            codeRequested = true; 
 
-          await client.sendMessage(m.chat, {
-            text:
-              `╭━━━━━━━━━━━━━━━━━╮\n` +
-              `│  💙 *HATSUNE MIKU*  │\n` +
-              `╰━━━━━━━━━━━━━━━━━╯\n\n` +
-              `🔐 *Pasos para vincular:*\n\n` +
-              `1️⃣ WhatsApp → *3 puntos* (⋮)\n` +
-              `2️⃣ *Dispositivos vinculados*\n` +
-              `3️⃣ *Vincular un dispositivo*\n` +
-              `4️⃣ *Vincular con número*\n` +
-              `5️⃣ Ingresa el código de abajo\n\n` +
-              `⚠️ Expira en *60 segundos*`
-          }, { quoted: m });
-
-          await client.sendMessage(m.chat, { text: `*${formattedCode}*` });
-=======
             await client.sendMessage(m.chat, {
               text: caption,
               ...global.miku
@@ -433,7 +307,6 @@ export default {
               ...global.miku
             });
           }
->>>>>>> 8891118920c9db2f2a76d9d33896359c2957bfb6
 
         } catch (err) {
           if (done) return;
@@ -447,7 +320,6 @@ export default {
           }).catch(() => {});
         }
       })();
-
 
       setTimeout(() => {
         if (done) return;
