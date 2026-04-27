@@ -169,7 +169,6 @@ export default {
           if (connection === 'open') {
             const cleanId  = currentSock.user?.id?.split(':')[0]?.split('@')[0] || sessionId;
             const userName = currentSock.user?.name || 'Usuario';
-            console.log(chalk.green(`💙 Subbot vinculado: ${cleanId}`));
 
             finish(true);
             global.db.data.users[m.sender].Subs = new Date() * 1;
@@ -196,7 +195,6 @@ export default {
             console.log(chalk.yellow(`💙 Socket pairing ${sessionId} cerrado. Razón: ${reason}`));
 
             if (PERMANENT_ERRORS.has(reason)) {
-              console.log(chalk.red(`💙 Error permanente (${reason}) en pairing ${sessionId}. Cancelando.`));
               finish(false);
               silentClose(currentSock);
               await m.react('❌');
@@ -207,39 +205,9 @@ export default {
               return;
             }
 
-            if (!codeRequested) {
-              console.log(chalk.red(`💙 Pairing ${sessionId} cerrado antes de pedir código (${reason}). Cancelando.`));
-              finish(false);
-              silentClose(currentSock);
-              await m.react('❌');
-              await client.sendMessage(m.chat, {
-                text: `💙 *HATSUNE MIKU* 💙\n\n❌ Error al conectar\n\n⚠️ Código: ${reason}\n\n💡 Intenta de nuevo con: *${usedPrefix}sub*`,
-                ...global.miku
-              }).catch(() => {});
-              return;
-            }
-
-            if (reconnecting || reconnectCount >= MAX_RECONNECT) {
-              if (reconnectCount >= MAX_RECONNECT) {
-                console.log(chalk.red(`💙 Máximo de reconexiones alcanzado para ${sessionId}. Cancelando.`));
-                finish(false);
-                silentClose(currentSock);
-                await m.react('❌');
-                await client.sendMessage(m.chat, {
-                  text: `💙 *HATSUNE MIKU* 💙\n\n❌ Vinculación fallida\n\nNo se pudo establecer conexión tras ${MAX_RECONNECT} intentos.\n\n💡 Intenta de nuevo con: *${usedPrefix}sub*`,
-                  ...global.miku
-                }).catch(() => {});
-              }
-              return;
-            }
-
             reconnecting    = true;
             reconnectCount += 1;
             const delay     = Math.min(2000 * reconnectCount, 10_000);
-
-            console.log(chalk.cyan(
-              `💙 Reconexión de pairing ${sessionId} (intento ${reconnectCount}/${MAX_RECONNECT}) en ${delay / 1000}s...`
-            ));
 
             silentClose(currentSock);
 
@@ -248,7 +216,6 @@ export default {
               reconnecting = false;
 
               if (!fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
-                console.log(chalk.gray(`💙 Carpeta ${sessionId} eliminada durante espera, cancelando.`));
                 finish(false);
                 return;
               }
@@ -257,9 +224,8 @@ export default {
                 sock = await buildSocket();
                 pendingSessions.set(sessionId, { sock, startTime: Date.now() });
                 attachEvents(sock);
-                console.log(chalk.cyan(`💙 Socket pairing ${sessionId} reconectado.`));
+                console.log(chalk.cyan(`💙 Reconexión ${sessionId} (${reconnectCount}/${MAX_RECONNECT})`));
               } catch (err) {
-                console.error(chalk.red(`💙 Error en reconexión ${sessionId}:`), err.message);
                 reconnectCount = MAX_RECONNECT; 
               }
             }, delay);
@@ -297,7 +263,6 @@ export default {
 
         } catch (err) {
           if (done) return;
-          console.error('Error generando código:', err.message);
           finish(false);
           silentClose(sock);
           await m.react('❌');
@@ -322,8 +287,11 @@ export default {
     } catch (err) {
       finish(false);
       await m.react('❌');
-      console.error('Error en comando sub:', err.message);
-      m.reply(`💙 *HATSUNE MIKU* 💙\n\n❌ Error iniciando vinculación\n\n${err.message}`, m, global.miku);
+      m.reply(`💙 *HATSUNE MIKU* 💙
+
+❌ Error iniciando vinculación
+
+${err.message}`, m, global.miku);
     }
   }
 };
