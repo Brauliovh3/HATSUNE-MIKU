@@ -93,6 +93,11 @@ class SubBotManager {
       return;
     }
 
+    const credsPath = path.join(sessionFolder, 'creds.json');
+    const stats = fs.statSync(credsPath);
+    const isNewSession = (Date.now() - stats.mtimeMs) < 300000; 
+    const maxRetries = isNewSession ? 2 : 5;
+
     this.startingSubbots.add(sessionId);
 
     try {
@@ -193,14 +198,19 @@ class SubBotManager {
 
             if (reason === 401 || reason === 405) {
               const intento = reintentos.get(sessionId) || 0;
-              if (intento >= 5) {
+              const credsPath = path.join(sessionFolder, 'creds.json');
+              const stats = fs.existsSync(credsPath) ? fs.statSync(credsPath) : null;
+              const isNewSession = stats ? (Date.now() - stats.mtimeMs) < 300000 : false;
+              const maxRetries = isNewSession ? 2 : 5;
+
+              if (intento >= maxRetries) {
                 console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) cerrado. Credenciales no válidas después de ${intento} intentos (${reason}). Eliminando sesión.\n└──────────────────────────────────┘`));
                 try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
                 reintentos.delete(sessionId);
                 this.startingSubbots.delete(sessionId);
                 return;
               }
-              console.log(chalk.yellow(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) credenciales inválidas (${reason}). Reintentando (${intento + 1}/5)...\n└──────────────────────────────────┘`));
+              console.log(chalk.yellow(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) credenciales inválidas (${reason}). Reintentando (${intento + 1}/${maxRetries})...\n└──────────────────────────────────┘`));
               reintentos.set(sessionId, intento + 1);
               this.startingSubbots.add(sessionId);
               const delayMs = 5000 * (intento + 1);
