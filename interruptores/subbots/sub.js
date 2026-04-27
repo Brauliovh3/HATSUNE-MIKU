@@ -105,12 +105,6 @@ export default {
 
     await m.react('⏳');
 
-    
-    await client.sendMessage(m.chat, {
-      text: `💙 *HATSUNE MIKU* 💙\n\n⏳ Iniciando vinculación...`,
-      ...global.miku
-    }, { quoted: m });
-
     let sock = null;
     let done = false;
 
@@ -197,24 +191,10 @@ export default {
         }
       });
 
-      
-      const waitForWS = () => new Promise((resolve, reject) => {
-        let tries = 0;
-        const check = setInterval(() => {
-          tries++;
-          if (done)                       { clearInterval(check); return reject(new Error('Cancelado')); }
-          if (sock?.ws?.readyState === 1) { clearInterval(check); return resolve(); }
-          if (tries > 60)                 { clearInterval(check); return reject(new Error('WS no abrió')); }
-        }, 500);
-      });
-
       ;(async () => {
         if (isQR) return;
         try {
-          await waitForWS();
-          if (done) return;
-
-          await new Promise(r => setTimeout(r, 1500));
+          await new Promise(r => setTimeout(r, 1000));
           if (done) return;
 
           const code          = await sock.requestPairingCode(phoneNumber);
@@ -222,13 +202,11 @@ export default {
 
           if (done) return;
 
-         
           await client.sendMessage(m.chat, {
             text: caption,
             ...global.miku
           }, { quoted: m });
 
-          
           await client.sendMessage(m.chat, {
             text: `💙 *${formattedCode}*`,
             ...global.miku
