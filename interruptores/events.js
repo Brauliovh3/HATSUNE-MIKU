@@ -198,9 +198,8 @@ export default async (client, m) => {
                   mentionedJid: [validJid, kicker, ...groupAdmins.map(v => v.id)]
                 };
                 await safeSend(client, anu.id, { image: { url: kickImage }, caption: kickCaption, contextInfo: kickContextInfo })
-              }
-
-              const caption = customMessage || `╭━━━🌸━━━💙━━━🌸━━━╮
+              } else if (!isKick) {
+                const caption = customMessage || `╭━━━🌸━━━💙━━━🌸━━━╮
 ┃  🎵 *¡ Hasta pronto !* 🎵
 ╰━━━🌸━━━💙━━━🌸━━━╯
 │
@@ -212,7 +211,8 @@ export default async (client, m) => {
 │ 🌸 Fue un placer tenerte aquí.
 │ 💙 ¡Esperamos verte de nuevo! ✨
 ╰━━━🌸━━━💙━━━🌸━━━╯`;
-              await safeSend(client, anu.id, { image: { url: goodbyeImage }, caption, contextInfo })
+                await safeSend(client, anu.id, { image: { url: goodbyeImage }, caption, contextInfo })
+              }
             } catch {}
           })
         }
