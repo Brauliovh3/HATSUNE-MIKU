@@ -39,7 +39,7 @@ export default async (client, m) => {
       }
     } catch (e) {}
   }
-  if (buttonId && buttonId.startsWith('menu_')) {
+  if (buttonId && (buttonId.startsWith('menu_') || buttonId.startsWith('shop_') || buttonId.startsWith('buy_'))) {
     if (m.isGroup) {
       const chat = global.db?.data?.chats?.[m.chat] || {};
       const primaryBot = chat?.primaryBot;
@@ -57,12 +57,16 @@ export default async (client, m) => {
         }
       }
     }
-    const { processMenuButton } = await import('./interruptores/main/menu.js')
-    await processMenuButton(client, m)
     
-    const { processFishingShopButton } = await import('./interruptores/economy/pescaderia.js')
-    const fishingProcessed = await processFishingShopButton(client, m)
-    if (fishingProcessed) return
+    if (buttonId.startsWith('menu_')) {
+      const { processMenuButton } = await import('./interruptores/main/menu.js')
+      await processMenuButton(client, m)
+    }
+    
+    if (buttonId.startsWith('shop_') || buttonId.startsWith('buy_')) {
+      const { processFishingShopButton } = await import('./interruptores/economy/pescaderia.js')
+      await processFishingShopButton(client, m)
+    }
     
     return
   }

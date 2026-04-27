@@ -32,11 +32,11 @@ export default {
     const rodName = { basic: 'Básica', improved: 'Mejorada', pro: 'Profesional', legendary: 'Legendaria' }[user.fishingRod] || 'Básica'
     
     let equipText = `\n🎣 *Caña:* ${rodName}`
-    if (user.fishingBait) equipText += `\n🪤 *Cebos:* ${user.fishingBait}`
-    if (user.fishingNet) equipText += `\n�️ *Red:* ✅`
+    if (user.fishingBait) equipText += `\n🪤 *Cebos:* ${user.fishingBait} (+${FISH_SHOP_ITEMS.cebos.bonus}% épico)`
+    if (user.fishingNet) equipText += `\n🕸️ *Red:* ✅`
     if (user.fishingRing) equipText += `\n💍 *Anillo:* ✅`
     
-    const text = `🐟 *PESCADERÍA* 🐟\n\n�💰 *Tu saldo:* 🌱${user.coins.toLocaleString()} ${currency}${equipText}\n\n🎯 *Selecciona una categoría:*`
+    const text = `🐟 *PESCADERÍA* 🐟\n\n💰 *Tu saldo:* 🌱${user.coins.toLocaleString()} ${currency}${equipText}\n\n🎯 *Selecciona una categoría:*`
     
     await client.sendMessage(m.chat, {
       text,
