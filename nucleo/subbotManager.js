@@ -148,19 +148,31 @@ class SubBotManager {
         try { sock.ws.close(); } catch {}
         sock.ev.removeAllListeners();
 
-        sock = makeWASocket({ ...connectionOptions }, { chats: oldChats });
-        sock.isInit     = false;
-        sock._sessionId = sessionId;
-        sock.ev.on('creds.update', saveCreds);
-        sock.decodeJid = (jid) => {
-          if (!jid) return jid;
-          if (/:\d+@/gi.test(jid)) {
-            const decode = jidDecode(jid) || {};
-            return (decode.user && decode.server && `${decode.user}@${decode.server}`) || jid;
-          }
-          return jid;
-        };
-        attachEvents(sock);
+        return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Timeout reconnecting')), 30000);
+          
+          sock = makeWASocket({ ...connectionOptions }, { chats: oldChats });
+          sock.isInit     = false;
+          sock._sessionId = sessionId;
+          sock.ev.on('creds.update', saveCreds);
+          sock.decodeJid = (jid) => {
+            if (!jid) return jid;
+            if (/:\d+@/gi.test(jid)) {
+              const decode = jidDecode(jid) || {};
+              return (decode.user && decode.server && `${decode.user}@${decode.server}`) || jid;
+            }
+            return jid;
+          };
+          
+          const onOpen = () => {
+            clearTimeout(timeout);
+            sock.ev.off('connection.update', onOpen);
+            resolve();
+          };
+          sock.ev.on('connection.update', onOpen);
+          
+          attachEvents(sock);
+        });
       };
 
       const attachEvents = (sock) => {
@@ -215,9 +227,14 @@ class SubBotManager {
               this.startingSubbots.add(sessionId);
               const delayMs = 5000 * (intento + 1);
               setTimeout(async () => {
-                this.startingSubbots.delete(sessionId);
-                if (fs.existsSync(sessionFolder) && fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
-                  await this.startSubBot(sessionId);
+                try {
+                  this.startingSubbots.delete(sessionId);
+                  if (fs.existsSync(sessionFolder) && fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
+                    await this.startSubBot(sessionId);
+                  }
+                } catch (e) {
+                  console.error(chalk.red(`💙 Error en retry ${sessionId}:`), e.message);
+                  this.startingSubbots.delete(sessionId);
                 }
               }, delayMs);
               return;
@@ -263,6 +280,10 @@ class SubBotManager {
                 console.error(chalk.red(`💙 Error reconectando ${sessionId}:`), err.message);
                 this.startingSubbots.delete(sessionId);
               }
+              
+              setTimeout(() => {
+                this.startingSubbots.delete(sessionId);
+              }, 5000)
               return;
             }
 
@@ -276,13 +297,18 @@ class SubBotManager {
             this.startingSubbots.add(sessionId);
 
             setTimeout(async () => {
-              if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
+              try {
+                if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
+                  this.startingSubbots.delete(sessionId);
+                  reintentos.delete(sessionId);
+                  return;
+                }
                 this.startingSubbots.delete(sessionId);
-                reintentos.delete(sessionId);
-                return;
+                await this.startSubBot(sessionId);
+              } catch (e) {
+                console.error(chalk.red(`💙 Error en reconexión general ${sessionId}:`), e.message);
+                this.startingSubbots.delete(sessionId);
               }
-              this.startingSubbots.delete(sessionId);
-              await this.startSubBot(sessionId);
             }, delayMs);
           }
         });

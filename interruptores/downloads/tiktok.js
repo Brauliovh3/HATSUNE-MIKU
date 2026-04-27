@@ -1,4 +1,5 @@
 import fetch from 'node-fetch'
+import { spawn } from 'child_process'
 import { proto, generateWAMessageFromContent, generateWAMessageContent } from '@whiskeysockets/baileys'
 
 const _a = [82,101,115,116,46,97,112,105,99,97,117,115,97,115,46,120,121,122].map(c=>String.fromCharCode(c)).join('')
@@ -532,6 +533,62 @@ async function sendAudioIfAvailable(conn, chat, m, audioUrl) {
   }
 }
 
+async function combineImageAndAudioToVideo(conn, chat, m, imageUrl, audioUrl, caption) {
+  try {
+    const imgBuffer = await safeBuffer(imageUrl, 30000)
+    const audBuffer = await safeBuffer(audioUrl, 60000)
+    
+    if (!imgBuffer?.buffer || !audBuffer?.buffer) {
+      throw new Error('No se pudieron descargar los archivos')
+    }
+
+    const imgPath = `./tmp/tik-img-${Date.now()}.jpg`
+    const audPath = `./tmp/tik-aud-${Date.now()}.mp3`
+    const outPath = `./tmp/tik-video-${Date.now()}.mp4`
+
+    require('fs').writeFileSync(imgPath, imgBuffer.buffer)
+    require('fs').writeFileSync(audPath, audBuffer.buffer)
+
+    await new Promise((resolve, reject) => {
+      const p = spawn('ffmpeg', [
+        '-y',
+        '-loop', '1',
+        '-i', imgPath,
+        '-i', audPath,
+        '-c:v', 'libx264',
+        '-tune', 'stillimage',
+        '-c:a', 'aac',
+        '-b:a', '192k',
+        '-shortest',
+        '-pix_fmt', 'yuv420p',
+        outPath
+      ])
+      let err = ''
+      p.stderr.on('data', d => err += d.toString())
+      p.on('close', code => {
+        if (code === 0) resolve()
+        else reject(new Error(err))
+      })
+    })
+
+    const videoBuffer = require('fs').readFileSync(outPath)
+    await conn.sendMessage(chat, {
+      video: videoBuffer,
+      mimetype: 'video/mp4',
+      caption
+    }, { quoted: m })
+
+    require('fs').unlinkSync(imgPath)
+    require('fs').unlinkSync(audPath)
+    require('fs').unlinkSync(outPath)
+    
+    return true
+  } catch (e) {
+    console.log('Error combinando imagen+audio:', e.message)
+    return false
+  }
+}
+
 async function resolveImages(images) {
   const valid = []
 
@@ -821,6 +878,13 @@ export default {
         const isSlideshow = playableVideos.length === 0 && validImages.length > 0
 
         if (isSlideshow) {
+          if (media.audio && isValidUrl(media.audio)) {
+            const combined = await combineImageAndAudioToVideo(conn, m.chat, m, validImages[0], media.audio, caption)
+            if (combined) {
+              await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
+              return
+            }
+          }
           await sendImagesWithFallback(conn, m.chat, m, validImages, caption)
           await sendAudioIfAvailable(conn, m.chat, m, media.audio)
         } else {
