@@ -51,11 +51,11 @@ export async function processFishingShopButton(conn, m) {
   const botId = conn.user.id.split(':')[0] + '@s.whatsapp.net'
   const currency = global.db.data.settings[botId]?.currency || 'MONEDA'
   
-  let buttonId = null
-  if (m.message?.buttonsResponseMessage) {
+  let buttonId = m.body || m.text || null
+  if (m.message?.buttonsResponseMessage?.selectedButtonId) {
     buttonId = m.message.buttonsResponseMessage.selectedButtonId
   }
-  if (m.message?.templateButtonReplyMessage) {
+  if (m.message?.templateButtonReplyMessage?.selectedId) {
     buttonId = m.message.templateButtonReplyMessage.selectedId
   }
   if (m.message?.interactiveResponseMessage) {
@@ -63,14 +63,22 @@ export async function processFishingShopButton(conn, m) {
       const paramsJson = m.message.interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson
       if (paramsJson) {
         const params = JSON.parse(paramsJson)
-        buttonId = params.id
+        if (params?.id) buttonId = params.id
       }
     } catch (e) {}
   }
   
-  if (!buttonId || !buttonId.startsWith('shop_')) return false
+  console.log('[PESCADERIA] buttonId:', buttonId)
+  
+  if (!buttonId || (!buttonId.startsWith('shop_') && !buttonId.startsWith('buy_'))) {
+    console.log('[PESCADERIA] No procesar, buttonId:', buttonId)
+    return false
+  }
   
   const chat = global.db.data.chats[m.chat]
+  if (!chat || !chat.users || !chat.users[m.sender]) {
+    return conn.sendMessage(m.chat, { text: 'Error: usuario no encontrado. Usa .pescaderia primero.' }, { quoted: m })
+  }
   const user = chat.users[m.sender]
   user.coins ||= 0
   
