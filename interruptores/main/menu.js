@@ -12,23 +12,31 @@ import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
 const execAsync = promisify(exec);
 
+
+const ptvCache = new Map();
+
 async function toVideoNote(url) {
+  if (ptvCache.has(url)) return ptvCache.get(url);
+
   const tmpIn = `/tmp/ptv_in_${Date.now()}.mp4`;
   const tmpOut = `/tmp/ptv_out_${Date.now()}.mp4`;
   try {
     const res = await fetch(url);
     await pipeline(res.body, createWriteStream(tmpIn));
-   
     await execAsync(
-      `ffmpeg -y -i ${tmpIn} -t 60 -vf "crop=min(iw\\,ih):min(iw\\,ih),scale=480:480" -c:v libx264 -preset fast -c:a aac -movflags +faststart ${tmpOut}`
+      `ffmpeg -y -threads 1 -i ${tmpIn} -t 60 -vf "crop=min(iw\\,ih):min(iw\\,ih),scale=480:480" -c:v libx264 -preset ultrafast -crf 28 -c:a aac -b:a 64k -movflags +faststart ${tmpOut}`
     );
     const buf = fs.readFileSync(tmpOut);
+    ptvCache.set(url, buf);
     return buf;
   } finally {
     if (fs.existsSync(tmpIn)) fs.unlinkSync(tmpIn);
     if (fs.existsSync(tmpOut)) fs.unlinkSync(tmpOut);
   }
 }
+
+
+toVideoNote(mainMenuImage).catch(() => {});
 
 function normalize(text = '') {
   text = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
