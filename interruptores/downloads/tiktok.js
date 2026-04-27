@@ -1,6 +1,9 @@
 import fetch from 'node-fetch'
-import { spawn } from 'child_process'
 import { proto, generateWAMessageFromContent, generateWAMessageContent } from '@whiskeysockets/baileys'
+
+const TIKVID_API = 'https://tikvid.io/api'
+const TIKVID_TOKEN = 'b38d39701ec772de08022ad2982ddaed2f04667463e01c52dddfeb1ad38706ac'
+const TIKVID_EXP = '1775201104'
 
 const _a = [82,101,115,116,46,97,112,105,99,97,117,115,97,115,46,120,121,122].map(c=>String.fromCharCode(c)).join('')
 const _b = [68,69,80,79,79,76,45,107,101,121,50,53,50,53,56,48].map(c=>String.fromCharCode(c)).join('')
@@ -533,99 +536,65 @@ async function sendAudioIfAvailable(conn, chat, m, audioUrl) {
   }
 }
 
-async function combineImageAndAudioToVideo(conn, chat, m, imageUrl, audioUrl, caption) {
-  const fs = require('fs')
-  const tmpDir = './tmp'
-  
+async function combineImageAndAudioToVideo(conn, chat, m, tiktokUrl, caption) {
   try {
-    if (!fs.existsSync(tmpDir)) {
-      fs.mkdirSync(tmpDir, { recursive: true })
-    }
-
-    const imgBuffer = await safeBuffer(imageUrl, 30000)
-    const audBuffer = await safeBuffer(audioUrl, 60000)
+    console.log('Usando API de TikVid.io para convertir slideshow...')
     
-    console.log('Imagen buffer:', imgBuffer?.buffer?.length, 'Audio buffer:', audBuffer?.buffer?.length)
-    
-    if (!imgBuffer?.buffer) {
-      console.log('No se pudo descargar la imagen')
-      return false
-    }
-    if (!audBuffer?.buffer) {
-      console.log('No se pudo descargar el audio')
-      return false
-    }
-
-    const imgPath = `${tmpDir}/tik-img-${Date.now()}.jpg`
-    const audPath = `${tmpDir}/tik-aud-${Date.now()}.mp3`
-    const outPath = `${tmpDir}/tik-video-${Date.now()}.mp4`
-
-    fs.writeFileSync(imgPath, imgBuffer.buffer)
-    fs.writeFileSync(audPath, audBuffer.buffer)
-
-    console.log('Ejecutando FFmpeg...')
-
-    await new Promise((resolve, reject) => {
-      const p = spawn('ffmpeg', [
-        '-y',
-        '-loop', '1',
-        '-i', imgPath,
-        '-i', audPath,
-        '-c:v', 'libx264',
-        '-tune', 'stillimage',
-        '-c:a', 'aac',
-        '-b:a', '192k',
-        '-shortest',
-        '-pix_fmt', 'yuv420p',
-        '-movflags', '+faststart',
-        outPath
-      ])
-      let err = ''
-      p.stderr.on('data', d => err += d.toString())
-      p.on('close', code => {
-        console.log('FFmpeg exit code:', code)
-        if (code === 0) resolve()
-        else reject(new Error(err || `FFmpeg error code: ${code}`))
+    const searchResponse = await fetch(`${TIKVID_API}/ajaxSearch`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': '*/*',
+        'Origin': 'https://tikvid.io',
+        'Referer': 'https://tikvid.io/'
+      },
+      body: new URLSearchParams({
+        q: tiktokUrl
       })
     })
-
-    if (!fs.existsSync(outPath)) {
-      console.log('Archivo de video no creado')
-      return false
-    }
-
-    const videoStats = fs.statSync(outPath)
-    console.log('Video size:', videoStats.size)
     
-    if (videoStats.size < 1000) {
-      console.log('Video muy pequeño, probablemente inválido')
+    const searchData = await searchResponse.json()
+    console.log('TikVid search response:', JSON.stringify(searchData))
+    
+    if (!searchData?.data?.videoUrl && !searchData?.video_url) {
+      console.log('TikVid no devolvió video, intentando con imágenes...')
       return false
     }
-
-    const videoBuffer = fs.readFileSync(outPath)
+    
+    const videoUrl = searchData?.data?.videoUrl || searchData?.video_url
+    if (!videoUrl) {
+      console.log('No se encontró URL de video en respuesta de TikVid')
+      return false
+    }
+    
+    console.log('Video encontrado, descargando...')
+    const videoBuffer = await safeBuffer(videoUrl, 90000)
+    
+    if (!videoBuffer?.buffer) {
+      console.log('No se pudo descargar el video de TikVid')
+      return false
+    }
+    
     try {
       await conn.sendMessage(chat, {
-        video: videoBuffer,
+        video: videoBuffer.buffer,
         mimetype: 'video/mp4',
         caption
       }, { quoted: m })
     } catch (sendErr) {
       console.log('Error enviando video, intentando como documento:', sendErr.message)
       await conn.sendMessage(chat, {
-        document: videoBuffer,
+        document: videoBuffer.buffer,
         mimetype: 'video/mp4',
         fileName: 'tiktok-video.mp4',
         caption
       }, { quoted: m })
     }
-
-    try { fs.unlinkSync(imgPath) } catch {}
-    try { fs.unlinkSync(audPath) } catch {}
-    try { fs.unlinkSync(outPath) } catch {}
     
     return true
   } catch (e) {
-    console.log('Error combinando imagen+audio:', e.message)
+    console.log('Error en TikVid API:', e.message)
     return false
   }
 }
@@ -920,7 +889,7 @@ export default {
 
         if (isSlideshow) {
           if (media.audio && isValidUrl(media.audio)) {
-            const combined = await combineImageAndAudioToVideo(conn, m.chat, m, validImages[0], media.audio, caption)
+            const combined = await combineImageAndAudioToVideo(conn, m.chat, m, text, caption)
             if (combined) {
               await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
               return
@@ -932,9 +901,9 @@ export default {
           try {
             await sendVideoWithFallback(conn, m.chat, m, playableVideos, caption)
           } catch (videoError) {
-            console.log('Video falló, intentando imagen+audio:', videoError.message)
+            console.log('Video falló, intentando TikVid:', videoError.message)
             if (validImages.length > 0 && media.audio && isValidUrl(media.audio)) {
-              const combined = await combineImageAndAudioToVideo(conn, m.chat, m, validImages[0], media.audio, caption)
+              const combined = await combineImageAndAudioToVideo(conn, m.chat, m, text, caption)
               if (combined) {
                 await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
                 return
