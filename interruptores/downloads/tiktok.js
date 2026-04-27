@@ -887,9 +887,27 @@ export default {
           }
           await sendImagesWithFallback(conn, m.chat, m, validImages, caption)
           await sendAudioIfAvailable(conn, m.chat, m, media.audio)
+        } else if (playableVideos.length > 0) {
+          try {
+            await sendVideoWithFallback(conn, m.chat, m, playableVideos, caption)
+          } catch (videoError) {
+            console.log('Video falló, intentando imagen+audio:', videoError.message)
+            if (validImages.length > 0 && media.audio && isValidUrl(media.audio)) {
+              const combined = await combineImageAndAudioToVideo(conn, m.chat, m, validImages[0], media.audio, caption)
+              if (combined) {
+                await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
+                return
+              }
+            }
+            if (validImages.length > 0) {
+              await sendImagesWithFallback(conn, m.chat, m, validImages, caption)
+              await sendAudioIfAvailable(conn, m.chat, m, media.audio)
+            } else {
+              throw videoError
+            }
+          }
         } else {
-          if (playableVideos.length === 0) throw new Error('No se encontro video descargable')
-          await sendVideoWithFallback(conn, m.chat, m, playableVideos, caption)
+          throw new Error('No se encontró video descargable')
         }
 
         await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })

@@ -209,34 +209,10 @@ class SubBotManager {
             removeFromConns(sessionId);
 
             if (reason === 401 || reason === 405) {
-              const intento = reintentos.get(sessionId) || 0;
-              const credsPath = path.join(sessionFolder, 'creds.json');
-              const stats = fs.existsSync(credsPath) ? fs.statSync(credsPath) : null;
-              const isNewSession = stats ? (Date.now() - stats.mtimeMs) < 300000 : false;
-              const maxRetries = isNewSession ? 2 : 5;
-
-              if (intento >= maxRetries) {
-                console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) cerrado. Credenciales no válidas después de ${intento} intentos (${reason}). Eliminando sesión.\n└──────────────────────────────────┘`));
-                try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
-                reintentos.delete(sessionId);
-                this.startingSubbots.delete(sessionId);
-                return;
-              }
-              console.log(chalk.yellow(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) credenciales inválidas (${reason}). Reintentando (${intento + 1}/${maxRetries})...\n└──────────────────────────────────┘`));
-              reintentos.set(sessionId, intento + 1);
-              this.startingSubbots.add(sessionId);
-              const delayMs = 5000 * (intento + 1);
-              setTimeout(async () => {
-                try {
-                  this.startingSubbots.delete(sessionId);
-                  if (fs.existsSync(sessionFolder) && fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
-                    await this.startSubBot(sessionId);
-                  }
-                } catch (e) {
-                  console.error(chalk.red(`💙 Error en retry ${sessionId}:`), e.message);
-                  this.startingSubbots.delete(sessionId);
-                }
-              }, delayMs);
+              console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) credenciales inválidas (${reason}). Eliminando sesión.\n│ El usuario debe escanear QR nuevamente.\n└──────────────────────────────────┘`));
+              try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
+              reintentos.delete(sessionId);
+              this.startingSubbots.delete(sessionId);
               return;
             }
 
