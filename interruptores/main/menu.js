@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { getDevice, generateWAMessageFromContent, proto } from '@whiskeysockets/baileys';
+import { getDevice } from '@whiskeysockets/baileys';
 import fs from 'fs';
 import axios from 'axios';
 import moment from 'moment-timezone';
@@ -159,48 +159,32 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
           }, { quoted: m });
         }
       } else {
-        
-        const ptvBuffer = await toVideoNote(mainMenuImage);
 
        
-        const uploaded = await client.uploadPreKeys();
-        const videoMsg = await client.sendMessage(m.chat, {
+        const ptvBuffer = await toVideoNote(mainMenuImage);
+        const ptvMsg = await client.sendMessage(m.chat, {
           video: ptvBuffer,
           ptv: true,
           mimetype: 'video/mp4'
-        }, { upload: client.waUploadToServer });
+        }, { quoted: m });
 
-        const videoProto = proto.Message.VideoMessage.create({
-          ...videoMsg?.message?.videoMessage,
-          ptvBit: true,
-        });
-
-        const fakeMsg = generateWAMessageFromContent(m.chat, {
-          buttonsMessage: proto.Message.ButtonsMessage.create({
-            contentText: messageContent,
-            footerText: '💙 Hatsune Miku Bot',
-            buttons: buttons.map(b => proto.Message.ButtonsMessage.Button.create({
-              buttonId: b.buttonId,
-              buttonText: proto.Message.ButtonsMessage.Button.ButtonText.create({
-                displayText: b.buttonText.displayText
-              }),
-              type: proto.Message.ButtonsMessage.Button.Type.RESPONSE
-            })),
-            headerType: proto.Message.ButtonsMessage.HeaderType.VIDEO,
-            videoMessage: videoProto,
-            contextInfo: proto.ContextInfo.create({
-              mentionedJid: [m.sender],
-              isForwarded: true,
-              forwardedNewsletterMessageInfo: proto.ContextInfo.ForwardedNewsletterMessageInfo.create({
-                newsletterJid: canalId,
-                serverMessageId: 0,
-                newsletterName: canalName
-              })
-            })
-          })
-        }, { userJid: client.user.id });
-
-        await client.relayMessage(m.chat, fakeMsg.message, { messageId: fakeMsg.key.id });
+       
+        await client.sendMessage(m.chat, {
+          image: { url: 'https://file.garden/ae-9DPf0ekWVe7ex/menu.png' },
+          caption: messageContent,
+          footer: '💙 Hatsune Miku Bot',
+          buttons: buttons,
+          headerType: 4,
+          contextInfo: {
+            mentionedJid: [m.sender],
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+              newsletterJid: canalId,
+              serverMessageId: '',
+              newsletterName: canalName
+            }
+          }
+        }, { quoted: ptvMsg });
       }
     } catch (e) {
       await m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
