@@ -47,8 +47,8 @@ export default {
   category: 'subbots',
   run: async (client, m, args, usedPrefix, command) => {
     const isQR = /^(qr)$/i.test(command);
-    const rtx = '💙 *HATSUNE MIKU* 💙\n\n`💌` Vincula tu *cuenta* usando el *codigo.*\n\n> ✥ Sigue las *instrucciones*\n\n*›* Click en los *3 puntos*\n*›* Toque *dispositivos vinculados*\n*›* Vincular *nuevo dispositivo*\n*›* Selecciona *Vincular con el número de teléfono*\n\nꕤ *`Importante`*\n> ₊·( 🜸 ) ➭ Este *Código* solo funciona en el *número que lo solicito*';
-    const rtx2 = '💙 *HATSUNE MIKU* 💙\n\n`💌` Vincula tu *cuenta* usando *codigo qr.*\n\n> ✥ Sigue las *instrucciones*\n\n*›* Click en los *3 puntos*\n*›* Toque *dispositivos vinculados*\n*›* Vincular *nuevo dispositivo*\n*›* Escanea el código *QR.*\n\n> ₊·( 🜸 ) ➭ Recuerda que no es recomendable usar tu cuenta principal para registrar un socket.';
+    const rtx = '💙 *HATSUNE MIKU* 💙\n\n`💌` Vincula tu *cuenta* usando el *codigo.*\n\n> 💮 Sigue las *instrucciones*\n\n*›* Click en los *3 puntos*\n*›* Toque *dispositivos vinculados*\n*›* Vincular *nuevo dispositivo*\n*›* Selecciona *Vincular con el número de teléfono*\n\n💙 *`Importante`*\n>📛 Este *Código* solo funciona en el *número que lo solicito*';
+    const rtx2 = '💙 *HATSUNE MIKU* 💙\n\n`💌` Vincula tu *cuenta* usando *codigo qr.*\n\n> 💮 Sigue las *instrucciones*\n\n*›* Click en los *3 puntos*\n*›* Toque *dispositivos vinculados*\n*›* Vincular *nuevo dispositivo*\n*›* Escanea el código *QR.*\n\n>💙 Recuerda que no es recomendable usar tu cuenta principal para registrar un socket.';
     const caption = isQR ? rtx2 : rtx;
     if (!global.db.data.users[m.sender]) global.db.data.users[m.sender] = {};
     const lastSubTime = global.db.data.users[m.sender].Subs || 0;
@@ -130,7 +130,7 @@ export default {
           creds: state.creds,
           keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
         },
-        markOnlineOnConnect: true,
+        markOnlineOnConnect: false,
         generateHighQualityLinkPreview: true,
         syncFullHistory: false,
         getMessage: async () => '',
@@ -194,7 +194,7 @@ export default {
       ;(async () => {
         if (isQR) return;
         try {
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 3000));
           if (done) return;
 
           const code          = await sock.requestPairingCode(phoneNumber);
