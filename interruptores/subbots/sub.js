@@ -269,23 +269,10 @@ export default {
 
       attachEvents(sock);
 
-      const waitForWS = () => new Promise((resolve, reject) => {
-        let tries = 0;
-        const check = setInterval(() => {
-          tries++;
-          if (done)                       { clearInterval(check); return reject(new Error('Cancelado')); }
-          if (sock?.ws?.readyState === 1) { clearInterval(check); return resolve(); }
-          if (tries > 60)                 { clearInterval(check); return reject(new Error('WS no abrió')); }
-        }, 500);
-      });
-
       ;(async () => {
         if (isQR) return;
         try {
-          await waitForWS();
-          if (done) return;
-
-          await new Promise(r => setTimeout(r, 1500));
+          await new Promise(r => setTimeout(r, 3000));
           if (done) return;
 
           const { state } = await useMultiFileAuthState(sessionFolder);
