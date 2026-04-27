@@ -151,13 +151,15 @@ export default async (client, m) => {
           const kicker = anu.author;
           const isKick = kicker && kicker !== validJid;
 
-          const kickedParticipant = metadata?.participants?.find(p => p.id === validJid || p.phoneNumber === validJid || p.jid === validJid);
-          const kickedName = kickedParticipant?.notify || kickedParticipant?.name || phone;
+          const kickedParticipant = metadata?.participants?.find(p => p.id === validJid || p.phoneNumber === validJid || p.jid === validJid || p.lid === validJid);
+          const realPhone = kickedParticipant?.phoneNumber || kickedParticipant?.id?.split('@')[0] || phone;
+          const kickedName = kickedParticipant?.notify || kickedParticipant?.name || realPhone;
 
-          const kickerParticipant = isKick ? metadata?.participants?.find(p => p.id === kicker || p.phoneNumber === kicker || p.jid === kicker) : null;
-          const kickerName = kickerParticipant?.notify || kickerParticipant?.name || (isKick ? kicker.split('@')[0] : '');
+          const kickerParticipant = isKick ? metadata?.participants?.find(p => p.id === kicker || p.phoneNumber === kicker || p.jid === kicker || p.lid === kicker) : null;
+          const kickerRealPhone = kickerParticipant?.phoneNumber || kickerParticipant?.id?.split('@')[0] || (isKick ? kicker.split('@')[0] : '');
+          const kickerName = kickerParticipant?.notify || kickerParticipant?.name || kickerRealPhone;
 
-          const customMessage = chat?.sGoodbye ? chat.sGoodbye.replace(/{usuario}/g, `@${phone}`).replace(/{grupo}/g, metadata.subject).replace(/{desc}/g, metadata?.desc || 'Sin descripción') : '';
+          const customMessage = chat?.sGoodbye ? chat.sGoodbye.replace(/{usuario}/g, `@${realPhone}`).replace(/{grupo}/g, metadata.subject).replace(/{desc}/g, metadata?.desc || 'Sin descripción') : '';
           const goodbyeImage = 'https://i.pinimg.com/736x/4a/f2/fa/4af2fad2fa327fca8a1c20c9ab4baadc.jpg';
 
           queueWelcome(async () => {
