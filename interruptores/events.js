@@ -198,9 +198,8 @@ export default async (client, m) => {
                   mentionedJid: [validJid, kicker, ...groupAdmins.map(v => v.id)]
                 };
                 await safeSend(client, anu.id, { image: { url: kickImage }, caption: kickCaption, contextInfo: kickContextInfo })
-              }
-
-              const caption = customMessage || `╭━━━🌸━━━💙━━━🌸━━━╮
+              } else if (!isKick && (anu.action === 'remove' || anu.action === 'leave')) {
+                const caption = customMessage || `╭━━━🌸━━━💙━━━🌸━━━╮
 ┃  🎵 *¡ Hasta pronto !* 🎵
 ╰━━━🌸━━━💙━━━🌸━━━╯
 │
@@ -212,7 +211,8 @@ export default async (client, m) => {
 │ 🌸 Fue un placer tenerte aquí.
 │ 💙 ¡Esperamos verte de nuevo! ✨
 ╰━━━🌸━━━💙━━━🌸━━━╯`;
-              await safeSend(client, anu.id, { image: { url: goodbyeImage }, caption, contextInfo })
+                await safeSend(client, anu.id, { image: { url: goodbyeImage }, caption, contextInfo })
+              }
             } catch {}
           })
         }
@@ -284,10 +284,11 @@ export default async (client, m) => {
   if (m.messageStubType == 26) {
     await safeSend(client, id, { text: `💙 *@${phone}* cambió los ajustes del grupo para permitir que ${m.messageStubParameters[0] === 'on' ? 'solo los administradores puedan enviar mensajes al grupo.' : 'todos los miembros puedan enviar mensajes al grupo.'}`, contextInfo })
   }
-  if (m.messageStubType == 27) {
+  const botNumber = client.user?.id?.split(':')[0] + '@s.whatsapp.net'
+  if (m.messageStubType == 27 && actor !== botNumber) {
     await safeSend(client, id, { text: `💙 *@${phone}* cerró el grupo.`, contextInfo })
   }
-  if (m.messageStubType == 28) {
+  if (m.messageStubType == 28 && actor !== botNumber) {
     await safeSend(client, id, { text: `💙 *@${phone}* abrió el grupo.`, contextInfo })
   }
 })

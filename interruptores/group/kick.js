@@ -13,7 +13,7 @@ export default {
     const ownerBot = global.owner[0][0] + '@s.whatsapp.net'
     const participant = groupInfo.participants.find((p) => p.phoneNumber === user || p.jid === user || p.id === user || p.lid === user)
     if (!participant) {
-      return client.sendMessage(m.chat, { text: `💙 *@${user.split('@')[0]}* ya no está en el grupo.`, mentions: [user] }, { quoted: m })
+      return client.sendMessage(m.chat, { text: `💙 @${user.split('@')[0]} ya no está en el grupo.`, mentions: [user], ...global.miku }, { quoted: m })
     }
     if (user === client.decodeJid(client.user.id)) {
       return m.reply('💙 No puedo eliminar al *bot* del grupo')
@@ -26,7 +26,7 @@ export default {
     }
     try {
       await client.groupParticipantsUpdate(m.chat, [user], 'remove')
-      await client.sendMessage(m.chat, { text: `🔰 @${user.split('@')[0]} *eliminado* correctamente`, mentions: [user] }, { quoted: m })
+      await client.sendMessage(m.chat, { text: `🔰 @${user.split('@')[0]} eliminado correctamente`, mentions: [user], ...global.miku }, { quoted: m })
     } catch (e) {
       return m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
     }
