@@ -1,39 +1,19 @@
 export const menuObject = {
 economia: `╭━━━💰 ECONOMÍA & RPG 💰━━━╮
 │ 💼 .work - Trabajar y ganar dinero
-│ 🎁 .daily - Recompensa diaria de monedas
 │ ⛏️ .mine - Minar recursos valiosos
-│ 🎰 .casino - Apostar en el casino
-│ 🪙 .cf - Cara o cruz por dinero
 │ 🎰 .slot - Máquina tragamonedas
 │ 🎲 .ruleta - Ruleta rusa por apuestas
 │ 💸 .steal - Robar dinero a usuarios
-│ ⭐ .robarxp - Robar experiencia
-│ 🏦 .bank - Ver saldo del banco
-│ 👛 .wallet - Ver cartera personal
-│ 💳 .deposit - Depositar al banco
 │ 💰 .withdraw - Retirar del banco
-│ 🤝 .transfer - Transferir dinero
-│ 🛒 .buyall - Comprar items con XP
-│ 📦 .cofre - Abrir cofre diario
-│ 📅 .weekly - Regalo semanal especial
+│ 🎫 .weekly - Regalo semanal especial
 │ 🗓️ .monthly - Regalo mensual exclusivo
-│ 🏆 .eboard - Ranking de millonarios
-│ 🗺️ .adventure - Aventurarse por el mundo
-│ ❤️‍🩹 .heal - Curar salud
 │ 🏹 .hunt - Cazar animales
-│ 🎒 .inv - Ver inventario
-│ 🏰 .dungeon - Explorar mazmorras
-│ 🏪 .tiendarpg - Tienda RPG completa
-│ 📊 .rpgstats - Estadísticas RPG
-│ 🏆 .ranking - Ranking aventureros
-│ 🎃 .halloween - Evento especial
-│ 🎄 .christmas - Regalo navideño
-│ 🦹 .crime - Trabajar como ladrón
-│ 💋 .slut - Trabajo alternativo
-│ 🎣 .fish - Pescar recursos
-│ 🏹 .hunt - Cazar en el bosque
-│ 🏰 .dungeon - Explorar mazmorras
+│ 🎯 .ppt - Piedra Papel Tijera
+│ ⛏️ .mine - Minar recursos
+│ 🧮 .math - Resolver matemáticas
+│ 🎇 .roulette - Ruleta de apuestas
+│ 🛕 .ritual - Ritual de invocación
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 gacha: `╭━━━🎯 GACHA & WAIFUS 🎯━━━╮
 │ 🎲 .rw - Invocar waifu aleatoria
@@ -41,8 +21,6 @@ gacha: `╭━━━🎯 GACHA & WAIFUS 🎯━━━╮
 │ 🛒 .v - Vender personaje
 │ 👥 .coleccion - Colección RPG
 │ 🎨 .gallery - Galería con imágenes
-│ ⚔️ .waifupvp - PvP de waifus
-│ 🎮 .ttt - Tic-Tac-Toe Tres en raya
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 downloads: `╭━━━📥 DESCARGAS 📥━━━╮
 │ 🎵 .play - Música/video de YouTube
@@ -50,7 +28,6 @@ downloads: `╭━━━📥 DESCARGAS 📥━━━╮
 │ 📷 .instagram - Posts de Instagram
 │ 💙 .facebook - Videos de Facebook
 │ 📁 .mediafire - Archivos MediaFire
-│ ☁️ .mega - Archivos MEGA
 │ 🐦 .twitter - Videos Twitter/X
 │ 🎬 .ytmp3 - YouTube a MP3
 │ 🎬 .ytmp4 - YouTube a MP4
@@ -58,9 +35,9 @@ downloads: `╭━━━📥 DESCARGAS 📥━━━╮
 │ 📦 .terabox - Archivos Terabox
 │ 🌿 .gitclone - Clonar repositorios
 │ 📲 .apk - APKs de Aptoide
-│ 📦 .npmdl - Paquetes NPM
 │ 🎥 .imagen - Imagen de URL
 │ 📁 .grive - Google Drive
+│ 🎮 .gameh - Juegos H+18
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 profile: `╭━━━📝 PERFIL & USUARIO 📝━━━╮
 │ 👤 .profile - Ver perfil completo
@@ -73,7 +50,6 @@ profile: `╭━━━📝 PERFIL & USUARIO 📝━━━╮
 │ 📄 .setdesc - Establecer descripción
 │ ❌ .deldesc - Eliminar descripción
 │ 🎮 .sethobby - Establecer hobby
-│ ❌ .delhobby - Eliminar hobby
 │ 🏆 .lb - Top usuarios por XP
 │ 📊 .level - Ver nivel actual
 │ 📈 .lboard - Ranking de niveles
@@ -81,22 +57,13 @@ profile: `╭━━━📝 PERFIL & USUARIO 📝━━━╮
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 sockets: `╭━━━⚙️ INFORMACIÓN & CONFIG ⚙️━━━╮
 │ 📡 .ping - Velocidad del bot
-│ ⏱️ .uptime - Tiempo activo
 │ 📊 .status - Estado del bot
 │ 🤖 .bots - Lista de subbots
 │ 💙 .sub - Vincular subbot
 │ 🗑️ .deletebot - Desvincular subbot
 │ ℹ️ .infobot - Información completa
-│ 📜 .script - Código fuente
-│ 👨‍💻 .staff - Desarrolladores
-│ 🌐 .links - Enlaces oficiales
-│ 💡 .suggest - Sugerir comando
+│  .suggest - Sugerir comando
 │ 🐛 .reporte - Reportar errores
-│ 💻 .sistema - Estado del sistema
-│ 🚀 .speed - Estadísticas de velocidad
-│ 👥 .views - Cantidad de usuarios
-│ 🛠️ .funciones - Ver funciones
-│ 🔄 .ds - Limpiar sesión
 │ 🚪 .leave - Salir del grupo
 │ ➕ .join - Unirse a grupo
 │ 📝 .setname - Cambiar nombre
@@ -109,8 +76,6 @@ sockets: `╭━━━⚙️ INFORMACIÓN & CONFIG ⚙️━━━╮
 │ 💰 .setcurrency - Cambiar moneda
 │ 🔤 .setprefix - Cambiar prefijo
 │ 🤖 .self - Modo self
-│ 🔄 .reload - Recargar comandos
-│ 🚪 .logout - Cerrar sesión
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 utils: `╭━━━🛠️ HERRAMIENTAS 🛠️━━━╮
 │ 🌤️ .translate - Traducir texto
@@ -134,8 +99,7 @@ grupo: `╭━━━👥 GRUPOS Solo admins 👥━━━╮
 │ ⬆️ .promote - Dar admin
 │ ⬇️ .demote - Quitar admin
 │ 🔗 .link - Enlace del grupo
-│ 🗑️ .delete - Eliminar mensaje
-│ 🔄 .revoke - Restablecer enlace
+│  .revoke - Restablecer enlace
 │ 🔓 .open - Abrir grupo
 │ 🔒 .close - Cerrar grupo
 │ ⚠️ .warn - Advertir usuario
@@ -143,15 +107,13 @@ grupo: `╭━━━👥 GRUPOS Solo admins 👥━━━╮
 │ 📋 .warns - Ver advertidos
 │ 👑 .admins - Lista de administradores
 │ ℹ️ .gp - Info del grupo
-│ 📊 .count - Contar participantes
-│ 👻 .fantasmas - Ver inactivos
+│  .fantasmas - Ver inactivos
 │ 📢 .tagall - Invocar todos
 │ 🪬 .setwelcome - Bienvenida
 │ 🪬 .setgoodbye - Despedida
 │ 📝 .setgpname - Nombre grupo
 │ 📄 .setgpdesc - Descripción grupo
 │ 🖼️ .setgpbanner - Banner grupo
-│ 🤖 .bot - Configurar bot
 │ 🎯 .setprimary - Bot primario
 │ ⚠️ .setwarnlimit - Límite warns
 │ 🔓 .enable - Activar función
@@ -180,7 +142,6 @@ nsfw: `╭━━━🔞 NSFW Solo +18 🔞━━━╮
 │ 🔞 .fuck - Follar
 │ 🔞 .violar - Violar
 │ 🔞 .grabboobs - Agarrar pechos
-│ 🔞 .grop - Manosear
 │ 🔞 .lickpussy - Lamer coño
 │ 🔞 .sixnine - Hacer 69
 │ 🔞 .spank - Dar nalgada
@@ -272,10 +233,7 @@ stickers: `╭━━━🎨 STICKERS 🎨━━━╮
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 owner: `╭━━━👑 OWNER Solo dueño 👑━━━╮
 │ 🔄 .restart - Reiniciar bot
-│ 💻 .exec - Ejecutar código
-│ 💻 .exec2 - Ejecutar código 2
 │ 🧹 .clear - Limpiar chat
-│ ➕ .add - Agregar owner
 │ 🎨 .tarjeta - Crear tarjeta
 │ 📢 .canalpost - Publicar en canal
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,

@@ -1,5 +1,5 @@
 export default {
-  command: ['ritual', 'invoke', 'invocar'],
+  command: ['ritual', 'invoke'],
   category: 'rpg',
   run: async (client, m, args, usedPrefix) => {
     const botId = client?.user?.id.split(':')[0] + '@s.whatsapp.net'
