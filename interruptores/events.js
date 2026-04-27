@@ -170,7 +170,7 @@ export default async (client, m) => {
 ╰━━━🌸━━━💙━━━🌸━━━╯
 │
 ├◦ 👤 *Expulsado* ⟶ @${phone}
-├◦ 🚫 *Expulsado por* ⟶ @${phone}
+├◦ 🚫 *Expulsado por* ⟶ @${kickerPhone}
 ├◦ 💙 *Grupo* ⟶ ${metadata.subject || 'Grupo'}
 ├◦ 🌱 *Miembros* ⟶ Ahora somos ${memberCount}
 │

@@ -16,8 +16,10 @@ export default {
     const ownerGroup = groupInfo.owner || m.chat.split`-`[0] + '@s.whatsapp.net'
     const ownerBot = global.owner[0][0] + '@s.whatsapp.net'
     const participant = groupInfo.participants.find((p) => p.id === realUser || p.phoneNumber === realUser || p.jid === realUser)
+   
+    const phone = participant?.phoneNumber || participant?.id?.split('@')[0] || realUser.split('@')[0]
     if (!participant) {
-      return client.sendMessage(m.chat, { text: `💙 @${realUser.split('@')[0]} ya no está en el grupo.`, mentions: [realUser], ...global.miku }, { quoted: m })
+      return client.sendMessage(m.chat, { text: `💙 @${phone} ya no está en el grupo.`, mentions: [realUser], ...global.miku }, { quoted: m })
     }
     if (realUser === client.decodeJid(client.user.id)) {
       return m.reply('💙 No puedo eliminar al *bot* del grupo')
@@ -28,8 +30,6 @@ export default {
     if (realUser === ownerBot) {
       return m.reply('💙 No puedo eliminar al *propietario* del bot')
     }
-   
-    const phone = participant?.phoneNumber || participant?.id?.split('@')[0] || realUser.split('@')[0]
     try {
       await client.groupParticipantsUpdate(m.chat, [realUser], 'remove')
       await client.sendMessage(m.chat, { text: `💙 @${phone} eliminado correctamente`, mentions: [realUser], ...global.miku }, { quoted: m })
