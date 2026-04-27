@@ -6,6 +6,30 @@ import moment from 'moment-timezone';
 import { bodyMenu, menuObject } from '../../nucleo/commands.js';
 import { categoryImages, categoryAliases, mainMenuImage } from '../../nucleo/menuConfig.js';
 
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { createWriteStream } from 'fs';
+import { pipeline } from 'stream/promises';
+const execAsync = promisify(exec);
+
+async function toVideoNote(url) {
+  const tmpIn = `/tmp/ptv_in_${Date.now()}.mp4`;
+  const tmpOut = `/tmp/ptv_out_${Date.now()}.mp4`;
+  try {
+    const res = await fetch(url);
+    await pipeline(res.body, createWriteStream(tmpIn));
+   
+    await execAsync(
+      `ffmpeg -y -i ${tmpIn} -t 60 -vf "crop=min(iw\\,ih):min(iw\\,ih),scale=480:480" -c:v libx264 -preset fast -c:a aac -movflags +faststart ${tmpOut}`
+    );
+    const buf = fs.readFileSync(tmpOut);
+    return buf;
+  } finally {
+    if (fs.existsSync(tmpIn)) fs.unlinkSync(tmpIn);
+    if (fs.existsSync(tmpOut)) fs.unlinkSync(tmpOut);
+  }
+}
+
 function normalize(text = '') {
   text = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
   return text.endsWith('s') ? text.slice(0, -1) : text;
@@ -84,10 +108,10 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
       if (cat) {
         
         if (categoryBanner.includes('.mp4') || categoryBanner.includes('.webm')) {
+          const ptvBuffer = await toVideoNote(categoryBanner);
           await client.sendMessage(m.chat, {
-            video: { url: categoryBanner },
-            gifPlayback: true,
-            caption: '',
+            video: ptvBuffer,
+            ptv: true,
             mimetype: 'video/mp4'
           }, { quoted: m });
           
@@ -129,10 +153,10 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
       } else {
         
         if (mainMenuImage.includes('.mp4') || mainMenuImage.includes('.webm') || mainMenuImage.includes('.gif')) {
+          const ptvBuffer = await toVideoNote(mainMenuImage);
           await client.sendMessage(m.chat, {
-            video: { url: mainMenuImage },
-            gifPlayback: true,
-            caption: '',
+            video: ptvBuffer,
+            ptv: true,
             mimetype: 'video/mp4'
           }, { quoted: m });
         }
@@ -202,7 +226,6 @@ export async function processMenuButton(conn, m) {
   }
   
   if (categoryAliases[category]) {
-    
     const alias = categoryAliases[category][0]; 
     return await menuRun(conn, m, [alias], usedPrefix, 'menu');
   }
