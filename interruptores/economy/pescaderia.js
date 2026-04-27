@@ -78,9 +78,9 @@ export async function processFishingShopButton(conn, m) {
     const currentRod = user.fishingRod || 'basic'
     
     const buttons = [
-      { buttonId: 'buy_caña mejorada', buttonText: { displayText: '🎣 Caña Mejorada - 50,000' }, type: 1 },
-      { buttonId: 'buy_caña profesional', buttonText: { displayText: '🎣 Caña Profesional - 150,000' }, type: 1 },
-      { buttonId: 'buy_caña legendaria', buttonText: { displayText: '🎣 Caña Legendaria - 500,000' }, type: 1 },
+      { buttonId: 'buy_improved', buttonText: { displayText: '🎣 Caña Mejorada - 50,000' }, type: 1 },
+      { buttonId: 'buy_pro', buttonText: { displayText: '🎣 Caña Profesional - 150,000' }, type: 1 },
+      { buttonId: 'buy_legendary', buttonText: { displayText: '🎣 Caña Legendaria - 500,000' }, type: 1 },
       { buttonId: 'shop_main', buttonText: { displayText: '🔙 Volver' }, type: 1 }
     ]
     
@@ -94,9 +94,9 @@ export async function processFishingShopButton(conn, m) {
   
   if (buttonId === 'shop_items') {
     const buttons = [
-      { buttonId: 'buy_cebos', buttonText: { displayText: '🪤 Cebos - 10,000' }, type: 1 },
-      { buttonId: 'buy_red', buttonText: { displayText: '🕸️ Red de Pesca - 25,000' }, type: 1 },
-      { buttonId: 'buy_anillo', buttonText: { displayText: '💍 Anillo de Suerte - 100,000' }, type: 1 },
+      { buttonId: 'buy_cebos', buttonText: { displayText: 'Cebos - 10,000' }, type: 1 },
+      { buttonId: 'buy_red', buttonText: { displayText: 'Red de Pesca - 25,000' }, type: 1 },
+      { buttonId: 'buy_anillo', buttonText: { displayText: 'Anillo de Suerte - 100,000' }, type: 1 },
       { buttonId: 'shop_main', buttonText: { displayText: '🔙 Volver' }, type: 1 }
     ]
     
@@ -130,7 +130,16 @@ export async function processFishingShopButton(conn, m) {
   }
   
   if (buttonId.startsWith('buy_')) {
-    const itemName = buttonId.replace('buy_', '')
+    const itemKey = buttonId.replace('buy_', '')
+    const itemMap = {
+      'improved': 'caña mejorada',
+      'pro': 'caña profesional',
+      'legendary': 'caña legendaria',
+      'cebos': 'cebos',
+      'red': 'red',
+      'anillo': 'anillo'
+    }
+    const itemName = itemMap[itemKey] || itemKey
     return buyFishingItem(conn, m, itemName, global.prefix || '.')
   }
   
