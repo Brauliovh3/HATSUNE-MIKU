@@ -26,7 +26,8 @@ export default {
     const buttons = [
       { buttonId: 'shop_canas', buttonText: { displayText: '🎣 CAÑAS' }, type: 1 },
       { buttonId: 'shop_items', buttonText: { displayText: '🪤 ARTÍCULOS' }, type: 1 },
-      { buttonId: 'shop_miEquipo', buttonText: { displayText: '🎒 MI EQUIPO' }, type: 1 }
+      { buttonId: 'shop_miEquipo', buttonText: { displayText: '🎒 MI EQUIPO' }, type: 1 },
+      { buttonId: 'shop_main', buttonText: { displayText: '🔙 VOLVER' }, type: 1 }
     ]
     
     const rodName = { basic: 'Básica', improved: 'Mejorada', pro: 'Profesional', legendary: 'Legendaria' }[user.fishingRod] || 'Básica'
@@ -94,9 +95,9 @@ export async function processFishingShopButton(conn, m) {
   
   if (buttonId === 'shop_items') {
     const buttons = [
-      { buttonId: 'buy_cebos', buttonText: { displayText: 'Cebos - 10,000' }, type: 1 },
-      { buttonId: 'buy_red', buttonText: { displayText: 'Red de Pesca - 25,000' }, type: 1 },
-      { buttonId: 'buy_anillo', buttonText: { displayText: 'Anillo de Suerte - 100,000' }, type: 1 },
+      { buttonId: 'buy_cebos', buttonText: { displayText: '🪤 Cebos - 10,000' }, type: 1 },
+      { buttonId: 'buy_red', buttonText: { displayText: '🕸️ Red de Pesca - 25,000' }, type: 1 },
+      { buttonId: 'buy_anillo', buttonText: { displayText: '💍 Anillo de Suerte - 100,000' }, type: 1 },
       { buttonId: 'shop_main', buttonText: { displayText: '🔙 Volver' }, type: 1 }
     ]
     

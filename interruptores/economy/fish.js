@@ -88,7 +88,9 @@ export default {
 ${fishData.emoji} *RAREZA:* ${rarityLabel}
 🐠 *Pez:* ${fishName}
 💰 *Recompensa:* 🌱${reward.toLocaleString()} ${currency}
-🎣 *Caña:* ${rod.name}`
+🎣 *Caña:* ${rod.name}
+
+💡 *Mejora tu equipo:* ${usedPrefix}pescaderia`
 
     if (fishData.image) {
       await client.sendMessage(m.chat, { image: { url: fishData.image }, caption }, { quoted: m })
