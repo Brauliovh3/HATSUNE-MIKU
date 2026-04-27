@@ -92,7 +92,15 @@ export default async (client, m) => {
         if (!validJid || typeof validJid !== 'string' || !validJid.includes('@')) {
           continue;
         }
-        
+
+        // Convertir LID a JID real si es necesario
+        if (validJid.endsWith('@lid')) {
+          try {
+            const realJid = client.findJidByLid ? client.findJidByLid(validJid) : null;
+            if (realJid) validJid = realJid;
+          } catch {}
+        }
+
         const phone = validJid.split('@')[0];
         
         let pp = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg';
@@ -284,6 +292,7 @@ export default async (client, m) => {
   if (m.messageStubType == 26) {
     await safeSend(client, id, { text: `💙 *@${phone}* cambió los ajustes del grupo para permitir que ${m.messageStubParameters[0] === 'on' ? 'solo los administradores puedan enviar mensajes al grupo.' : 'todos los miembros puedan enviar mensajes al grupo.'}`, contextInfo })
   }
+  /* Desactivado temporalmente - causa conflictos con eventos de kick
   const botNumber = client.decodeJid(client.user?.id)
   if (m.messageStubType == 27 && actor !== botNumber) {
     await safeSend(client, id, { text: `💙 *@${phone}* cerró el grupo.`, contextInfo })
@@ -291,5 +300,6 @@ export default async (client, m) => {
   if (m.messageStubType == 28 && actor !== botNumber) {
     await safeSend(client, id, { text: `💙 *@${phone}* abrió el grupo.`, contextInfo })
   }
+  */
 })
 }
