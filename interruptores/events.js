@@ -148,11 +148,39 @@ export default async (client, m) => {
         }
         
         if ((anu.action === 'remove' || anu.action === 'leave') && (!primaryBotId || primaryBotId === botId)) {
+          const kicker = anu.author;
+          const isKick = kicker && kicker !== validJid;
+          const kickerPhone = isKick ? kicker.split('@')[0] : null;
+
           const customMessage = chat?.sGoodbye ? chat.sGoodbye.replace(/{usuario}/g, `@${phone}`).replace(/{grupo}/g, metadata.subject).replace(/{desc}/g, metadata?.desc || 'Sin descripción') : '';
           const goodbyeImage = 'https://i.pinimg.com/736x/4a/f2/fa/4af2fad2fa327fca8a1c20c9ab4baadc.jpg';
 
           queueWelcome(async () => {
             try {
+              if (isKick && chat?.alerts) {
+                const kickContextInfo = {
+                  isForwarded: true,
+                  forwardedNewsletterMessageInfo: {
+                    newsletterJid: botSettings.id || '120363315369913363@newsletter',
+                    serverMessageId: '0',
+                    newsletterName: botSettings.nameid || '💙 HATSUNE MIKU CHANNEL💙'
+                  },
+                  externalAdReply: {
+                    title: botSettings.namebot || 'HATSUNE MIKU',
+                    body: global.dev || '© 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ)',
+                    mediaUrl: null,
+                    description: null,
+                    previewType: 'PHOTO',
+                    thumbnailUrl: botSettings.icon || 'https://i.pinimg.com/736x/30/42/b8/3042b89ced13fefda4e75e3bc6dc2a57.jpg',
+                    sourceUrl: botSettings.link || 'https://www.whatsapp.com/channel/0029VajYamSIHphMAl3ABi1o',
+                    mediaType: 1,
+                    renderLargerThumbnail: false
+                  },
+                  mentionedJid: [validJid, kicker, ...groupAdmins.map(v => v.id)]
+                };
+                await safeSend(client, anu.id, { text: `💙 *@${phone}* ha sido expulsado del grupo por *@${kickerPhone}*.`, contextInfo: kickContextInfo })
+              }
+
               const caption = customMessage || `╭━━━🌸━━━💙━━━🌸━━━╮
 ┃  🎵 *¡ Hasta pronto !* 🎵
 ╰━━━🌸━━━💙━━━🌸━━━╯
@@ -196,26 +224,52 @@ export default async (client, m) => {
   const groupAdmins = groupMetadata?.participants.filter(p => (p.admin === 'admin' || p.admin === 'superadmin')) || []
   const participant = groupMetadata?.participants.find(p => p.id === actor)
   const userName = participant?.notify || participant?.name || phone
+
+  const botSettings = global.db.data.settings[botId] || {};
   const contextInfo = {
+    isForwarded: true,
+    forwardedNewsletterMessageInfo: {
+      newsletterJid: botSettings.id || '120363315369913363@newsletter',
+      serverMessageId: '0',
+      newsletterName: botSettings.nameid || '💙 HATSUNE MIKU CHANNEL💙'
+    },
+    externalAdReply: {
+      title: botSettings.namebot || 'HATSUNE MIKU',
+      body: global.dev || '© 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ)',
+      mediaUrl: null,
+      description: null,
+      previewType: 'PHOTO',
+      thumbnailUrl: botSettings.icon || 'https://i.pinimg.com/736x/30/42/b8/3042b89ced13fefda4e75e3bc6dc2a57.jpg',
+      sourceUrl: botSettings.link || 'https://www.whatsapp.com/channel/0029VajYamSIHphMAl3ABi1o',
+      mediaType: 1,
+      renderLargerThumbnail: false
+    },
     mentionedJid: [actor, ...groupAdmins.map(v => v.id)]
   }
+
   if (m.messageStubType == 21) {
-    await safeSend(client, id, { text: `💙 @${phone} cambió el nombre del grupo a *${m.messageStubParameters[0]}*`, contextInfo })
+    await safeSend(client, id, { text: `💙 *@${phone}* cambió el nombre del grupo a *${m.messageStubParameters[0]}*`, contextInfo })
   }
   if (m.messageStubType == 22) {
-    await safeSend(client, id, { text: `💙 @${phone} cambió el icono del grupo.`, contextInfo })
+    await safeSend(client, id, { text: `💙 *@${phone}* cambió el icono del grupo.`, contextInfo })
   }
   if (m.messageStubType == 23) {
-    await safeSend(client, id, { text: `💙 @${phone} restableció el enlace del grupo.`, contextInfo })
+    await safeSend(client, id, { text: `💙 *@${phone}* restableció el enlace del grupo.`, contextInfo })
   }
   if (m.messageStubType == 24) {
-    await safeSend(client, id, { text: `💙 @${phone} cambió la descripción del grupo.`, contextInfo })
+    await safeSend(client, id, { text: `💙 *@${phone}* cambió la descripción del grupo.`, contextInfo })
   }
   if (m.messageStubType == 25) {
-    await safeSend(client, id, { text: `💙 @${phone} cambió los ajustes del grupo para permitir que ${m.messageStubParameters[0] == 'on' ? 'solo admins' : 'todos'} puedan configurar el grupo.`, contextInfo })
+    await safeSend(client, id, { text: `💙 *@${phone}* cambió los ajustes del grupo para permitir que ${m.messageStubParameters[0] == 'on' ? 'solo admins' : 'todos'} puedan configurar el grupo.`, contextInfo })
   }
   if (m.messageStubType == 26) {
-    await safeSend(client, id, { text: `💙 @${phone} cambió los ajustes del grupo para permitir que ${m.messageStubParameters[0] === 'on' ? 'solo los administradores puedan enviar mensajes al grupo.' : 'todos los miembros puedan enviar mensajes al grupo.'}`, contextInfo })
+    await safeSend(client, id, { text: `💙 *@${phone}* cambió los ajustes del grupo para permitir que ${m.messageStubParameters[0] === 'on' ? 'solo los administradores puedan enviar mensajes al grupo.' : 'todos los miembros puedan enviar mensajes al grupo.'}`, contextInfo })
+  }
+  if (m.messageStubType == 27) {
+    await safeSend(client, id, { text: `💙 *@${phone}* cerró el grupo.`, contextInfo })
+  }
+  if (m.messageStubType == 28) {
+    await safeSend(client, id, { text: `💙 *@${phone}* abrió el grupo.`, contextInfo })
   }
 })
 }
