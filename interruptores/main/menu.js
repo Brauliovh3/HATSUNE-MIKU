@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { getDevice } from '@whiskeysockets/baileys';
+import { getDevice, generateWAMessageFromContent, proto } from '@whiskeysockets/baileys';
 import fs from 'fs';
 import axios from 'axios';
 import moment from 'moment-timezone';
@@ -162,26 +162,45 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
         
         const ptvBuffer = await toVideoNote(mainMenuImage);
 
-        await client.sendMessage(m.chat, {
+       
+        const uploaded = await client.uploadPreKeys();
+        const videoMsg = await client.sendMessage(m.chat, {
           video: ptvBuffer,
-          mimetype: 'video/mp4',
-          caption: messageContent,
-          footer: '💙 Hatsune Miku Bot',
-          buttons: buttons,
-          headerType: 4,
-          gifPlayback: false,
-          width: 480,
-          height: 480,
-          contextInfo: {
-            mentionedJid: [m.sender],
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: canalId,
-              serverMessageId: '',
-              newsletterName: canalName
-            }
-          }
-        }, { quoted: m });
+          ptv: true,
+          mimetype: 'video/mp4'
+        }, { upload: client.waUploadToServer });
+
+        const videoProto = proto.Message.VideoMessage.create({
+          ...videoMsg?.message?.videoMessage,
+          ptvBit: true,
+        });
+
+        const fakeMsg = generateWAMessageFromContent(m.chat, {
+          buttonsMessage: proto.Message.ButtonsMessage.create({
+            contentText: messageContent,
+            footerText: '💙 Hatsune Miku Bot',
+            buttons: buttons.map(b => proto.Message.ButtonsMessage.Button.create({
+              buttonId: b.buttonId,
+              buttonText: proto.Message.ButtonsMessage.Button.ButtonText.create({
+                displayText: b.buttonText.displayText
+              }),
+              type: proto.Message.ButtonsMessage.Button.Type.RESPONSE
+            })),
+            headerType: proto.Message.ButtonsMessage.HeaderType.VIDEO,
+            videoMessage: videoProto,
+            contextInfo: proto.ContextInfo.create({
+              mentionedJid: [m.sender],
+              isForwarded: true,
+              forwardedNewsletterMessageInfo: proto.ContextInfo.ForwardedNewsletterMessageInfo.create({
+                newsletterJid: canalId,
+                serverMessageId: 0,
+                newsletterName: canalName
+              })
+            })
+          })
+        }, { userJid: client.user.id });
+
+        await client.relayMessage(m.chat, fakeMsg.message, { messageId: fakeMsg.key.id });
       }
     } catch (e) {
       await m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
