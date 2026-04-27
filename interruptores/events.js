@@ -126,7 +126,8 @@ export default async (client, m) => {
         
         if (anu.action === 'add' && (!primaryBotId || primaryBotId === botId)) {
           const customMessage = chat?.sWelcome ? chat.sWelcome.replace(/{usuario}/g, `@${phone}`).replace(/{grupo}/g, metadata.subject).replace(/{desc}/g, metadata?.desc || 'Sin descripción') : '';
-          
+          const welcomeImage = 'https://i.pinimg.com/736x/2d/f3/3d/2df33d05677675f88fcd6bc16444ad2b.jpg';
+
           queueWelcome(async () => {
             try {
               const caption = customMessage || `╭━━━🌸━━━💙━━━🌸━━━╮
@@ -141,14 +142,15 @@ export default async (client, m) => {
 │ 🌱 Usa */menu* para ver comandos.
 │ 💙 ¡Que disfrutes tu estancia! ✨
 ╰━━━🌸━━━💙━━━🌸━━━╯`;
-              await safeSend(client, anu.id, { image: { url: pp }, caption, contextInfo })
+              await safeSend(client, anu.id, { image: { url: welcomeImage }, caption, contextInfo })
             } catch {}
           })
         }
         
         if ((anu.action === 'remove' || anu.action === 'leave') && (!primaryBotId || primaryBotId === botId)) {
           const customMessage = chat?.sGoodbye ? chat.sGoodbye.replace(/{usuario}/g, `@${phone}`).replace(/{grupo}/g, metadata.subject).replace(/{desc}/g, metadata?.desc || 'Sin descripción') : '';
-          
+          const goodbyeImage = 'https://i.pinimg.com/736x/4a/f2/fa/4af2fad2fa327fca8a1c20c9ab4baadc.jpg';
+
           queueWelcome(async () => {
             try {
               const caption = customMessage || `╭━━━🌸━━━💙━━━🌸━━━╮
@@ -163,7 +165,7 @@ export default async (client, m) => {
 │ 🌸 Fue un placer tenerte aquí.
 │ 💙 ¡Esperamos verte de nuevo! ✨
 ╰━━━🌸━━━💙━━━🌸━━━╯`;
-              await safeSend(client, anu.id, { image: { url: pp }, caption, contextInfo })
+              await safeSend(client, anu.id, { image: { url: goodbyeImage }, caption, contextInfo })
             } catch {}
           })
         }
