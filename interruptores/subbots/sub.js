@@ -10,6 +10,18 @@ const pendingSessions = new Map();
 const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 const userDevicesCache  = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 
+const DIGITS = (s = "") => String(s).replace(/\D/g, "");
+
+function normalizePhoneForPairing(input) {
+  let s = DIGITS(input);
+  if (!s) return "";
+  if (s.startsWith("0")) s = s.replace(/^0+/, "");
+  if (s.length === 10 && s.startsWith("3")) s = "57" + s;
+  if (s.startsWith("52") && !s.startsWith("521") && s.length >= 12) s = "521" + s.slice(2);
+  if (s.startsWith("54") && !s.startsWith("549") && s.length >= 11) s = "549" + s.slice(2);
+  return s;
+}
+
 const cleanFolder = (folder) => {
   try { if (fs.existsSync(folder)) fs.rmSync(folder, { recursive: true, force: true }); } catch {}
 };
@@ -18,10 +30,11 @@ export default {
   command: ['sub', 'vincular', 'conectar', 'code', 'serbot--code', 'serbot-code', 'botcode'],
   category: 'subbots',
   run: async (client, m, args, usedPrefix, command) => {
-    const phoneNumber   = m.sender.split('@')[0].replace(/\D/g, '');
-    const sessionId     = phoneNumber;
+    const rawPhone      = m.sender.split('@')[0].replace(/\D/g, '');
+    const phoneNumber   = normalizePhoneForPairing(rawPhone);
+    const sessionId     = rawPhone;
     const sessionFolder = `./Sessions/subbots/${sessionId}`;
-    const privatChat    = phoneNumber + '@s.whatsapp.net';
+    const privatChat    = rawPhone + '@s.whatsapp.net';
 
    
     if (fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
