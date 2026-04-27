@@ -16,8 +16,7 @@ export default {
     const ownerGroup = groupInfo.owner || m.chat.split`-`[0] + '@s.whatsapp.net'
     const ownerBot = global.owner[0][0] + '@s.whatsapp.net'
     const participant = groupInfo.participants.find((p) => p.id === realUser || p.phoneNumber === realUser || p.jid === realUser)
-   
-    const phone = participant?.phoneNumber || participant?.id?.split('@')[0] || realUser.split('@')[0]
+    const phone = realUser.split('@')[0]
     if (!participant) {
       return client.sendMessage(m.chat, { text: `💙 @${phone} ya no está en el grupo.`, mentions: [realUser], ...global.miku }, { quoted: m })
     }
