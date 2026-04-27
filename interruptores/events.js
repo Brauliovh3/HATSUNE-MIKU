@@ -155,7 +155,8 @@ export default async (client, m) => {
           const kickedName = kickedParticipant?.notify || kickedParticipant?.name || phone;
 
           const kickerParticipant = isKick ? metadata?.participants?.find(p => p.id === kicker || p.phoneNumber === kicker || p.jid === kicker) : null;
-          const kickerName = kickerParticipant?.notify || kickerParticipant?.name || (isKick ? kicker.split('@')[0] : '');
+          const kickerPhone = kickerParticipant?.phoneNumber || kickerParticipant?.id?.split('@')[0] || (isKick ? kicker.split('@')[0] : '');
+          const kickerName = kickerParticipant?.notify || kickerParticipant?.name || kickerPhone;
 
           const customMessage = chat?.sGoodbye ? chat.sGoodbye.replace(/{usuario}/g, `@${phone}`).replace(/{grupo}/g, metadata.subject).replace(/{desc}/g, metadata?.desc || 'Sin descripción') : '';
           const goodbyeImage = 'https://i.pinimg.com/736x/4a/f2/fa/4af2fad2fa327fca8a1c20c9ab4baadc.jpg';
@@ -168,8 +169,8 @@ export default async (client, m) => {
 ┃  ⚠️ *¡ Usuario Expulsado !* ⚠️
 ╰━━━🌸━━━💙━━━🌸━━━╯
 │
-├◦ 👤 *Expulsado* ⟶ ${kickedName}
-├◦ 🚫 *Expulsado por* ⟶ ${kickerName}
+├◦ 👤 *Expulsado* ⟶ @${phone}
+├◦ 🚫 *Expulsado por* ⟶ @${phone}
 ├◦ 💙 *Grupo* ⟶ ${metadata.subject || 'Grupo'}
 ├◦ 🌱 *Miembros* ⟶ Ahora somos ${memberCount}
 │
