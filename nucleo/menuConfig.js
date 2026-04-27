@@ -1,5 +1,4 @@
-export const mainMenuImage = 'https://images7.alphacoders.com/894/thumb-1920-894455.jpg';
-
+export const mainMenuImage = 'https://file.garden/ae-9DPf0ekWVe7ex/TikVid.io_7633242534839356692-hd.mp4'; 
 export const categoryImages = {
   anime: 'https://i.pinimg.com/736x/53/13/9a/53139a45b8a098588a4e1b6557ee8492.jpg',
   downloads: 'https://i.pinimg.com/736x/60/64/bb/6064bb9466503fd9e752f8db55d92ced.jpg',

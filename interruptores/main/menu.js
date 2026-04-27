@@ -126,6 +126,7 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
           footer: '💙 Hatsune Miku Bot',
           buttons: buttons,
           headerType: 4,
+          mimetype: 'video/mp4',
           contextInfo: {
             mentionedJid: [m.sender],
             isForwarded: true,
@@ -133,6 +134,15 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
               newsletterJid: canalId,
               serverMessageId: '',
               newsletterName: canalName
+            },
+            externalAdReply: {
+              title: botname,
+              body: `${namebot}, © 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ) `,
+              showAdAttribution: false,
+              thumbnailUrl: categoryBanner,
+              mediaType: 2,
+              previewType: 0,
+              renderLargerThumbnail: true
             }
           }
         } : {
