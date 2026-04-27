@@ -284,7 +284,7 @@ export default async (client, m) => {
   if (m.messageStubType == 26) {
     await safeSend(client, id, { text: `💙 *@${phone}* cambió los ajustes del grupo para permitir que ${m.messageStubParameters[0] === 'on' ? 'solo los administradores puedan enviar mensajes al grupo.' : 'todos los miembros puedan enviar mensajes al grupo.'}`, contextInfo })
   }
-  const botNumber = client.user?.id?.split(':')[0] + '@s.whatsapp.net'
+  const botNumber = client.decodeJid(client.user?.id)
   if (m.messageStubType == 27 && actor !== botNumber) {
     await safeSend(client, id, { text: `💙 *@${phone}* cerró el grupo.`, contextInfo })
   }
