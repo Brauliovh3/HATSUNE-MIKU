@@ -29,10 +29,16 @@ export default {
     if (realUser === ownerBot) {
       return m.reply('💙 No puedo eliminar al *propietario* del bot')
     }
+    if (participant.admin) {
+      return m.reply('💙 No puedo eliminar a un *administrador* del grupo')
+    }
     try {
       await client.groupParticipantsUpdate(m.chat, [realUser], 'remove')
       await client.sendMessage(m.chat, { text: `💙 @${phone} eliminado correctamente`, mentions: [realUser], ...global.miku }, { quoted: m })
     } catch (e) {
+      if (e.message === 'forbidden' || e.message?.includes('forbidden')) {
+        return m.reply('💙 No tengo *permisos* para eliminar a este usuario', m, global.miku)
+      }
       return m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
     }
   },
