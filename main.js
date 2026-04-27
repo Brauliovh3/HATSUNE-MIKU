@@ -59,6 +59,11 @@ export default async (client, m) => {
     }
     const { processMenuButton } = await import('./interruptores/main/menu.js')
     await processMenuButton(client, m)
+    
+    const { processFishingShopButton } = await import('./interruptores/economy/pescaderia.js')
+    const fishingProcessed = await processFishingShopButton(client, m)
+    if (fishingProcessed) return
+    
     return
   }
   
