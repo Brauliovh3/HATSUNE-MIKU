@@ -534,20 +534,36 @@ async function sendAudioIfAvailable(conn, chat, m, audioUrl) {
 }
 
 async function combineImageAndAudioToVideo(conn, chat, m, imageUrl, audioUrl, caption) {
+  const fs = require('fs')
+  const tmpDir = './tmp'
+  
   try {
+    if (!fs.existsSync(tmpDir)) {
+      fs.mkdirSync(tmpDir, { recursive: true })
+    }
+
     const imgBuffer = await safeBuffer(imageUrl, 30000)
     const audBuffer = await safeBuffer(audioUrl, 60000)
     
-    if (!imgBuffer?.buffer || !audBuffer?.buffer) {
-      throw new Error('No se pudieron descargar los archivos')
+    console.log('Imagen buffer:', imgBuffer?.buffer?.length, 'Audio buffer:', audBuffer?.buffer?.length)
+    
+    if (!imgBuffer?.buffer) {
+      console.log('No se pudo descargar la imagen')
+      return false
+    }
+    if (!audBuffer?.buffer) {
+      console.log('No se pudo descargar el audio')
+      return false
     }
 
-    const imgPath = `./tmp/tik-img-${Date.now()}.jpg`
-    const audPath = `./tmp/tik-aud-${Date.now()}.mp3`
-    const outPath = `./tmp/tik-video-${Date.now()}.mp4`
+    const imgPath = `${tmpDir}/tik-img-${Date.now()}.jpg`
+    const audPath = `${tmpDir}/tik-aud-${Date.now()}.mp3`
+    const outPath = `${tmpDir}/tik-video-${Date.now()}.mp4`
 
-    require('fs').writeFileSync(imgPath, imgBuffer.buffer)
-    require('fs').writeFileSync(audPath, audBuffer.buffer)
+    fs.writeFileSync(imgPath, imgBuffer.buffer)
+    fs.writeFileSync(audPath, audBuffer.buffer)
+
+    console.log('Ejecutando FFmpeg...')
 
     await new Promise((resolve, reject) => {
       const p = spawn('ffmpeg', [
@@ -561,26 +577,51 @@ async function combineImageAndAudioToVideo(conn, chat, m, imageUrl, audioUrl, ca
         '-b:a', '192k',
         '-shortest',
         '-pix_fmt', 'yuv420p',
+        '-movflags', '+faststart',
         outPath
       ])
       let err = ''
       p.stderr.on('data', d => err += d.toString())
       p.on('close', code => {
+        console.log('FFmpeg exit code:', code)
         if (code === 0) resolve()
-        else reject(new Error(err))
+        else reject(new Error(err || `FFmpeg error code: ${code}`))
       })
     })
 
-    const videoBuffer = require('fs').readFileSync(outPath)
-    await conn.sendMessage(chat, {
-      video: videoBuffer,
-      mimetype: 'video/mp4',
-      caption
-    }, { quoted: m })
+    if (!fs.existsSync(outPath)) {
+      console.log('Archivo de video no creado')
+      return false
+    }
 
-    require('fs').unlinkSync(imgPath)
-    require('fs').unlinkSync(audPath)
-    require('fs').unlinkSync(outPath)
+    const videoStats = fs.statSync(outPath)
+    console.log('Video size:', videoStats.size)
+    
+    if (videoStats.size < 1000) {
+      console.log('Video muy pequeño, probablemente inválido')
+      return false
+    }
+
+    const videoBuffer = fs.readFileSync(outPath)
+    try {
+      await conn.sendMessage(chat, {
+        video: videoBuffer,
+        mimetype: 'video/mp4',
+        caption
+      }, { quoted: m })
+    } catch (sendErr) {
+      console.log('Error enviando video, intentando como documento:', sendErr.message)
+      await conn.sendMessage(chat, {
+        document: videoBuffer,
+        mimetype: 'video/mp4',
+        fileName: 'tiktok-video.mp4',
+        caption
+      }, { quoted: m })
+    }
+
+    try { fs.unlinkSync(imgPath) } catch {}
+    try { fs.unlinkSync(audPath) } catch {}
+    try { fs.unlinkSync(outPath) } catch {}
     
     return true
   } catch (e) {
