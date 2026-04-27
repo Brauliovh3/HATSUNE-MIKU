@@ -24,9 +24,10 @@ export default {
     if (user === ownerBot) {
       return m.reply('💙 No puedo eliminar al *propietario* del bot')
     }
+   
+    const phone = participant?.phoneNumber || participant?.id?.split('@')[0] || user.split('@')[0]
     try {
       await client.groupParticipantsUpdate(m.chat, [user], 'remove')
-      const phone = user.split('@')[0]
       await client.sendMessage(m.chat, { text: `💙 @${phone} eliminado correctamente`, mentions: [user], ...global.miku }, { quoted: m })
     } catch (e) {
       return m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
