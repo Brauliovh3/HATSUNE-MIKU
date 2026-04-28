@@ -443,10 +443,19 @@ function inspectMp4Buffer(buffer) {
 }
 
 async function validateVideoBuffer(buffer, contentType) {
-  if (!buffer || buffer.length < MIN_VIDEO_SIZE) return false
-  if (buffer.length > MAX_VIDEO_SIZE) return false
-  if (contentType && !contentType.includes('video') && !contentType.includes('octet-stream')) return false
-  return true
+  if (!buffer || buffer.length < MIN_VIDEO_SIZE) return { valid: false }
+  if (buffer.length > MAX_VIDEO_SIZE) return { valid: false }
+  if (contentType && !contentType.includes('video') && !contentType.includes('octet-stream')) return { valid: false }
+  
+  const inspect = inspectMp4Buffer(buffer)
+  let sendAsDocument = false
+  
+  
+  if (inspect.hasHevc && !inspect.hasAvc) sendAsDocument = true
+ 
+  if (buffer.length > 40 * 1024 * 1024) sendAsDocument = true
+  
+  return { valid: true, sendAsDocument }
 }
 
 async function sendVideoWithFallback(conn, chat, m, videoCandidates, caption) {
@@ -482,13 +491,14 @@ async function sendVideoWithFallback(conn, chat, m, videoCandidates, caption) {
       break
     } catch (error) {
       lastError = error
-      console.log(`Intento buffer fallido: ${error.message}`)
+          console.log(`Intento video fallido: ${error.message}`)
     }
 
     try {
       if (!downloaded?.buffer) continue
 
-      if (!await validateVideoBuffer(downloaded.buffer, downloaded.contentType)) continue
+          const validation = await validateVideoBuffer(downloaded.buffer, downloaded.contentType)
+          if (!validation.valid) continue
 
       await conn.sendMessage(
         chat,
@@ -496,7 +506,7 @@ async function sendVideoWithFallback(conn, chat, m, videoCandidates, caption) {
           document: downloaded.buffer,
           mimetype: 'video/mp4',
           fileName: candidate.isHd ? 'tiktok-hd.mp4' : 'tiktok.mp4',
-          caption: `${caption}\n\n📎 Enviado como documento por problemas de compatibilidad`,
+              caption: `${caption}\n\n📎 *Nota:* Enviado como documento por su alta calidad o peso.`,
         },
         { quoted: m }
       )
