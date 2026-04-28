@@ -4,7 +4,6 @@ import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
 import NodeCache from 'node-cache';
-import imageCache from './system/imageCache.js';
 import main from '../main.js';
 import { smsg } from './message.js';
 import optimizer from './system/optimizer.js';
