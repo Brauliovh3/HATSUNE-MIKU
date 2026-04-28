@@ -509,10 +509,20 @@ export async function smsg(client, m, store) {
       }
     } else {
       try {
-        const type = await client.getFile(buffer)
-        if (/^image\//i.test(type.mime)) { img = await prepareWAMessageMedia({ image: { url: buffer } }, { upload: client.waUploadToServer })
-        } else if (/^video\//i.test(type.mime)) {
-          video = await prepareWAMessageMedia({ video: { url: buffer } }, { upload: client.waUploadToServer })
+        if (Buffer.isBuffer(buffer)) {
+          const type = await fileType.fromBuffer(buffer)
+          if (/^image\//i.test(type.mime)) {
+            img = await prepareWAMessageMedia({ image: buffer }, { upload: client.waUploadToServer })
+          } else if (/^video\//i.test(type.mime)) {
+            video = await prepareWAMessageMedia({ video: buffer }, { upload: client.waUploadToServer })
+          }
+        } else {
+          const type = await client.getFile(buffer)
+          if (/^image\//i.test(type.mime)) {
+            img = await prepareWAMessageMedia({ image: { url: buffer } }, { upload: client.waUploadToServer })
+          } else if (/^video\//i.test(type.mime)) {
+            video = await prepareWAMessageMedia({ video: { url: buffer } }, { upload: client.waUploadToServer })
+          }
         }
       } catch (error) {
         console.error('Error al obtener el tipo de archivo:', error)
