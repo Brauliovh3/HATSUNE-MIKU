@@ -22,9 +22,9 @@ class SystemOptimizer {
       memoryThreshold: 85,
       diskThreshold: 90,
       sessionMaxAge: 24 * 60 * 60 * 1000,
-      prekeyBatchSize: 50,
-      tmpMaxAge: 30 * 60 * 1000,
-      tmpMaxSize: 10 * 1024 * 1024
+      prekeyBatchSize: 20,
+      tmpMaxAge: 10 * 60 * 1000,
+      tmpMaxSize: 5 * 1024 * 1024
     };
     
     this.timers = new Map();
@@ -45,11 +45,11 @@ class SystemOptimizer {
     
   
     
-    this.schedule('memory-check', () => this.checkMemory(), 30000);
-    this.schedule('tmp-cleanup', () => this.cleanTempFiles(), 5 * 60000);
-    this.schedule('session-cleanup', () => this.cleanSessions(), 10 * 60000);
-    this.schedule('prekey-rotation', () => this.rotatePrekeys(), 15 * 60000);
-    this.schedule('aggressive-cleanup', () => this.aggressiveCleanup(), 30 * 60000);
+    this.schedule('memory-check', () => this.checkMemory(), 15000);
+    this.schedule('tmp-cleanup', () => this.cleanTempFiles(), 2 * 60000);
+    this.schedule('session-cleanup', () => this.cleanSessions(), 5 * 60000);
+    this.schedule('prekey-rotation', () => this.rotatePrekeys(), 10 * 60000);
+    this.schedule('aggressive-cleanup', () => this.aggressiveCleanup(), 15 * 60000);
     this.schedule('stats-report', () => this.printStats(), 60 * 60000);
     
     this.checkMemory();
@@ -100,12 +100,12 @@ class SystemOptimizer {
       };
       
       if (usedPercent > this.limits.memoryThreshold) {
-        // console.log(chalk.yellow(`[ 🔧 Optimizador ] Memoria alta: ${usedPercent.toFixed(1)}%`));
+        
         await this.aggressiveCleanup();
         
         if (global.gc) {
           global.gc();
-          // console.log(chalk.gray('[ 🔧 Optimizador ] Garbage collector ejecutado'));
+          
         }
       }
       
@@ -165,13 +165,14 @@ class SystemOptimizer {
     if (cleaned > 0) {
       this.stats.cleanups++;
       this.stats.memoryFreed += freed;
-      // console.log(chalk.gray(`[ 🔧 Optimizador ] Temp limpio: ${cleaned} archivos (${(freed/1024/1024).toFixed(2)} MB)`));
+      
     }
   }
 
   async cleanSessions() {
     const sessionDirs = [
-      './Sessions/Owner'
+      './Sessions/Owner',
+      './Sessions/subbots'
     ];
     
     let cleaned = 0;
@@ -255,7 +256,8 @@ class SystemOptimizer {
 
   async rotatePrekeys() {
     const sessionDirs = [
-      './Sessions/Owner'
+      './Sessions/Owner',
+      './Sessions/subbots'
     ];
     
     let rotated = 0;
@@ -293,12 +295,12 @@ class SystemOptimizer {
     
     if (rotated > 0) {
       this.stats.prekeysRotated += rotated;
-      // console.log(chalk.gray(`[ 🔧 Optimizador ] Prekeys rotadas: ${rotated}`));
+      
     }
   }
 
   async aggressiveCleanup() {
-    // console.log(chalk.cyan('[ 🔧 Optimizador ] Limpieza agresiva iniciada'));
+  
     
     await this.cleanTempFiles();
     
@@ -315,7 +317,7 @@ class SystemOptimizer {
     } catch {}
     
     this.stats.lastCleanup = Date.now();
-    // console.log(chalk.green('[ 🔧 Optimizador ] Limpieza agresiva completada'));
+   
   }
 
   optimizeCache() {
@@ -323,7 +325,7 @@ class SystemOptimizer {
     if (keys.length > 1000) {
       const toDelete = keys.slice(0, keys.length - 500);
       this.cache.del(toDelete);
-      // console.log(chalk.gray(`[ 🔧 Optimizador ] Cache optimizada: ${toDelete.length} entradas eliminadas`));
+      
     }
   }
 
@@ -362,14 +364,7 @@ class SystemOptimizer {
 
   printStats() {
     const mem = global.memoryStats || {};
-    // console.log(chalk.blueBright('\n[ 📊 Stats Optimizador ]'));
-    // console.log(chalk.white(`  Limpiezas: ${this.stats.cleanups}`));
-    // console.log(chalk.white(`  Memoria liberada: ${(this.stats.memoryFreed / 1024 / 1024).toFixed(2)} MB`));
-    // console.log(chalk.white(`  Sesiones limpiadas: ${this.stats.sessionsCleaned}`));
-    // console.log(chalk.white(`  Prekeys rotadas: ${this.stats.prekeysRotated}`));
-    // console.log(chalk.white(`  Memoria actual: RSS ${mem.rss || 'N/A'} MB`));
-    // console.log(chalk.white(`  Sesiones activas: ${this.sessionRegistry.size}`));
-    // console.log(chalk.white(`  Conexiones: 1\n`));
+    
   }
 
   getStats() {

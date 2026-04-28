@@ -114,18 +114,18 @@ class SubBotManager {
           creds: state.creds,
           keys: makeCacheableSignalKeyStore(state.keys, logger),
         },
-        markOnlineOnConnect: true,
-        generateHighQualityLinkPreview: true,
+        markOnlineOnConnect: false,
+        generateHighQualityLinkPreview: false,
         syncFullHistory: false,
         getMessage: async () => '',
         msgRetryCounterCache,
         userDevicesCache,
         cachedGroupMetadata: async (jid) => groupCache.get(jid),
         version,
-        keepAliveIntervalMs: 25000,
-        maxIdleTimeMs: 40000,
-        connectTimeoutMs: 30000,
-        defaultQueryTimeoutMs: 30000,
+        keepAliveIntervalMs: 30000,
+        maxIdleTimeMs: 60000,
+        connectTimeoutMs: 60000,
+        defaultQueryTimeoutMs: 60000,
       };
 
       let sock = makeWASocket(connectionOptions);
@@ -155,6 +155,12 @@ class SubBotManager {
           sock.isInit     = false;
           sock._sessionId = sessionId;
           sock.ev.on('creds.update', saveCreds);
+          
+          if (!optimizer.active) {
+            optimizer.start();
+          }
+          optimizer.registerSession(sessionId, 'Sub', { userId: sock.userId });
+
           sock.decodeJid = (jid) => {
             if (!jid) return jid;
             if (/:\d+@/gi.test(jid)) {
@@ -195,6 +201,11 @@ class SubBotManager {
             reintentos.delete(sessionId);
             this.startingSubbots.delete(sessionId);
             this.subbots.set(sessionId, sock);
+            
+            if (!optimizer.active) {
+              optimizer.start();
+            }
+            optimizer.registerSession(sessionId, 'Sub', { userId: sock.userId });
 
             console.log(chalk.green(`💙 Subbot conectado: ${sock.userId} (sesión: ${sessionId})`));
           }
@@ -207,6 +218,7 @@ class SubBotManager {
 
             this.subbots.delete(sessionId);
             removeFromConns(sessionId);
+            optimizer.unregisterSession(sessionId);
 
             if (reason === 401 || reason === 405) {
               console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) credenciales inválidas (${reason}). Eliminando sesión.\n│ El usuario debe escanear QR nuevamente.\n└──────────────────────────────────┘`));
@@ -344,6 +356,7 @@ class SubBotManager {
     this.startingSubbots.delete(sessionId);
     reintentos.delete(sessionId);
     removeFromConns(sessionId);
+    optimizer.unregisterSession(sessionId);
     console.log(chalk.yellow(`💙 Subbot ${sessionId} detenido`));
   }
 

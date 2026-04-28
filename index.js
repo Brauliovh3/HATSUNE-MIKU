@@ -149,11 +149,11 @@ async function startBot() {
     browser: Browsers.macOS('Chrome'),
     auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, logger) },
     markOnlineOnConnect: false,
-    generateHighQualityLinkPreview: true,
+    generateHighQualityLinkPreview: false,
     syncFullHistory: false,
     getMessage: async () => "",
-    keepAliveIntervalMs: 45000,
-    maxIdleTimeMs: 60000,
+    keepAliveIntervalMs: 60000,
+    maxIdleTimeMs: 120000,
   });
   global.client = sock;
   sock.isInit = false;
