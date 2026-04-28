@@ -1,5 +1,6 @@
+import axios from 'axios'
+import * as cheerio from 'cheerio'
 import { getBuffer } from '../../nucleo/message.js'
-
 
 const MIKU = {
   divider: '╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌',
@@ -7,102 +8,52 @@ const MIKU = {
   thumb:   'https://iili.io/qp681b1.jpg',
 }
 
-
-const APIS = [
-  {
-    name: 'WhatsApp Group Links',
-    fetch: async (query, limit) => {
+async function fetchGruposSinApi(query, limit) {
+  try {
     
-      const url = `https://whatsapp-group-links.p.rapidapi.com/groups?search=${encodeURIComponent(query)}&limit=${limit}`
-      const res = await fetch(url, {
-        headers: {
-          'x-rapidapi-host': 'whatsapp-group-links.p.rapidapi.com',
-        
-          'x-rapidapi-key': global.APIs?.rapidapi?.key || ''
-        },
-        signal: AbortSignal.timeout(8000)
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      return parseRapidAPI(json)
-    }
-  },
-  {
-    name: 'Stellar API',
-    fetch: async (query, limit) => {
-      const base = global.APIs?.stellar?.url || 'https://api.stellarapi.io'
-      const key  = global.APIs?.stellar?.key || ''
-      const url  = `${base}/search/wagroups?query=${encodeURIComponent(query)}&limit=${limit}&key=${key}`
-      const res  = await fetch(url, { signal: AbortSignal.timeout(8000) })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      return parseStellar(json)
-    }
-  },
-  {
-    name: 'Axi API',
-    fetch: async (query, limit) => {
-      const base = global.APIs?.axi?.url || 'https://api.axioma.workers.dev'
-      const url  = `${base}/api/grupos?search=${encodeURIComponent(query)}&limit=${limit}`
-      const res  = await fetch(url, { signal: AbortSignal.timeout(8000) })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      return parseGeneric(json)
-    }
-  }
-]
-
-
-function parseRapidAPI(json) {
-  const items = json?.data || json?.groups || json?.results || []
-  return items.filter(v => v.link || v.url || v.invite).map(v => ({
-    name:        v.name || v.title || 'Sin nombre',
-    link:        v.link || v.url || v.invite,
-    country:     v.country || v.region || 'No especificado',
-    category:    v.category || v.type || '',
-    description: v.description || v.desc || 'Sin descripción',
-  }))
-}
-
-function parseStellar(json) {
-  const items = json?.results || json?.data || []
-  return items.filter(v => v.link || v.url).map(v => ({
-    name:        v.name || v.title || 'Sin nombre',
-    link:        v.link || v.url,
-    country:     v.country || 'No especificado',
-    category:    v.category || '',
-    description: v.description || 'Sin descripción',
-  }))
-}
-
-function parseGeneric(json) {
-  const items = json?.data || json?.results || json?.grupos || []
-  return items.filter(v => v.link || v.url || v.invite_link).map(v => ({
-    name:        v.name || v.title || 'Sin nombre',
-    link:        v.link || v.url || v.invite_link,
-    country:     v.country || 'No especificado',
-    category:    v.category || '',
-    description: v.description || 'Sin descripción',
-  }))
-}
-
-
-async function fetchGrupos(query, limit) {
-  const errors = []
-
-  for (const api of APIS) {
-    try {
-      const grupos = await api.fetch(query, limit)
-      if (grupos?.length) {
-        return { grupos, source: api.name }
+    const searchUrl = `https://html.duckduckgo.com/html/?q=site:chat.whatsapp.com+${encodeURIComponent(query)}`
+    const { data } = await axios.get(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       }
-    } catch (e) {
-      errors.push(`${api.name}: ${e.message}`)
-      console.warn(`[wagrupos] API fallida → ${api.name}:`, e.message)
-    }
-  }
+    })
 
-  throw new Error(`Todas las APIs fallaron:\n${errors.join('\n')}`)
+    const $ = cheerio.load(data)
+    const grupos = []
+
+    $('.result').each((i, el) => {
+      let title = $(el).find('.result__title').text().trim()
+     
+      title = title.replace(/WhatsApp Group Invite|Invitación a grupo de WhatsApp|WhatsApp Group/gi, '').trim() || 'Grupo sin nombre'
+      const snippet = $(el).find('.result__snippet').text().trim()
+      
+      
+      const linkMatch = snippet.match(/chat\.whatsapp\.com\/[a-zA-Z0-9]{15,30}/)
+      
+      if (linkMatch && grupos.length < limit) {
+        const link = `https://${linkMatch[0]}`
+        
+        if (!grupos.some(g => g.link === link)) {
+          grupos.push({
+            name: title,
+            link: link,
+            country: 'Global',
+            category: query,
+            description: snippet.length > 70 ? snippet.substring(0, 70) + '...' : snippet || 'Sin descripción'
+          })
+        }
+      }
+    })
+
+    if (grupos.length > 0) {
+      return { grupos, source: 'Scraper Nativo (Internet)' }
+    } else {
+      throw new Error('No se encontraron enlaces válidos en la búsqueda.')
+    }
+
+  } catch (error) {
+    throw new Error(`Búsqueda fallida: ${error.message}`)
+  }
 }
 
 export default {
@@ -142,36 +93,23 @@ export default {
         )
       }
 
-      
       let grupos, source
       try {
-        ({ grupos, source } = await fetchGrupos(categoria, limite))
+        ({ grupos, source } = await fetchGruposSinApi(categoria, limite))
       } catch (apiError) {
-        console.error('[wagrupos] Sin APIs disponibles:', apiError.message)
-        await m.react('❌')
-        return m.reply(
-          `🩵✦ *SIN CONEXIÓN* ✦🩵\n${MIKU.divider}\n\n` +
-          `🎵 Los servidores de grupos no están disponibles ahora mismo.\n` +
-          `🌿 Inténtalo de nuevo en unos minutos.` +
-          MIKU.footer
-        )
-      }
-
-      if (!grupos.length) {
+        console.error('[wagrupos] Error en el scraper:', apiError.message)
         await m.react('❌')
         return m.reply(
           `🩵✦ *SIN RESULTADOS* ✦🩵\n${MIKU.divider}\n\n` +
-          `🎵 No se encontraron grupos para: *${categoria}*\n` +
-          `🌿 Prueba con otra palabra clave.` +
+          `🎵 No se encontraron grupos públicos para esa categoría ahora mismo.\n` +
+          `🌿 Inténtalo de nuevo con otra palabra clave.` +
           MIKU.footer
         )
       }
 
-     
       let thumbnail = null
       try { thumbnail = await getBuffer(MIKU.thumb) } catch (_) {}
 
-      
       const icons = ['🩵', '🌿', '🎵', '✦', '🌐']
 
       let teks  = `🎵✦ *WA GRUPOS SEARCH* ✦🎵\n${MIKU.divider}\n\n`
@@ -185,7 +123,7 @@ export default {
         return (
           `${ico} *${i + 1}. ${v.name}*\n` +
           `> 🩵 *País ›* ${v.country}\n` +
-          `> 🌿 *Categoría ›* ${v.category || categoria}\n` +
+          `> 🌿 *Categoría ›* ${v.category}\n` +
           `> 🎵 *Info ›* ${v.description}\n` +
           `> ✦ *Link ›* ${v.link}`
         )
