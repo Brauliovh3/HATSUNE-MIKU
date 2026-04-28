@@ -100,11 +100,16 @@ export async function processFishingShopButton(conn, m) {
       ['🔙 Volver', 'shop_main']
     ]
     
-    await conn.sendMessage(m.chat, {
-      text: `🎣 *CAÑAS DE PESCAR*\n\n💰 Saldo: 🌱${user.coins.toLocaleString()} ${currency}\n🎯 Actual: ${rodName}`,
+    await conn.sendButton(
+      m.chat,
+      `🎣 *CAÑAS DE PESCAR*\n\n💰 Saldo: 🌱${user.coins.toLocaleString()} ${currency}\n🎯 Actual: ${rodName}`,
+      '🛒 Tienda de Pesca - Hatsune Miku Bot',
+      null,
       buttons,
-      headerType: 4
-    }, { quoted: m })
+      null,
+      null,
+      m
+    )
     return true
   }
   
@@ -116,11 +121,16 @@ export async function processFishingShopButton(conn, m) {
       ['🔙 Volver', 'shop_main']
     ]
     
-    await conn.sendMessage(m.chat, {
-      text: `🪤 *ARTÍCULOS ESPECIALES*\n\n💰 Saldo: 🌱${user.coins.toLocaleString()} ${currency}`,
+    await conn.sendButton(
+      m.chat,
+      `🪤 *ARTÍCULOS ESPECIALES*\n\n💰 Saldo: 🌱${user.coins.toLocaleString()} ${currency}`,
+      '🛒 Tienda de Pesca - Hatsune Miku Bot',
+      null,
       buttons,
-      headerType: 4
-    }, { quoted: m })
+      null,
+      null,
+      m
+    )
     return true
   }
   
@@ -136,7 +146,16 @@ export async function processFishingShopButton(conn, m) {
     
     const buttons = [['🔙 Volver', 'shop_main']]
     
-    await conn.sendMessage(m.chat, { text, buttons, headerType: 4 }, { quoted: m })
+    await conn.sendButton(
+      m.chat,
+      text,
+      '🛒 Tienda de Pesca - Hatsune Miku Bot',
+      null,
+      buttons,
+      null,
+      null,
+      m
+    )
     return true
   }
   
