@@ -26,7 +26,19 @@ export default {
 
       const apiUrl = global.APIs?.axi?.url || 'https://axiio.my.id'
       const api = `${apiUrl}/search/wpgrupos?categoria=${encodeURIComponent(categoria)}&limite=${limite}`
-      const res = await fetch(api)
+      
+      let res
+      try {
+        res = await fetch(api)
+      } catch (fetchError) {
+        console.error('Error de conexión a la API:', fetchError)
+        return m.reply(`💙 Error de conexión al servidor. Por favor, intenta más tarde.`)
+      }
+      
+      if (!res.ok) {
+        return m.reply(`💙 Error del servidor (${res.status}). Por favor, intenta más tarde.`)
+      }
+      
       const json = await res.json()
 
       if (!json?.status || !json?.resultado?.grupos?.length) {
@@ -40,7 +52,13 @@ export default {
       }
 
       const thumb = 'https://iili.io/qp681b1.jpg'
-      const thumbnail = await getBuffer(thumb)
+      let thumbnail
+      try {
+        thumbnail = await getBuffer(thumb)
+      } catch (bufferError) {
+        console.error('Error al obtener thumbnail:', bufferError)
+        thumbnail = null
+      }
 
       let teks = `➩ *Grupos de WhatsApp encontrados*\n\n`
       teks += `> 💙 *Categoría ›* ${json.resultado.categoria || categoria}\n`
@@ -55,7 +73,7 @@ export default {
           `> 🌱 *Estado ›* ${v.estado}\n` +
           `> 💙 *Url ›* ${v.enlace}`
         ).trim()
-      }).join('\n\n╾۪〬─ ┄۫╌ ׄ┄┈۪ ─〬 ׅ┄╌ ۫┈ ─ׄ─۪〬 ┈ ┄۫╌ ┈┄۪ ─ׄ〬╼\n\n')
+      }).join('\n\n(💙 * 7)\n\n')
 
       await client.sendMessage(
         m.chat,
