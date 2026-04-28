@@ -6,6 +6,7 @@ import chalk from 'chalk';
 import NodeCache from 'node-cache';
 import main from '../main.js';
 import { smsg } from './message.js';
+import optimizer from './system/optimizer.js';
 
 if (!global.conns) global.conns = [];
 const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
