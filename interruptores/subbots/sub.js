@@ -49,8 +49,9 @@ export default {
   category: 'subbots',
   run: async (client, m, args, usedPrefix, command) => {
     const isQR = /^(qr)$/i.test(command);
-    const rtx = '💙 *HATSUNE MIKU* 💙\n\n`💌` Vincula tu *cuenta* usando el *codigo.*\n\n> 💮 Sigue las *instrucciones*\n\n*›* Click en los *3 puntos*\n*›* Toque *dispositivos vinculados*\n*›* Vincular *nuevo dispositivo*\n*›* Selecciona *Vincular con el número de teléfono*\n\n💙 *`Importante`*\n> 📛 Este *Código* solo funciona en el *número que lo solicito*';
-    const rtx2 = '💙 *HATSUNE MIKU* 💙\n\n`💌` Vincula tu *cuenta* usando *codigo qr.*\n\n> 💮 Sigue las *instrucciones*\n\n*›* Click en los *3 puntos*\n*›* Toque *dispositivos vinculados*\n*›* Vincular *nuevo dispositivo*\n*›* Escanea el código *QR.*\n\n> 💙 Recuerda que no es recomendable usar tu cuenta principal para registrar un socket.';
+    const divider = `╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌`;
+    const rtx = `💙 *S U B B O T   -   C O D E* 💙\n${divider}\n\n🎵 *Instrucciones para vincular:*\n\n🌿 *1.* Toca los 3 puntos en la esquina superior derecha de tu WhatsApp.\n🌿 *2.* Toca en *Dispositivos vinculados*.\n🌿 *3.* Toca en *Vincular un dispositivo*.\n🌿 *4.* Selecciona *Vincular con el número de teléfono*.\n🌿 *5.* Ingresa el código que aparece abajo.\n\n${divider}\n⚠️ *Nota:* Este código es de un solo uso.\n\n🎵 *Hatsune Miku* 💙 *Bot* 🎵`;
+    const rtx2 = `💙 *S U B B O T   -   Q R* 💙\n${divider}\n\n🎵 *Instrucciones para vincular:*\n\n🌿 *1.* Toca los 3 puntos en la esquina superior derecha de tu WhatsApp.\n🌿 *2.* Toca en *Dispositivos vinculados*.\n🌿 *3.* Toca en *Vincular un dispositivo*.\n🌿 *4.* Escanea este código QR con tu cámara.\n\n${divider}\n⚠️ *Nota:* No uses tu cuenta personal principal.\n\n🎵 *Hatsune Miku* 💙 *Bot* 🎵`;
     const caption = isQR ? rtx2 : rtx;
     if (!global.db.data.users[m.sender]) global.db.data.users[m.sender] = {};
     const lastSubTime = global.db.data.users[m.sender].Subs || 0;
@@ -58,7 +59,7 @@ export default {
     
     if (new Date() - lastSubTime < cooldown) {
       const remaining = msToTime(cooldown - (new Date() - lastSubTime));
-      return m.reply(`💙 Debes esperar *${remaining}* para volver a intentar vincular un subbot.`, m, global.miku);
+      return m.reply(`💙 *E S P E R A* 💙\n${divider}\n\n🎵 ¡Miku necesita un respiro!\n🌿 Espera *${remaining}* antes de intentar subir otro subbot al escenario.\n\n${divider}\n🎵 *Hatsune Miku* 💙 *Bot* 🎵`, m, global.miku);
     }
 
     const subsPath = './Sessions/subbots';
@@ -70,7 +71,7 @@ export default {
     const maxSubs = 50;
     
     if (subsCount >= maxSubs) {
-      return m.reply('💙 No se han encontrado espacios disponibles para registrar un subbot.', m, global.miku);
+      return m.reply(`💙 *S I S T E M A   L L E N O* 💙\n${divider}\n\n🎵 ¡Oh no! Miku ya no tiene más espacio para nuevos subbots en este momento.\n🌿 El límite máximo del host ha sido alcanzado.\n\n${divider}\n🎵 *Hatsune Miku* 💙 *Bot* 🎵`, m, global.miku);
     }
 
     const rawPhone      = m.sender.split('@')[0].replace(/\D/g, '');
@@ -81,22 +82,20 @@ export default {
     if (fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
       if (subBotManager.subbots?.has(sessionId)) {
         return m.reply(
-          `💙 *Ya tienes un subbot activo*\n\n` +
-          `📱 Número: ${sessionId}\n✅ Estado: Conectado\n\n` +
-          `⚠️ Para eliminar usa: ${usedPrefix}deletebot`,
+          `💙 *S U B B O T   A C T I V O* 💙\n${divider}\n\n🎵 ¡Ya eres parte del escenario de Miku!\n\n🌿 *Número:* ${sessionId}\n💙 *Estado:* Conectado y listo\n\n${divider}\n⚠️ *Nota:* Para eliminarlo usa *${usedPrefix}deletebot*\n\n🎵 *Hatsune Miku* 💙 *Bot* 🎵`,
           m, global.miku
         );
       }
       try {
         await subBotManager.startSubBot(sessionId);
-        return m.reply(`💙 Reconectando tu subbot...\n📱 ${sessionId}\n⏳ Espera unos segundos.`, m, global.miku);
+        return m.reply(`💙 *R E C O N E C T A N D O* 💙\n${divider}\n\n🎵 ¡Afinando los micrófonos!\n🌿 Reconectando sesión: ${sessionId}\n⏳ Espera unos segundos por favor.\n\n${divider}\n🎵 *Hatsune Miku* 💙 *Bot* 🎵`, m, global.miku);
       } catch {
-        return m.reply(`💙 Sesión desconectada.\n⚠️ Usa ${usedPrefix}deletebot para limpiar e intentar de nuevo.`, m, global.miku);
+        return m.reply(`💙 *D E S C O N E C T A D O* 💙\n${divider}\n\n🎵 La conexión se ha perdido.\n🌿 Usa *${usedPrefix}deletebot* para limpiar tu escenario e intentar de nuevo.\n\n${divider}\n🎵 *Hatsune Miku* 💙 *Bot* 🎵`, m, global.miku);
       }
     }
 
     if (pendingSessions.has(sessionId)) {
-      return m.reply(`⏳ Ya hay una vinculación en curso.\nEspera o usa ${usedPrefix}deletebot para cancelar.`, m, global.miku);
+      return m.reply(`💙 *E N   E S P E R A* 💙\n${divider}\n\n🎵 ¡Miku ya está procesando una solicitud tuya!\n🌿 Termina la actual o usa *${usedPrefix}deletebot* para cancelarla.\n\n${divider}\n🎵 *Hatsune Miku* 💙 *Bot* 🎵`, m, global.miku);
     }
 
     cleanFolder(sessionFolder);
@@ -179,7 +178,7 @@ export default {
             }, 3000);
 
             await client.sendMessage(m.chat, {
-              text: `💙 *HATSUNE MIKU* 💙\n\n✅ ¡Vinculación exitosa!\n\n👤 ${userName}\n📱 ${cleanId}\n\n🤖 Tu subbot está activándose...\n⏳ En unos segundos estará listo\n\n⚠️ Para desvincular: *${usedPrefix}deletebot*`,
+              text: ` *C O N E X I Ó N   E X I T O S A* 💙\n${divider}\n\n🎵 ¡Miku Miku Ooeeoo!\nTu subbot se ha unido al escenario.\n\n👤 *Usuario:* ${userName}\n📱 *Número:* ${cleanId}\n\n🌿 Tu subbot está activándose, en unos segundos estará listo para cantar.\n\n${divider}\n⚠️ *Nota:* Para desvincular usa *${usedPrefix}deletebot*\n\n🎵 *Hatsune Miku* 💙 *Bot* 🎵`,
               ...global.miku
             }, { quoted: m });
 
@@ -199,7 +198,7 @@ export default {
               silentClose(currentSock);
               await m.react('❌');
               await client.sendMessage(m.chat, {
-                text: `💙 *HATSUNE MIKU* 💙\n\n❌ Vinculación fallida\n\n⚠️ Código: ${reason}\n\n💡 Intenta de nuevo con: *${usedPrefix}sub*`,
+                text: `❌ *E R R O R   D E   C O N E X I Ó N* ❌\n${divider}\n\n🎵 Miku no pudo conectar tu subbot.\n🌿 *Código:* ${reason}\n\n💡 Intenta de nuevo usando: *${usedPrefix}sub*\n\n${divider}\n🎵 *Hatsune Miku*  *Bot* 🎵`,
                 ...global.miku
               }).catch(() => {});
               return;
@@ -243,6 +242,16 @@ export default {
 
           const { state } = await useMultiFileAuthState(sessionFolder);
           if (!state.creds.registered) {
+            
+           
+            await client.sendMessage(m.chat, {
+              text: caption,
+              ...global.miku
+            }, { quoted: m });
+            
+            await new Promise(r => setTimeout(r, 1500)); 
+            if (done) return;
+            
             const code          = await sock.requestPairingCode(phoneNumber);
             const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
 
@@ -251,13 +260,7 @@ export default {
             codeRequested = true; 
 
             await client.sendMessage(m.chat, {
-              text: caption,
-              ...global.miku
-            }, { quoted: m });
-
-            await client.sendMessage(m.chat, {
-              text: `💙 *${formattedCode}*`,
-              ...global.miku
+              text: formattedCode
             });
           }
 
@@ -267,7 +270,7 @@ export default {
           silentClose(sock);
           await m.react('❌');
           await client.sendMessage(m.chat, {
-            text: `💙 *HATSUNE MIKU* 💙\n\n❌ Error al generar código\n\n${err.message}\n\n💡 Intenta de nuevo con: *${usedPrefix}sub*`,
+            text: `❌ *E R R O R   D E   C Ó D I G O* ❌\n${divider}\n\n🎵 Miku tuvo un problema al generar tu código.\n🌿 *Error:* ${err.message}\n\n💡 Intenta de nuevo usando: *${usedPrefix}sub*\n\n${divider}\n🎵 *Hatsune Miku* 💙 *Bot* 🎵`,
             ...global.miku
           }).catch(() => {});
         }
@@ -279,7 +282,7 @@ export default {
         silentClose(sock);
         m.react('⏰');
         client.sendMessage(m.chat, {
-          text: `💙 *HATSUNE MIKU* 💙\n\n⏰ Tiempo agotado\n\nLa vinculación expiró.\n💡 Intenta de nuevo con: *${usedPrefix}sub*`,
+          text: `⏰ *T I E M P O   A G O T A D O* ⏰\n${divider}\n\n🎵 ¡Te has demorado mucho!\n🌿 La solicitud de vinculación ha expirado.\n\n💡 Intenta de nuevo usando: *${usedPrefix}sub*\n\n${divider}\n🎵 *Hatsune Miku*  *Bot* 🎵`,
           ...global.miku
         }).catch(() => {});
       }, 120_000);
@@ -287,11 +290,7 @@ export default {
     } catch (err) {
       finish(false);
       await m.react('❌');
-      m.reply(`💙 *HATSUNE MIKU* 💙
-
-❌ Error iniciando vinculación
-
-${err.message}`, m, global.miku);
+      m.reply(`❌ *E R R O R   I N T E R N O* ❌\n${divider}\n\n🎵 Ocurrió un error inesperado al iniciar tu subbot.\n🌿 *Detalle:* ${err.message}\n\n${divider}\n🎵 *Hatsune Miku* 💙 *Bot* 🎵`, m, global.miku);
     }
   }
 };
