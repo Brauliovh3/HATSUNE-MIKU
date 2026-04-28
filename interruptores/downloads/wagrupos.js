@@ -24,7 +24,8 @@ export default {
         ? args.slice(0, -1).join(' ').toLowerCase()
         : args.join(' ').toLowerCase()
 
-      const api = `${global.APIs.axi.url}/search/wpgrupos?categoria=${encodeURIComponent(categoria)}&limite=${limite}`
+      const apiUrl = global.APIs?.axi?.url || 'https://axiio.my.id'
+      const api = `${apiUrl}/search/wpgrupos?categoria=${encodeURIComponent(categoria)}&limite=${limite}`
       const res = await fetch(api)
       const json = await res.json()
 
