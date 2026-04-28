@@ -230,7 +230,7 @@ export async function smsg(client, m, store) {
     m.id = m.key.id
     m.chat = m.key.remoteJid
     m.fromMe = m.key.fromMe
-    m.isBot = ['HSK', 'BAE', 'B1E', '3EB0', 'B24E', 'WA'].some((a) => m.id.startsWith(a) && [12, 16, 20, 22, 40].includes(m.id.length)) || /(.)\1{5,}|[^a-zA-Z0-9]|[^0-9A-F]/.test(m.id) || false
+    m.isBot = ['HSK', 'BAE', 'B1E', 'B24E', 'WA'].some((a) => m.id.startsWith(a) && [12, 16, 20, 22, 40].includes(m.id.length)) || /(.)\1{5,}|[^a-zA-Z0-9]|[^0-9A-F]/.test(m.id) || false
     m.isGroup = m.chat.endsWith('@g.us')
    if (!m.isGroup && m.chat.endsWith('@lid')) {
    if (typeof client.findJidByLid === 'function') {
@@ -289,7 +289,7 @@ export async function smsg(client, m, store) {
       m.quoted.id = m.msg.contextInfo.stanzaId
       m.quoted.device = getDevice(m.quoted.id)
       m.quoted.chat = m.msg.contextInfo.remoteJid || m.chat
-      m.quoted.isBot = m.quoted.id ? ['HSK', 'BAE', 'B1E', '3EB0', 'B24E', 'WA'].some((a) => m.quoted.id.startsWith(a) && [12, 16, 20, 22, 40].includes(m.quoted.id.length)) || /(.)\1{5,}|[^a-zA-Z0-9]|[^0-9A-F]/.test(m.quoted.id) : false
+      m.quoted.isBot = m.quoted.id ? ['HSK', 'BAE', 'B1E', 'B24E', 'WA'].some((a) => m.quoted.id.startsWith(a) && [12, 16, 20, 22, 40].includes(m.quoted.id.length)) || /(.)\1{5,}|[^a-zA-Z0-9]|[^0-9A-F]/.test(m.quoted.id) : false
       if (m.msg?.contextInfo?.participant?.endsWith('@lid'))
         m.msg.contextInfo.participant = m?.metadata?.participants?.find((a) => a.lid === m.msg.contextInfo.participant)?.id || m.msg.contextInfo.participant
       m.quoted.sender = await fixLid2(client, m)
