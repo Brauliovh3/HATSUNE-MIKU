@@ -18,7 +18,6 @@ export default {
     const currency = global.db.data.settings[botId].currency
     
     const shopImage = 'https://files.catbox.moe/ir0e22.png'
-    const cachedShopImg = await imageCache.get(shopImage) || { url: shopImage };
     
     if (chat.adminonly || !chat.economy) {
       return m.reply(`💙 Los comandos de *Economía* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}economy on*`)
@@ -46,7 +45,7 @@ export default {
       m.chat,
       text,
       '🛒 Tienda de Pesca - Hatsune Miku Bot',
-      cachedShopImg,
+      shopImage,
       buttons,
       null,
       null,

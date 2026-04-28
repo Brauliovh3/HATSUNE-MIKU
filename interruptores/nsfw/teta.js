@@ -68,11 +68,11 @@ Un *administrador* puede activarlo con el comando:
       }
 
       await m.react('🕒')
-      const image = await imageCache.get(API_URL)
+      const image = await getBoobsImage()
       await client.sendMessage(
         m.chat,
         {
-          image: image,
+          image: image.type === 'buffer' ? image.data : { url: image.data },
           caption: '💙 *TETA NSFW*',
           mentions: [m.sender],
         },

@@ -730,7 +730,6 @@ let handler = async (client, m) => {
     }
     
     selectedWaifu = instantiateWaifu(selectedWaifu, RARITY_POWER)
-    const waifuImg = await imageCache.get(selectedWaifu.img) || { url: selectedWaifu.img };
 
     const rarityColors = {
         'común': '⚪',
@@ -771,7 +770,7 @@ let handler = async (client, m) => {
         m.chat,
         message,
         '🎮 Sistema de Personajes - Hatsune Miku Bot',
-        waifuImg,
+        selectedWaifu.img,
         buttons,
         null,
         null,

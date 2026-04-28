@@ -1,6 +1,6 @@
+import imageCache from '../../nucleo/system/imageCache.js';
 import axios from 'axios';
 import fs from 'fs';
-import imageCache from '../../nucleo/system/imageCache.js';
 
 const fetchStickerVideo = async (text) => {
   const response = await axios.get(`https://skyzxu-brat.hf.space/brat-animated`, { params: { text }, responseType: 'arraybuffer' });
@@ -25,8 +25,7 @@ export default {
       const meta2 = user.metadatos2 ? String(user.metadatos2).trim() : '';
       let texto1 = meta1 ? meta1 : '💙 HATSUNE MIKU';
       let texto2 = meta1 ? (meta2 ? meta2 : '') : `@${name}`;
-      const videoBuffer = await imageCache.get(`https://skyzxu-brat.hf.space/brat-animated?text=${encodeURIComponent(text)}`);
-      if (!videoBuffer) throw new Error('Error al obtener el video de la API.');
+      const videoBuffer = await fetchStickerVideo(text);
       const tmpFile = `./tmp/bratv-${Date.now()}.mp4`;
       fs.writeFileSync(tmpFile, videoBuffer);
       await client.sendVideoAsSticker(m.chat, tmpFile, m, { packname: texto1, author: texto2 });

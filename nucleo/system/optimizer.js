@@ -49,7 +49,6 @@ class SystemOptimizer {
     this.schedule('tmp-cleanup', () => this.cleanTempFiles(), 2 * 60000);
     this.schedule('session-cleanup', () => this.cleanSessions(), 5 * 60000);
     this.schedule('prekey-rotation', () => this.rotatePrekeys(), 10 * 60000);
-    this.schedule('image-cache-cleanup', () => imageCache.autoClean(7), 24 * 60 * 60000);
     this.schedule('aggressive-cleanup', () => this.aggressiveCleanup(), 15 * 60000);
     this.schedule('stats-report', () => this.printStats(), 60 * 60000);
     
