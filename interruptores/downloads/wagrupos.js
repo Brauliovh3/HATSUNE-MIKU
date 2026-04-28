@@ -3,7 +3,7 @@ import { getBuffer } from '../../nucleo/message.js'
 export default {
   command: ['wpgrupos', 'gruposwa', 'wagrupos'],
   category: 'internet',
-  run: async (client, m, args, command) => {
+  run: async (client, m, args, usedPrefix, command) => {
     if (!args || !args[0]) {
       return m.reply(
         '💙 Por favor, ingrese una categoría.\n\n' +
