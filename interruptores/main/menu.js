@@ -3,6 +3,7 @@ import { getDevice } from '@whiskeysockets/baileys';
 import fs from 'fs';
 import axios from 'axios';
 import moment from 'moment-timezone';
+import imageCache from '../../nucleo/system/imageCache.js';
 import { bodyMenu, menuObject } from '../../nucleo/commands.js';
 import { categoryImages, categoryAliases, mainMenuImage } from '../../nucleo/menuConfig.js';
 
@@ -11,7 +12,6 @@ import { promisify } from 'util';
 import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
 const execAsync = promisify(exec);
-
 
 const ptvCache = new Map();
 
@@ -35,7 +35,6 @@ async function toVideoNote(url) {
   }
 }
 
-
 toVideoNote(mainMenuImage).catch(() => {});
 
 function normalize(text = '') {
@@ -45,134 +44,110 @@ function normalize(text = '') {
 
 const menuRun = async (client, m, args, usedPrefix, command) => {
   try {
-      const now = new Date();
-      const colombianTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Caracas' }));
-      const tiempo = colombianTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '');
-      const tempo = moment.tz('America/Caracas').format('hh:mm A');
-      const botId = client?.user?.id.split(':')[0] + '@s.whatsapp.net';
-      const botSettings = global.db.data.settings[botId] || {};
-      const botname = botSettings.botname || '';
-      const namebot = botSettings.namebot || '';
-      const banner = botSettings.banner || '';
-      const owner = botSettings.owner || '';
-      const canalId = botSettings.id || '';
-      const canalName = botSettings.nameid || '';
-      const prefix = botSettings.prefix;
-      const link = botSettings.link || links.api.channel;
-      const isOficialBot = botId === global.client.user.id.split(':')[0] + '@s.whatsapp.net';
-      const botType = isOficialBot ? 'Principal/Owner' : 'Sub Bot';
-      const users = Object.keys(global.db.data.users).length;
-      const device = getDevice(m.key.id);
-      const sender = global.db.data.users[m.sender].name;
-      const time = client.uptime ? formatearMs(Date.now() - client.uptime) : "Desconocido";
-      const input = normalize(args[0] || '');
-      let cat = Object.keys(categoryAliases).find(k => categoryAliases[k].map(normalize).includes(input));
+    const now = new Date();
+    const colombianTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Caracas' }));
+    const tiempo = colombianTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '');
+    const tempo = moment.tz('America/Caracas').format('hh:mm A');
+    const botId = client?.user?.id.split(':')[0] + '@s.whatsapp.net';
+    const botSettings = global.db.data.settings[botId] || {};
+    const botname = botSettings.botname || '';
+    const namebot = botSettings.namebot || '';
+    const banner = botSettings.banner || '';
+    const owner = botSettings.owner || '';
+    const canalId = botSettings.id || '';
+    const canalName = botSettings.nameid || '';
+    const prefix = botSettings.prefix;
+    const link = botSettings.link || links.api.channel;
+    const isOficialBot = botId === global.client.user.id.split(':')[0] + '@s.whatsapp.net';
+    const botType = isOficialBot ? 'Principal/Owner' : 'Sub Bot';
+    const users = Object.keys(global.db.data.users).length;
+    const device = getDevice(m.key.id);
+    const sender = global.db.data.users[m.sender].name;
+    const time = client.uptime ? formatearMs(Date.now() - client.uptime) : "Desconocido";
+    const input = normalize(args[0] || '');
+    let cat = Object.keys(categoryAliases).find(k => categoryAliases[k].map(normalize).includes(input));
+    
+    if (!cat && args[0] && categoryAliases[args[0]]) {
+      cat = args[0];
+    }
+    
+    const category = `${cat ? ` para \`${cat}\`` : '. *(˶ᵔ ᵕ ᵔ˶)*'}`;
+    if (args[0] && !cat) {      
+      return m.reply(`💙 La categoria *${args[0]}* no existe, las categorias disponibles son: *${Object.keys(categoryAliases).join(', ')}*.\n> Para ver la lista completa escribe *${usedPrefix}menu*\n> Para ver los comandos de una categoría escribe *${usedPrefix}menu [categoría]*\n> Ejemplo: *${usedPrefix}menu anime*`);
+    }
+    const sections = menuObject;
+    const content = cat ? String(sections[cat] || '') : Object.values(sections).map(s => String(s || '')).join('\n\n');
+    let menu = cat ? content : (bodyMenu ? String(bodyMenu || '') + '\n\n' + content : content);
+    
+    const categoryButtons = Object.keys(sections).map(key => ({
+      buttonId: `menu_${key}`,
+      buttonText: { displayText: key.toUpperCase() },
+      type: 1
+    }));
+    
+    const buttons = [
+      ...categoryButtons,
+      { buttonId: 'menu_all', buttonText: { displayText: '📋 COMPLETO' }, type: 1 }
+    ];
+    const replacements = {
+      $owner: owner ? (!isNaN(owner.replace(/@s\.whatsapp\.net$/, '')) ? global.db.data.users[owner]?.name || owner.split('@')[0] : owner) : 'Oculto por privacidad',
+      $botType: botType,
+      $device: device,
+      $tiempo: tiempo,
+      $tempo: tempo,
+      $users: users.toLocaleString(),
+      $link: link,
+      $cat: category,
+      $sender: sender,
+      $botname: botname,
+      $namebot: namebot,
+      $prefix: usedPrefix,
+      $uptime: time
+    };
+    for (const [key, value] of Object.entries(replacements)) {
+      menu = menu.replace(new RegExp(`\\${key}`, 'g'), value);
+    }
+    
+    const messageContent = cat ? menu : `╭━💙 MENU PRINCIPAL 💙━╮\n│\n│ 💙 *${botname}*\n│\n│ 👤 *Usuarios:* ${users.toLocaleString()}\n│ ⏱️ *Uptime:* ${time}\n│ 📱 *Tipo:* ${botType}\n│\n│ 💙 Selecciona una categoría:\n│\n╰━━━━━━━━━━━━━━━━━╯`;
+    const categoryBanner = cat ? (categoryImages[cat] || banner) : mainMenuImage;
+    
+    if (cat) {
       
-      
-      if (!cat && args[0] && categoryAliases[args[0]]) {
-        cat = args[0];
-      }
-      
-      const category = `${cat ? ` para \`${cat}\`` : '. *(˶ᵔ ᵕ ᵔ˶)*'}`;
-      if (args[0] && !cat) {      
-        return m.reply(`💙 La categoria *${args[0]}* no existe, las categorias disponibles son: *${Object.keys(categoryAliases).join(', ')}*.\n> Para ver la lista completa escribe *${usedPrefix}menu*\n> Para ver los comandos de una categoría escribe *${usedPrefix}menu [categoría]*\n> Ejemplo: *${usedPrefix}menu anime*`);
-      }
-      const sections = menuObject;
-      const content = cat ? String(sections[cat] || '') : Object.values(sections).map(s => String(s || '')).join('\n\n');
-      let menu = cat ? content : (bodyMenu ? String(bodyMenu || '') + '\n\n' + content : content);
-      
-      const categoryButtons = Object.keys(sections).map(key => ({
-        buttonId: `menu_${key}`,
-        buttonText: { displayText: key.toUpperCase() },
-        type: 1
-      }));
-      
-      const buttons = [
-        ...categoryButtons,
-        { buttonId: 'menu_all', buttonText: { displayText: '📋 COMPLETO' }, type: 1 }
-      ];
-      const replacements = {
-        $owner: owner ? (!isNaN(owner.replace(/@s\.whatsapp\.net$/, '')) ? global.db.data.users[owner]?.name || owner.split('@')[0] : owner) : 'Oculto por privacidad',
-        $botType: botType,
-        $device: device,
-        $tiempo: tiempo,
-        $tempo: tempo,
-        $users: users.toLocaleString(),
-        $link: link,
-        $cat: category,
-        $sender: sender,
-        $botname: botname,
-        $namebot: namebot,
-        $prefix: usedPrefix,
-        $uptime: time
-      };
-      for (const [key, value] of Object.entries(replacements)) {
-        menu = menu.replace(new RegExp(`\\${key}`, 'g'), value);
-      }
-      
-      const messageContent = cat ? menu : `╭━💙 MENU PRINCIPAL 💙━╮\n│\n│ 💙 *${botname}*\n│\n│ 👤 *Usuarios:* ${users.toLocaleString()}\n│ ⏱️ *Uptime:* ${time}\n│ 📱 *Tipo:* ${botType}\n│\n│ 💙 Selecciona una categoría:\n│\n╰━━━━━━━━━━━━━━━━━╯`;
-      const categoryBanner = cat ? (categoryImages[cat] || banner) : mainMenuImage;
-      
-      if (cat) {
-        
-        if (categoryBanner.includes('.mp4') || categoryBanner.includes('.webm')) {
-          const ptvBuffer = await toVideoNote(categoryBanner);
-          const ptvMsg = await client.sendMessage(m.chat, {
-            video: ptvBuffer,
-            ptv: true,
-            mimetype: 'video/mp4'
-          }, { quoted: m });
-
-          await client.sendMessage(m.chat, {
-            text: messageContent,
-            contextInfo: {
-              mentionedJid: [m.sender],
-              isForwarded: true,
-              forwardedNewsletterMessageInfo: {
-                newsletterJid: canalId,
-                serverMessageId: '',
-                newsletterName: canalName
-              }
-            }
-          }, { quoted: ptvMsg });
-        } else {
-          await client.sendMessage(m.chat, {
-            text: messageContent,
-            contextInfo: {
-              mentionedJid: [m.sender],
-              isForwarded: true,
-              forwardedNewsletterMessageInfo: {
-                newsletterJid: canalId,
-                serverMessageId: '',
-                newsletterName: canalName
-              },
-              externalAdReply: {
-                title: botname,
-                body: `${namebot}, © 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ) `,
-                showAdAttribution: false,
-                thumbnailUrl: categoryBanner,
-                mediaType: 1,
-                previewType: 0,
-                renderLargerThumbnail: true
-              }
-            }
-          }, { quoted: m });
-        }
-      } else {
-
-       
-        const ptvBuffer = await toVideoNote(mainMenuImage);
+      if (categoryBanner.includes('.mp4') || categoryBanner.includes('.webm')) {
+        const ptvBuffer = await toVideoNote(categoryBanner);
         const ptvMsg = await client.sendMessage(m.chat, {
           video: ptvBuffer,
           ptv: true,
           mimetype: 'video/mp4'
         }, { quoted: m });
 
-       
         await client.sendMessage(m.chat, {
-          image: { url: 'https://file.garden/ae-9DPf0ekWVe7ex/menu.png' },
+          text: messageContent,
+          contextInfo: {
+            mentionedJid: [m.sender],
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+              newsletterJid: canalId,
+              serverMessageId: '',
+              newsletterName: canalName
+            },
+            externalAdReply: {
+              title: botname,
+              body: `${namebot},  (ㅎㅊDEPOOLㅊㅎ) `,
+              showAdAttribution: false,
+              thumbnail: cachedBanner || { url: categoryBanner },
+              mediaType: 1,
+              previewType: 0,
+              renderLargerThumbnail: true
+            }
+          }
+        }, { quoted: m });
+      } else {
+        const cachedBanner = await imageCache.get(categoryBanner);
+        await client.sendMessage(m.chat, {
+          image: cachedBanner || { url: categoryBanner },
           caption: messageContent,
-          footer: '💙 Hatsune Miku Bot',
+          footer: 'Hatsune Miku Bot',
           buttons: buttons,
           headerType: 4,
           contextInfo: {
@@ -184,13 +159,38 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
               newsletterName: canalName
             }
           }
-        }, { quoted: ptvMsg });
+        }, { quoted: m });
       }
-    } catch (e) {
-      await m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
+    } else {
+      const ptvBuffer = await toVideoNote(mainMenuImage);
+      const ptvMsg = await client.sendMessage(m.chat, {
+        video: ptvBuffer,
+        ptv: true,
+        mimetype: 'video/mp4'
+      }, { quoted: m });
+
+      const cachedMenuImg = await imageCache.get('https://file.garden/ae-9DPf0ekWVe7ex/menu.png');
+      await client.sendMessage(m.chat, {
+        image: cachedMenuImg || { url: 'https://file.garden/ae-9DPf0ekWVe7ex/menu.png' },
+        caption: messageContent,
+        footer: 'Hatsune Miku Bot',
+        buttons: buttons,
+        headerType: 4,
+        contextInfo: {
+          mentionedJid: [m.sender],
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: canalId,
+            serverMessageId: '',
+            newsletterName: canalName
+          }
+        }
+      }, { quoted: ptvMsg });
     }
+  } catch (e) {
+    await m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
   }
-;
+};
 
 export default {
   command: ['menu','help','ayuda'],

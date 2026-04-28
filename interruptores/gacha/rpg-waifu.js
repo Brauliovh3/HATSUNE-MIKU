@@ -2,6 +2,7 @@
 import fs_sync from 'fs';
 import path from 'path';
 import { instantiateWaifu, formatPvpLine } from '../../nucleo/gacha/waifuPvp.js'
+import imageCache from '../../nucleo/system/imageCache.js'
 
 const dbPath = path.join(process.cwd(), 'src', 'database');
 const databaseFilePath = path.join(dbPath, 'waifudatabase.json');
@@ -717,7 +718,6 @@ let handler = async (client, m) => {
     const roll = Math.random() * totalProbability;
     let selectedWaifu = null;
     
-    
     for (const { waifu, threshold } of cumulativeProbabilities) {
         if (roll <= threshold) {
             selectedWaifu = waifu;
@@ -725,13 +725,12 @@ let handler = async (client, m) => {
         }
     }
     
-   
     if (!selectedWaifu) {
         selectedWaifu = waifuList[waifuList.length - 1];
     }
-
     
     selectedWaifu = instantiateWaifu(selectedWaifu, RARITY_POWER)
+    const waifuImg = await imageCache.get(selectedWaifu.img) || { url: selectedWaifu.img };
 
     const rarityColors = {
         'común': '⚪',
@@ -772,7 +771,7 @@ let handler = async (client, m) => {
         m.chat,
         message,
         '🎮 Sistema de Personajes - Hatsune Miku Bot',
-        selectedWaifu.img,
+        waifuImg,
         buttons,
         null,
         null,

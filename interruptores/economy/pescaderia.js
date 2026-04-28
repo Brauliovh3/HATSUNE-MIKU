@@ -11,11 +11,14 @@ const FISH_SHOP_ITEMS = {
 export default {
   command: ['pescaderia', 'tienda pesca', 'fishshop'],
   category: 'rpg',
-  run: async (client, m, args, usedPrefix, command) => {
+    run: async (client, m, args, usedPrefix, command) => {
     const chat = global.db.data.chats[m.chat]
     const user = chat.users[m.sender]
     const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
     const currency = global.db.data.settings[botId].currency
+    
+    const shopImage = 'https://files.catbox.moe/ir0e22.png'
+    const cachedShopImg = await imageCache.get(shopImage) || { url: shopImage };
     
     if (chat.adminonly || !chat.economy) {
       return m.reply(`💙 Los comandos de *Economía* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}economy on*`)
@@ -39,11 +42,16 @@ export default {
     
     const text = `🐟 *PESCADERÍA* 🐟\n\n💰 *Tu saldo:* 🌱${user.coins.toLocaleString()} ${currency}${equipText}\n\n🎯 *Selecciona una categoría:*`
     
-    await client.sendMessage(m.chat, {
+    await client.sendButton(
+      m.chat,
       text,
+      '🛒 Tienda de Pesca - Hatsune Miku Bot',
+      cachedShopImg,
       buttons,
-      headerType: 4
-    }, { quoted: m })
+      null,
+      null,
+      m
+    )
   },
 }
 
