@@ -27,7 +27,7 @@ const shouldProcessRaw = (sock, raw) => {
   const chatJid = raw.key?.remoteJid;
   if (!chatJid || !chatJid.endsWith('@g.us')) return true;
   const chat = global.db?.data?.chats?.[chatJid] || {};
-  const primaryBot = chat?.primaryBot || getMainBotDigits();
+  const primaryBot = chat?.primaryBot;
   if (!primaryBot) return true;
   const botJid = (sock.user?.id?.split(':')[0] || '') + '@s.whatsapp.net';
   return normalizeJid(primaryBot) === normalizeJid(botJid);

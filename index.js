@@ -57,58 +57,43 @@ if (!fs.existsSync('./tmp')) fs.mkdirSync('./tmp', { recursive: true });
 
 function cleanCache() {
   try {
-    const tmpFolder = './tmp';
-    if (fs.existsSync(tmpFolder)) {
+    const tmpFolders = ['./tmp', './tmp-descargas', './channel-audios'];
+    let cleanedTmp = 0;
+    
+    for (const tmpFolder of tmpFolders) {
+      if (!fs.existsSync(tmpFolder)) continue;
       const files = fs.readdirSync(tmpFolder);
-      let cleaned = 0;
       for (const file of files) {
         try {
           const filePath = path.join(tmpFolder, file);
           const stat = fs.statSync(filePath);
-          
-          if (stat.size > 5 * 1024 * 1024) {
+         
+          if (stat.size > 10 * 1024 * 1024 || Date.now() - stat.mtimeMs > 60 * 60 * 1000) {
             fs.unlinkSync(filePath);
-            cleaned++;
-          }
-          
-          else if (Date.now() - stat.mtimeMs > 60 * 60 * 1000) {
-            fs.unlinkSync(filePath);
-            cleaned++;
+            cleanedTmp++;
           }
         } catch {}
       }
-      if (cleaned > 0) console.log(chalk.gray(`[ 🗑️ ] Cache tmp: ${cleaned} archivos eliminados`));
     }
+    if (cleanedTmp > 0) console.log(chalk.gray(`[ 🗑️ ] Cache temporal: ${cleanedTmp} archivos basura eliminados`));
+
     const sessionsFolder = './Sessions';
     if (fs.existsSync(sessionsFolder)) {
-      const getFolderSizeMB = (dir) => {
-        let total = 0;
-        for (const file of fs.readdirSync(dir)) {
-          try {
-            const filePath = path.join(dir, file);
-            const stat = fs.statSync(filePath);
-            total += stat.isDirectory() ? getFolderSizeMB(filePath) : stat.size;
-          } catch {}
-        }
-        return total / (1024 * 1024);
-      };
-      const sizeMB = getFolderSizeMB(sessionsFolder);
-      if (sizeMB > maxCache) {
-        console.log(chalk.yellow(`⚠ Sessions ${sizeMB.toFixed(1)}MB — limpiando...`));
-        const safeDelete = (dir) => {
-          for (const file of fs.readdirSync(dir)) {
-            const filePath = path.join(dir, file);
-            const stat = fs.statSync(filePath);
-            if (stat.isDirectory()) {
-              safeDelete(filePath);
-            } else if (!file.includes('creds') && !file.startsWith('session-')) {
-              try { fs.unlinkSync(filePath); } catch {}
-            }
+      let cleanedSessions = 0;
+      const cleanSessionsRecursive = (dir) => {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          const filePath = path.join(dir, file);
+          const stat = fs.statSync(filePath);
+          if (stat.isDirectory()) {
+            cleanSessionsRecursive(filePath);
+          } else if ((file.startsWith('pre-key-') || file.startsWith('sender-key-') || file.startsWith('app-state-')) && (Date.now() - stat.mtimeMs > 2 * 24 * 60 * 60 * 1000)) {
+            try { fs.unlinkSync(filePath); cleanedSessions++; } catch {}
           }
-        };
-        const ownerFolder = path.join(sessionsFolder, 'Owner');
-        if (fs.existsSync(ownerFolder)) safeDelete(ownerFolder);
-      }
+        }
+      };
+      cleanSessionsRecursive(sessionsFolder);
+      if (cleanedSessions > 0) console.log(chalk.yellow(`[ 🗑️ ] Optimización: ${cleanedSessions} llaves antiguas de subbots eliminadas`));
     }
   } catch (e) {
     console.error(chalk.red('Error en cleanCache: '), e);

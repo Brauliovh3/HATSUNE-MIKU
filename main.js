@@ -17,10 +17,10 @@ global.gallerySessions = global.gallerySessions || new Map();
 const normalizeJidDigits = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '');
 const getBotJid = (client) => (client.user?.id?.split(':')[0] || client.user?.lid || '') + '@s.whatsapp.net';
 const getMainBotJid = () => (global.client?.user?.id?.split(':')[0] || '') + '@s.whatsapp.net';
-const getAssignedPrimaryBot = (chat) => chat?.primaryBot || getMainBotJid();
+const getAssignedPrimaryBot = (chat) => chat?.primaryBot || null;
 const isPrimaryHandler = (client, chat) => {
   const assignedBot = getAssignedPrimaryBot(chat);
-  if (!assignedBot || assignedBot === '@s.whatsapp.net') return true;
+  if (!assignedBot) return true;
   return normalizeJidDigits(assignedBot) === normalizeJidDigits(getBotJid(client));
 };
 
@@ -292,9 +292,6 @@ export default async (client, m) => {
   const from = m.key.remoteJid;
   const botJid = getBotJid(client);
   const chat = global.db.data.chats[m.chat] || {}
-  if (m.isGroup && !chat.primaryBot && getMainBotJid() !== '@s.whatsapp.net') {
-    chat.primaryBot = getMainBotJid()
-  }
   const settings = global.db.data.settings[botJid] || {}
   const user = global.db.data.users[sender] ||= {}
   const users = chat.users[sender] || {}
