@@ -364,7 +364,7 @@ export async function smsg(client, m, store) {
   }  
 
   client.getName = (jid, withoutContact = false) => {
-    id = client.decodeJid(jid)
+    const id = client.decodeJid(jid)
     withoutContact = client.withoutContact || withoutContact
     let v
     if (id.endsWith('@g.us'))
