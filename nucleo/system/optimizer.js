@@ -377,8 +377,6 @@ class SystemOptimizer {
   }
 }
 
-import imageCache from './imageCache.js';
-
 const optimizer = new SystemOptimizer();
 
 export default optimizer;
