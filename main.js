@@ -14,6 +14,16 @@ seeCommands();
 
 global.gallerySessions = global.gallerySessions || new Map();
 
+const normalizeJidDigits = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '');
+const getBotJid = (client) => (client.user?.id?.split(':')[0] || client.user?.lid || '') + '@s.whatsapp.net';
+const getMainBotJid = () => (global.client?.user?.id?.split(':')[0] || '') + '@s.whatsapp.net';
+const getAssignedPrimaryBot = (chat) => chat?.primaryBot || getMainBotJid();
+const isPrimaryHandler = (client, chat) => {
+  const assignedBot = getAssignedPrimaryBot(chat);
+  if (!assignedBot || assignedBot === '@s.whatsapp.net') return true;
+  return normalizeJidDigits(assignedBot) === normalizeJidDigits(getBotJid(client));
+};
+
 export default async (client, m) => {
   const sender = m.sender;
   let body = m.message?.conversation || m.message?.extendedTextMessage?.text || m.message?.imageMessage?.caption || m.message?.videoMessage?.caption || m.message?.buttonsResponseMessage?.selectedButtonId || m.message?.listResponseMessage?.singleSelectReply?.selectedRowId || m.message?.templateButtonReplyMessage?.selectedId || m.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson || '';
@@ -40,22 +50,8 @@ export default async (client, m) => {
     } catch (e) {}
   }
   if (buttonId && (buttonId.startsWith('menu_') || buttonId.startsWith('shop_') || buttonId.startsWith('buy_'))) {
-    if (m.isGroup) {
-      const chat = global.db?.data?.chats?.[m.chat] || {};
-      const primaryBot = chat?.primaryBot;
-      if (primaryBot) {
-        const botJid = client.user?.id?.split(':')[0] + '@s.whatsapp.net' || ''
-        const normalizeJid = (jid) => {
-          if (!jid) return ''
-          const clean = String(jid).split(':')[0].replace(/\D/g, '')
-          return clean
-        }
-        const primaryDigits = normalizeJid(primaryBot)
-        const currentDigits = normalizeJid(botJid)
-        if (primaryDigits && primaryDigits !== currentDigits) {
-          return
-        }
-      }
+    if (m.isGroup && !isPrimaryHandler(client, global.db?.data?.chats?.[m.chat])) {
+      return
     }
     
     if (buttonId.startsWith('menu_')) {
@@ -77,22 +73,8 @@ export default async (client, m) => {
     buttonId.includes('youtube_video_doc_') ||
     buttonId.includes('youtube_audio_doc_')
   )) {
-    if (m.isGroup) {
-      const chat = global.db?.data?.chats?.[m.chat] || {};
-      const primaryBot = chat?.primaryBot;
-      if (primaryBot) {
-        const botJid = client.user?.id?.split(':')[0] + '@s.whatsapp.net' || ''
-        const normalizeJid = (jid) => {
-          if (!jid) return ''
-          const clean = String(jid).split(':')[0].replace(/\D/g, '')
-          return clean
-        }
-        const primaryDigits = normalizeJid(primaryBot)
-        const currentDigits = normalizeJid(botJid)
-        if (primaryDigits && primaryDigits !== currentDigits) {
-          return
-        }
-      }
+    if (m.isGroup && !isPrimaryHandler(client, global.db?.data?.chats?.[m.chat])) {
+      return
     }
     
     const { processDownload } = await import('./interruptores/downloads/play.js')
@@ -119,22 +101,8 @@ export default async (client, m) => {
   }
 
   if (buttonId && (buttonId.startsWith('waifu_claim_') || buttonId.startsWith('waifu_sell_'))) {
-    if (m.isGroup) {
-      const chat = global.db?.data?.chats?.[m.chat] || {};
-      const primaryBot = chat?.primaryBot;
-      if (primaryBot) {
-        const botJid = client.user?.id?.split(':')[0] + '@s.whatsapp.net' || ''
-        const normalizeJid = (jid) => {
-          if (!jid) return ''
-          const clean = String(jid).split(':')[0].replace(/\D/g, '')
-          return clean
-        }
-        const primaryDigits = normalizeJid(primaryBot)
-        const currentDigits = normalizeJid(botJid)
-        if (primaryDigits && primaryDigits !== currentDigits) {
-          return
-        }
-      }
+    if (m.isGroup && !isPrimaryHandler(client, global.db?.data?.chats?.[m.chat])) {
+      return
     }
     
     let userId;
@@ -321,8 +289,11 @@ export default async (client, m) => {
   antilink(client, m);
 
   const from = m.key.remoteJid;
-  const botJid = client.user?.id?.split(':')[0] + '@s.whatsapp.net' || client.user?.lid || '';
+  const botJid = getBotJid(client);
   const chat = global.db.data.chats[m.chat] || {}
+  if (m.isGroup && !chat.primaryBot && getMainBotJid() !== '@s.whatsapp.net') {
+    chat.primaryBot = getMainBotJid()
+  }
   const settings = global.db.data.settings[botJid] || {}
   const user = global.db.data.users[sender] ||= {}
   const users = chat.users[sender] || {}
@@ -331,13 +302,14 @@ export default async (client, m) => {
   let groupMetadata = null
   let groupAdmins = []
   let groupName = ''
-  if (m.isGroup) {
+  const ensureGroupContext = async () => {
+    if (!m.isGroup || groupMetadata) return
     groupMetadata = await client.groupMetadata(m.chat).catch(() => null)
-    groupName = groupMetadata?.subject || ''
+    groupName = groupMetadata?.subject || groupName
     groupAdmins = groupMetadata?.participants.filter(p => (p.admin === 'admin' || p.admin === 'superadmin')) || []
-  }  
-  const isBotAdmins = m.isGroup ? groupAdmins.some(p => p.phoneNumber === botJid || p.jid === botJid || p.id === botJid || p.lid === botJid ) : false
-  const isAdmins = m.isGroup ? groupAdmins.some(p => p.phoneNumber === sender || p.jid === sender || p.id === sender || p.lid === sender ) : false
+  }
+  let isBotAdmins = false
+  let isAdmins = false
   const isOwners = [botJid, ...(settings.owner ? [settings.owner] : []), ...global.owner.map(num => num + '@s.whatsapp.net')].includes(sender);
 
   for (const name in global.plugins) {
@@ -404,7 +376,7 @@ export default async (client, m) => {
   if (!command) return;
   
   const chatData = global.db.data.chats[from] || {};
-  const consolePrimary = chatData.primaryBot;
+  const consolePrimary = getAssignedPrimaryBot(chatData);
   if (m.message || !consolePrimary || consolePrimary === botJid) {
     const bodyPreview = typeof body === 'string' && body.length > 50 ? `${body.slice(0, 50)}…` : body;
     const h = chalk.bold.blue('╔⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍···');
@@ -414,15 +386,10 @@ export default async (client, m) => {
   }
   
   const hasPrefix = settings.prefix === true ? true : (Array.isArray(settings.prefix) ? settings.prefix : typeof settings.prefix === 'string' ? [settings.prefix] : []).some(p => textToMatch?.startsWith(p));
-  const botprimaryId = chat?.primaryBot
+  const botprimaryId = getAssignedPrimaryBot(chat)
   if (botprimaryId && hasPrefix && m.isGroup) {
-    const normalizeJid = (jid) => {
-      if (!jid) return ''
-      const clean = String(jid).split(':')[0].replace(/\D/g, '')
-      return clean + '@s.whatsapp.net'
-    }
-    const normalizedPrimary = normalizeJid(botprimaryId)
-    const normalizedCurrent = normalizeJid(botJid)
+    const normalizedPrimary = normalizeJidDigits(botprimaryId)
+    const normalizedCurrent = normalizeJidDigits(botJid)
     if (normalizedPrimary !== normalizedCurrent) {
       return
     }
@@ -446,6 +413,10 @@ export default async (client, m) => {
 
   if (!users.stats) users.stats = {};
   if (!users.stats[today]) users.stats[today] = { msgs: 0, cmds: 0 }; 
+  if (m.isGroup && chat.adminonly) {
+    await ensureGroupContext()
+    isAdmins = groupAdmins.some(p => p.phoneNumber === sender || p.jid === sender || p.id === sender || p.lid === sender )
+  }
   if (chat.adminonly && !isAdmins) return;
   const cmdData = global.comandos.get(command);
   if (!cmdData) {
@@ -455,7 +426,12 @@ export default async (client, m) => {
   }
   if (cmdData.isOwner && !global.owner.map(num => num + '@s.whatsapp.net').includes(sender)) {
     if (settings.prefix === true) return;
-    return m.reply(`💙 El comando *${command}* no existe.\n> 🌱 Usa *${usedPrefix}help* para ver la lista de comandos disponibles.`);
+    return m.reply(`El comando *${command}* no existe.\n> Usa *${usedPrefix}help* para ver la lista de comandos disponibles.`);
+  }
+  if (m.isGroup && (cmdData.isAdmin || cmdData.botAdmin)) {
+    await ensureGroupContext()
+    isAdmins = groupAdmins.some(p => p.phoneNumber === sender || p.jid === sender || p.id === sender || p.lid === sender )
+    isBotAdmins = groupAdmins.some(p => p.phoneNumber === botJid || p.jid === botJid || p.id === botJid || p.lid === botJid )
   }
   if (cmdData.isAdmin && !isAdmins) return client.reply(m.chat, mess.admin, m);
   if (cmdData.botAdmin && !isBotAdmins) return client.reply(m.chat, mess.botAdmin, m);

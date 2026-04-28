@@ -21,10 +21,12 @@ const normalizeJid = (jid) => {
   return String(jid).split(':')[0].replace(/\D/g, '');
 };
 
+const getMainBotDigits = () => normalizeJid(global.client?.user?.id || '');
+
 const shouldProcessCommand = (sock, m) => {
   if (!m.isGroup) return true;
   const chat = global.db?.data?.chats?.[m.chat] || {};
-  const primaryBot = chat?.primaryBot;
+  const primaryBot = chat?.primaryBot || getMainBotDigits();
   if (!primaryBot) return true;
   const botJid = (sock.user?.id?.split(':')[0] || '') + '@s.whatsapp.net';
   return normalizeJid(primaryBot) === normalizeJid(botJid);
