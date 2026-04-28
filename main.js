@@ -285,7 +285,7 @@ export default async (client, m) => {
     return;
   }
 
-  if ((m.id.startsWith("3EB0") || (m.id.startsWith("BAE5") && m.id.length === 16) || (m.id.startsWith("B24E") && m.id.length === 20)) && !m.message?.interactiveResponseMessage) return
+  if (m.isBot && !m.message?.interactiveResponseMessage) return
   initDB(m, client)
   antilink(client, m);
 

@@ -252,7 +252,6 @@ async function startBot() {
       if (!kay?.message) return;
       if (kay.key?.remoteJid === 'status@broadcast') return;
       kay.message = Object.keys(kay.message)[0] === 'ephemeralMessage' ? kay.message.ephemeralMessage.message : kay.message;
-      if (kay.key.fromMe && kay.key.id.startsWith('3EB0')) return;
       const m = await smsg(sock, kay);
       main(sock, m, chatUpdate);
     } catch (err) {
