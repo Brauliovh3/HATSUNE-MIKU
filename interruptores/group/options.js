@@ -7,6 +7,7 @@ export default {
     'antilink', 'antienlaces', 'antilinks',
     'rpg', 'economy', 'economia',
     'gacha',
+    'audios', 'audio',
     'adminonly', 'onlyadmin'
   ],
   category: 'grupo',
@@ -32,7 +33,9 @@ export default {
       onlyadmin: 'adminonly',
       nsfw: 'nsfw',
       rpg: 'gacha',
-      gacha: 'gacha'
+      gacha: 'gacha',
+      audios: 'audios',
+      audio: 'audios'
     }
     const featureNames = {
       antilinks: 'el *AntiEnlace*',
@@ -41,6 +44,7 @@ export default {
       alerts: 'las *Alertas*',
       economy: 'los comandos de *Economía*',
       gacha: 'los comandos de *Gacha*',
+      audios: 'los *Audios*',
       adminonly: 'el modo *Solo Admin*',
       nsfw: 'los comandos *NSFW*'
     }
@@ -51,6 +55,7 @@ export default {
       alerts: 'Alertas',
       economy: 'Economía',
       gacha: 'Gacha',
+      audios: 'Audios',
       adminonly: 'AdminOnly',
       nsfw: 'NSFW'
     }

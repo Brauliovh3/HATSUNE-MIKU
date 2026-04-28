@@ -14,7 +14,7 @@ function initDB(m, client) {
   settings.banner ??= 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
   settings.icon ??= 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
   settings.currency ??= '🌱 Cebollines'
-  settings.audios ??= true
+  settings.audios ??= false
   settings.namebot ??= '💙HATSUNE MIKU💙'
   settings.botname ??= '💙HATSUNE MIKU💙'  
   settings.owner ??= '(ㅎㅊDEPOOLㅊㅎ)'
@@ -43,6 +43,7 @@ function initDB(m, client) {
   chat.alerts ??= true
   chat.gacha ??= true
   chat.economy ??= true
+  chat.audios ??= false
   chat.adminonly ??= false
   chat.primaryBot ??= null
   chat.antilinks ??= true

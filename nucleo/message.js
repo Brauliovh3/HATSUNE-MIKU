@@ -365,17 +365,19 @@ export async function smsg(client, m, store) {
 
   client.getName = (jid, withoutContact = false) => {
     const id = client.decodeJid(jid)
+    const contacts = store?.contacts || client.contacts || {}
+    const fallbackName = String(id || jid || '').replace(/@s\.whatsapp\.net$|@g\.us$/g, '')
     withoutContact = client.withoutContact || withoutContact
     let v
     if (id.endsWith('@g.us'))
       return new Promise(async (resolve) => {
-        v = store.contacts[id] || {}
+        v = contacts[id] || {}
         if (!(v.name || v.subject)) v = client.groupMetadata(id) || {}
-        resolve(v.name || v.subject || PhoneNumber('+' + id.replace('@s.whatsapp.net', '')).getNumber('international'))
+        resolve(v.name || v.subject || fallbackName)
       })
     else
-      v = id === '0@s.whatsapp.net' ? { id, name: 'WhatsApp' } : id === client.decodeJid(client.user.jid) ? client.user : store.contacts[id] || {}
-    return ((withoutContact ? '' : v.name) || v.subject || v.verifiedName || PhoneNumber('+' + jid.replace('@s.whatsapp.net', '')).getNumber('international'))
+      v = id === '0@s.whatsapp.net' ? { id, name: 'WhatsApp' } : id === client.decodeJid(client.user.jid) ? client.user : contacts[id] || {}
+    return ((withoutContact ? '' : v.name) || v.subject || v.verifiedName || fallbackName)
   }
 
   client.getFile = async (PATH, saveToFile = false) => {
