@@ -23,9 +23,10 @@ const normalizeJid = (jid) => {
 
 const getMainBotDigits = () => normalizeJid(global.client?.user?.id || '');
 
-const shouldProcessCommand = (sock, m) => {
-  if (!m.isGroup) return true;
-  const chat = global.db?.data?.chats?.[m.chat] || {};
+const shouldProcessRaw = (sock, raw) => {
+  const chatJid = raw.key?.remoteJid;
+  if (!chatJid || !chatJid.endsWith('@g.us')) return true;
+  const chat = global.db?.data?.chats?.[chatJid] || {};
   const primaryBot = chat?.primaryBot || getMainBotDigits();
   if (!primaryBot) return true;
   const botJid = (sock.user?.id?.split(':')[0] || '') + '@s.whatsapp.net';
@@ -123,7 +124,6 @@ class SubBotManager {
         getMessage: async () => '',
         msgRetryCounterCache,
         userDevicesCache,
-        cachedGroupMetadata: async (jid) => groupCache.get(jid),
         version,
         keepAliveIntervalMs: 30000,
         maxIdleTimeMs: 60000,
@@ -318,11 +318,13 @@ class SubBotManager {
           if (type !== 'notify') return;
           for (const raw of messages) {
             if (!raw.message) continue;
+            // Cortocircuito: Si el subbot no es el principal del grupo, ignorar inmediatamente sin gastar CPU
+            if (!shouldProcessRaw(sock, raw)) continue;
             // Procesar cada mensaje de forma paralela para evitar cuellos de botella
             (async () => {
               try {
                 const m = await smsg(sock, raw);
-                if (m && shouldProcessCommand(sock, m)) main(sock, m, messages);
+                if (m) main(sock, m, messages);
               } catch (err) {
                 console.error(`Error en subbot ${sessionId}:`, err.message);
               }

@@ -30,7 +30,9 @@ export async function resolveLidToRealJid(lid, client, groupChatId) {
     if (pendingMetadataRequests.has(groupChatId)) {
       metadata = await pendingMetadataRequests.get(groupChatId)
     } else {
-      const request = client.groupMetadata(groupChatId).catch(() => null)
+      // Timeout de 5s para evitar que un subbot con mala conexión trabe a toda la red global de bots
+      const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 5000))
+      const request = Promise.race([client.groupMetadata(groupChatId).catch(() => null), timeout])
       pendingMetadataRequests.set(groupChatId, request)
       metadata = await request
       pendingMetadataRequests.delete(groupChatId)

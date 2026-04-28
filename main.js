@@ -24,6 +24,24 @@ const isPrimaryHandler = (client, chat) => {
   return normalizeJidDigits(assignedBot) === normalizeJidDigits(getBotJid(client));
 };
 
+const groupMetaCache = new Map();
+const pendingGroupMeta = new Map();
+
+async function fetchGroupMetadataCached(client, jid) {
+  const now = Date.now();
+  const cached = groupMetaCache.get(jid);
+  if (cached && (now - cached.ts < 300000)) return cached.data; // Caché de 5 minutos
+  
+  if (pendingGroupMeta.has(jid)) return await pendingGroupMeta.get(jid);
+  const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 5000));
+  const req = Promise.race([client.groupMetadata(jid).catch(() => null), timeout]);
+  pendingGroupMeta.set(jid, req);
+  const data = await req;
+  pendingGroupMeta.delete(jid);
+  if (data) groupMetaCache.set(jid, { data, ts: now });
+  return data;
+}
+
 export default async (client, m) => {
   const sender = m.sender;
   let body = m.message?.conversation || m.message?.extendedTextMessage?.text || m.message?.imageMessage?.caption || m.message?.videoMessage?.caption || m.message?.buttonsResponseMessage?.selectedButtonId || m.message?.listResponseMessage?.singleSelectReply?.selectedRowId || m.message?.templateButtonReplyMessage?.selectedId || m.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson || '';
@@ -287,7 +305,7 @@ export default async (client, m) => {
   let groupName = ''
   const ensureGroupContext = async () => {
     if (!m.isGroup || groupMetadata) return
-    groupMetadata = await client.groupMetadata(m.chat).catch(() => null)
+    groupMetadata = await fetchGroupMetadataCached(client, m.chat)
     groupName = groupMetadata?.subject || groupName
     groupAdmins = groupMetadata?.participants.filter(p => (p.admin === 'admin' || p.admin === 'superadmin')) || []
   }
