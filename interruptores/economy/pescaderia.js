@@ -26,10 +26,10 @@ export default {
     user.coins ||= 0
     
     const buttons = [
-      { buttonId: 'shop_canas', buttonText: { displayText: '🎣 CAÑAS' }, type: 1 },
-      { buttonId: 'shop_items', buttonText: { displayText: '🪤 ARTÍCULOS' }, type: 1 },
-      { buttonId: 'shop_miEquipo', buttonText: { displayText: '🎒 MI EQUIPO' }, type: 1 },
-      { buttonId: 'shop_main', buttonText: { displayText: '🔙 VOLVER' }, type: 1 }
+      ['🎣 CAÑAS', 'shop_canas'],
+      ['🪤 ARTÍCULOS', 'shop_items'],
+      ['🎒 MI EQUIPO', 'shop_miEquipo'],
+      ['🔙 VOLVER', 'shop_main']
     ]
     
     const rodName = { basic: 'Básica', improved: 'Mejorada', pro: 'Profesional', legendary: 'Legendaria' }[user.fishingRod] || 'Básica'
@@ -94,10 +94,10 @@ export async function processFishingShopButton(conn, m) {
     const currentRod = user.fishingRod || 'basic'
     
     const buttons = [
-      { buttonId: 'buy_improved', buttonText: { displayText: '🎣 Caña Mejorada - 50,000' }, type: 1 },
-      { buttonId: 'buy_pro', buttonText: { displayText: '🎣 Caña Profesional - 150,000' }, type: 1 },
-      { buttonId: 'buy_legendary', buttonText: { displayText: '🎣 Caña Legendaria - 500,000' }, type: 1 },
-      { buttonId: 'shop_main', buttonText: { displayText: '🔙 Volver' }, type: 1 }
+      ['🎣 Caña Mejorada - 50,000', 'buy_improved'],
+      ['🎣 Caña Profesional - 150,000', 'buy_pro'],
+      ['🎣 Caña Legendaria - 500,000', 'buy_legendary'],
+      ['🔙 Volver', 'shop_main']
     ]
     
     await conn.sendMessage(m.chat, {
@@ -110,10 +110,10 @@ export async function processFishingShopButton(conn, m) {
   
   if (buttonId === 'shop_items') {
     const buttons = [
-      { buttonId: 'buy_cebos', buttonText: { displayText: '🪤 Cebos - 10,000' }, type: 1 },
-      { buttonId: 'buy_red', buttonText: { displayText: '🕸️ Red de Pesca - 25,000' }, type: 1 },
-      { buttonId: 'buy_anillo', buttonText: { displayText: '💍 Anillo de Suerte - 100,000' }, type: 1 },
-      { buttonId: 'shop_main', buttonText: { displayText: '🔙 Volver' }, type: 1 }
+      ['🪤 Cebos - 10,000', 'buy_cebos'],
+      ['🕸️ Red de Pesca - 25,000', 'buy_red'],
+      ['💍 Anillo de Suerte - 100,000', 'buy_anillo'],
+      ['🔙 Volver', 'shop_main']
     ]
     
     await conn.sendMessage(m.chat, {
@@ -134,7 +134,7 @@ export async function processFishingShopButton(conn, m) {
     text += `💍 *Anillo:* ${user.fishingRing ? '✅ Comprado' : '❌ No disponible'}\n\n`
     text += `💰 *Saldo:* 🌱${user.coins.toLocaleString()} ${currency}`
     
-    const buttons = [{ buttonId: 'shop_main', buttonText: { displayText: '🔙 Volver' }, type: 1 }]
+    const buttons = [['🔙 Volver', 'shop_main']]
     
     await conn.sendMessage(m.chat, { text, buttons, headerType: 4 }, { quoted: m })
     return true
