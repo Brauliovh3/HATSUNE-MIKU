@@ -8,31 +8,30 @@ const MIKU = {
   thumb:   'https://iili.io/qp681b1.jpg',
 }
 
+
 async function fetchGruposSinApi(query, limit) {
   try {
-    
-    const searchUrl = `https://html.duckduckgo.com/html/?q=site:chat.whatsapp.com+${encodeURIComponent(query)}`
+    const searchUrl = `https://www.bing.com/search?q=site:chat.whatsapp.com+${encodeURIComponent(query)}`
     const { data } = await axios.get(searchUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'es-ES,es;q=0.9'
       }
     })
 
     const $ = cheerio.load(data)
     const grupos = []
 
-    $('.result').each((i, el) => {
-      let title = $(el).find('.result__title').text().trim()
-     
+    $('.b_algo').each((i, el) => {
+      let title = $(el).find('h2').text().trim()
       title = title.replace(/WhatsApp Group Invite|Invitación a grupo de WhatsApp|WhatsApp Group/gi, '').trim() || 'Grupo sin nombre'
-      const snippet = $(el).find('.result__snippet').text().trim()
       
-      
-      const linkMatch = snippet.match(/chat\.whatsapp\.com\/[a-zA-Z0-9]{15,30}/)
+      const snippet = $(el).find('.b_caption p').text().trim() || $(el).text()
+      const htmlBlock = $(el).html()
+      const linkMatch = htmlBlock.match(/chat\.whatsapp\.com\/[a-zA-Z0-9]{15,30}/)
       
       if (linkMatch && grupos.length < limit) {
         const link = `https://${linkMatch[0]}`
-        
         if (!grupos.some(g => g.link === link)) {
           grupos.push({
             name: title,
@@ -46,9 +45,9 @@ async function fetchGruposSinApi(query, limit) {
     })
 
     if (grupos.length > 0) {
-      return { grupos, source: 'Scraper Nativo (Internet)' }
+      return { grupos, source: 'Scraper Nativo (Bing)' }
     } else {
-      throw new Error('No se encontraron enlaces válidos en la búsqueda.')
+      throw new Error('No se encontraron enlaces válidos (Posible bloqueo de IP por el buscador).')
     }
 
   } catch (error) {
