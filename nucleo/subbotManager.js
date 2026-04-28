@@ -152,7 +152,7 @@ class SubBotManager {
         sock.ev.removeAllListeners();
 
         return new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('Timeout reconnecting')), 30000);
+          const timeout = setTimeout(() => reject(new Error('Timeout reconnecting')), 60000); // Aumentado a 60s para redes lentas
           
           sock = makeWASocket({ ...connectionOptions }, { chats: oldChats });
           sock.isInit     = false;
@@ -223,15 +223,16 @@ class SubBotManager {
             removeFromConns(sessionId);
             optimizer.unregisterSession(sessionId);
 
-            if (reason === 401 || reason === 405) {
-              console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) credenciales inválidas (${reason}). Eliminando sesión.\n│ El usuario debe escanear QR nuevamente.\n└──────────────────────────────────┘`));
+            // Solo borrar si explícitamente se cerró sesión (401), ignorar el 405 (falsos positivos)
+            if (reason === DisconnectReason.loggedOut || reason === 401) {
+              console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) desconectado (Sesión cerrada). Eliminando sesión.\n│ El usuario debe escanear QR nuevamente.\n└──────────────────────────────────┘`));
               try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
               reintentos.delete(sessionId);
               this.startingSubbots.delete(sessionId);
               return;
             }
 
-            if (reason === 403 || reason === DisconnectReason.loggedOut) {
+            if (reason === 403) {
               console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) cerrado o cuenta suspendida (${reason}). Eliminando.\n└──────────────────────────────────┘`));
               try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
               reintentos.delete(sessionId);
@@ -252,11 +253,12 @@ class SubBotManager {
               return;
             }
 
-            if ([428, 408, 500, 515].includes(reason)) {
+            if ([428, 408, 500, 503, 515].includes(reason)) {
               const etiqueta = {
                 428: 'cierre inesperado',
                 408: 'pérdida de conexión',
                 500: 'conexión perdida',
+                503: 'servicio no disponible',
                 515: 'reinicio requerido',
               }[reason];
 
@@ -303,16 +305,6 @@ class SubBotManager {
             }, delayMs);
           }
         });
-
-        const healthInterval = setInterval(() => {
-          if (!sock.user) {
-            clearInterval(healthInterval);
-            try { sock.ws.close(); } catch {}
-            sock.ev.removeAllListeners();
-            removeFromConns(sessionId);
-            this.subbots.delete(sessionId);
-          }
-        }, 30000);
 
         sock.ev.on('messages.upsert', async ({ messages, type }) => {
           if (type !== 'notify') return;
