@@ -24,8 +24,8 @@ export default {
         ? args.slice(0, -1).join(' ').toLowerCase()
         : args.join(' ').toLowerCase()
 
-      const apiUrl = global.APIs?.axi?.url || 'https://axiio.my.id'
-      const api = `${apiUrl}/search/wpgrupos?categoria=${encodeURIComponent(categoria)}&limite=${limite}`
+      const apiUrl = global.APIs?.axi?.url || 'https://api.zeltoria.xyz'
+      const api = `${apiUrl}/api/grupos?search=${encodeURIComponent(categoria)}&limit=${limite}`
       
       let res
       try {
@@ -41,11 +41,11 @@ export default {
       
       const json = await res.json()
 
-      if (!json?.status || !json?.resultado?.grupos?.length) {
+      if (!json?.status || !json?.data?.length) {
         return m.reply(`💙 Lo sentimos, no se encontraron grupos para la categoría *${categoria}*.`)
       }
 
-      const grupos = json.resultado.grupos.filter(v => v.estado === 'ok' && v.enlace)
+      const grupos = json.data.filter(v => v.link)
 
       if (!grupos.length) {
         return m.reply(`💙 Se encontraron resultados en *${categoria}*, pero ninguno tiene enlace disponible.`)
@@ -61,19 +61,19 @@ export default {
       }
 
       let teks = `➩ *Grupos de WhatsApp encontrados*\n\n`
-      teks += `> 💙 *Categoría ›* ${json.resultado.categoria || categoria}\n`
-      teks += `> 🌱 *Total API ›* ${json.resultado.total || grupos.length}\n`
+      teks += `> 💙 *Categoría ›* ${categoria}\n`
+      teks += `> 🌱 *Total API ›* ${grupos.length}\n`
       teks += `> 🌱 *Mostrando ›* ${grupos.length}\n\n`
 
       teks += grupos.map((v, i) => {
         return (
-          `➩ *${i + 1}. ${v.nombre}*\n` +
-          `> 💙 *País ›* ${v.pais || 'No especificado'}\n` +
-          `> 🌱 *Categoría ›* ${v.categoria || categoria}\n` +
-          `> 🌱 *Estado ›* ${v.estado}\n` +
-          `> 💙 *Url ›* ${v.enlace}`
+          `➩ *${i + 1}. ${v.name || v.title || 'Sin nombre'}*\n` +
+          `> 💙 *País ›* ${v.country || 'No especificado'}\n` +
+          `> 🌱 *Categoría ›* ${v.category || categoria}\n` +
+          `> 🌱 *Descripción ›* ${v.description || 'Sin descripción'}\n` +
+          `> 💙 *Url ›* ${v.link}`
         ).trim()
-      }).join('\n\n(💙 * 7)\n\n')
+      }).join('\n\n╾\n\n')
 
       await client.sendMessage(
         m.chat,
