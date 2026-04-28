@@ -954,16 +954,7 @@ handler.before = async function (m, { conn, client }) {
             msg += `📊 Total: *${user.waifu.characters.length}* personajes\n\n`;
             msg += `🔍 Usa *.miwaifu* para ver tu colección completa\n`;
 
-            await client.sendButton(
-                m.chat,
-                msg,
-                '🎮 Sistema de Personajes - Hatsune Miku Bot',
-                currentWaifu.img,
-                [['🏠 Menú', '.menu']],
-                null,
-                null,
-                m
-            );
+            await m.reply(msg);
             return true;
 
         } else if (action === 'sell') {
@@ -997,16 +988,7 @@ handler.before = async function (m, { conn, client }) {
             msg += `💳 *Total cebollines:* ${user.coin}\n\n`;
             msg += `🏪 Usa *.tienda* para gastar tus cebollines`;
 
-            await client.sendButton(
-                m.chat,
-                msg,
-                '🎮 Sistema de Personajes - Hatsune Miku Bot',
-                currentWaifu.img,
-                [['🏠 Menú', '.menu']],
-                null,
-                null,
-                m
-            );
+            await m.reply(msg);
             return true;
         }
 

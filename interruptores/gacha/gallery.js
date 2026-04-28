@@ -46,19 +46,20 @@ let handler = async (client, m, args, usedPrefix, command) => {
   message += `📊 Total en colección: ${userCharacters.length}\n\n`;
   message += `💡 Usa los botones para navegar`;
 
-  const buttons = [
-    { buttonId: `gallery_prev_${sessionId}`, buttonText: { displayText: '⬅️ Anterior' }, type: 1 },
-    { buttonId: `gallery_next_${sessionId}`, buttonText: { displayText: '➡️ Siguiente' }, type: 1 },
-    { buttonId: '.rw', buttonText: { displayText: '🎲 Invocar' }, type: 1 }
-  ];
-
-  await client.sendMessage(m.chat, {
-    image: { url: waifu.img },
-    caption: message,
-    buttons: buttons,
-    footer: '🎮 Mi Colección - Hatsune Miku Bot',
-    headerType: 4
-  }, { quoted: m });
+  await client.sendButton(
+    m.chat,
+    message,
+    '?? Mi Colecci?n - Hatsune Miku Bot',
+    waifu.img,
+    [
+      ['?? Anterior', `gallery_prev_${sessionId}`],
+      ['?? Siguiente', `gallery_next_${sessionId}`],
+      ['?? Invocar', '.rw']
+    ],
+    null,
+    null,
+    m
+  );
 
   global.gallerySessions = global.gallerySessions || new Map();
   global.gallerySessions.set(sessionId, {

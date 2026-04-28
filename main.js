@@ -159,16 +159,7 @@ export default async (client, m) => {
       user.waifu.characters.push(currentWaifu);
       user.waifu.pending = null;
       
-      await client.sendButton(
-        m.chat,
-        msg,
-        '🎮 Sistema de Personajes - Hatsune Miku Bot',
-        currentWaifu?.img || null,
-        [['🏠 Menú', '.menu']],
-        null,
-        null,
-        m
-      );
+      await m.reply(msg);
       return;
     }
 
@@ -198,16 +189,7 @@ export default async (client, m) => {
       
       user.waifu.pending = null;
       
-      await client.sendButton(
-        m.chat,
-        msg,
-        '🎮 Sistema de Personajes - Hatsune Miku Bot',
-        currentWaifu?.img || null,
-        [['🏠 Menú', '.menu']],
-        null,
-        null,
-        m
-      );
+      await m.reply(msg);
       return;
     }
   }
@@ -260,19 +242,20 @@ export default async (client, m) => {
     message += `📊 Total en colección: ${userCharacters.length}\n\n`;
     message += `💡 Usa los botones para navegar`;
 
-    const buttons = [
-      { buttonId: `gallery_prev_${sessionId}`, buttonText: { displayText: '⬅️ Anterior' }, type: 1 },
-      { buttonId: `gallery_next_${sessionId}`, buttonText: { displayText: '➡️ Siguiente' }, type: 1 },
-      { buttonId: '.rw', buttonText: { displayText: '🎲 Invocar' }, type: 1 }
-    ];
-
-    await client.sendMessage(m.chat, {
-      image: { url: waifu.img },
-      caption: message,
-      buttons: buttons,
-      footer: '🎮 Mi Colección - Hatsune Miku Bot',
-      headerType: 4
-    }, { quoted: m });
+    await client.sendButton(
+      m.chat,
+      message,
+      '🎮 Mi Colección - Hatsune Miku Bot',
+      waifu.img,
+      [
+        ['⬅️ Anterior', `gallery_prev_${sessionId}`],
+        ['➡️ Siguiente', `gallery_next_${sessionId}`],
+        ['🎲 Invocar', '.rw'],
+      ],
+      null,
+      null,
+      m,
+    );
 
     gallerySessions.set(sessionId, {
       index: newIndex,
