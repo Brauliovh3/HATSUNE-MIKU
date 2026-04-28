@@ -318,12 +318,15 @@ class SubBotManager {
           if (type !== 'notify') return;
           for (const raw of messages) {
             if (!raw.message) continue;
-            try {
-              const m = await smsg(sock, raw);
-              if (m && shouldProcessCommand(sock, m)) main(sock, m, messages);
-            } catch (err) {
-              console.error(`Error en subbot ${sessionId}:`, err.message);
-            }
+            // Procesar cada mensaje de forma paralela para evitar cuellos de botella
+            (async () => {
+              try {
+                const m = await smsg(sock, raw);
+                if (m && shouldProcessCommand(sock, m)) main(sock, m, messages);
+              } catch (err) {
+                console.error(`Error en subbot ${sessionId}:`, err.message);
+              }
+            })();
           }
         });
       };

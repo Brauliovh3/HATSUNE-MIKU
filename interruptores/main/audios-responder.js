@@ -167,7 +167,7 @@ const normalizedAudioMap = Object.fromEntries(
 
 const audioQueue = []
 let audioProcessing = false
-const AUDIO_DELAY = 2000 
+const AUDIO_DELAY = 500 // Reducido de 2 segundos a medio segundo
 
 async function processAudioQueue() {
   if (audioProcessing || audioQueue.length === 0) return

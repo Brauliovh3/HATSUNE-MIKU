@@ -18,6 +18,7 @@ import GraphemeSplitter from 'grapheme-splitter'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const splitter = new GraphemeSplitter() // Instanciado globalmente para mayor rendimiento
 
 const { imageToWebp, videoToWebp, writeExifImg, writeExifVid } = exif;
 
@@ -191,13 +192,19 @@ export function getGroupAdmins(participants) {
 }
 
 export async function fixLid(client, m) {
-  const decodedJid = client.decodeJid((m.fromMe && client.user?.id) || m.key.participant || m.chat || '')
+  const rawJid = (m.fromMe && client.user?.id) || m.key?.participant || m.chat || ''
+  if (!rawJid) return ''
+  const decodedJid = client.decodeJid(rawJid)
+  if (!decodedJid || !decodedJid.includes('@lid')) return decodedJid;
   const realJid = await resolveLidToRealJid(decodedJid, client, m.chat)
   return realJid
 }
 
 export async function fixLid2(client, m) {
-  const decodedJid = client.decodeJid(m.msg.contextInfo.participant)
+  const participant = m.msg?.contextInfo?.participant || ''
+  if (!participant) return ''
+  const decodedJid = client.decodeJid(participant)
+  if (!decodedJid || !decodedJid.includes('@lid')) return decodedJid;
   const realJid = await resolveLidToRealJid(decodedJid, client, m.chat)
   return realJid
 }
@@ -241,7 +248,6 @@ export async function smsg(client, m, store) {
     m.text = m.msg?.text || m.msg?.caption || m.message?.conversation || m.msg?.contentText || m.msg?.selectedDisplayText || m.msg?.title || ''
     const idBot = client.user?.id?.split(':')[0] + '@s.whatsapp.net'
     const config = global.db.data.settings[idBot] ||= {}
-    const splitter = new GraphemeSplitter()
     let activePrefixes = []
     if (config.prefix === true) {
       activePrefixes = []
