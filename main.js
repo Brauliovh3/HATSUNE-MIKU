@@ -422,7 +422,8 @@ export default async (client, m) => {
   const cmdData = global.comandos.get(command);
   if (!cmdData) {
     if (settings.prefix === true) return;
-    await client.readMessages([m.key]);
+    // Enviamos el visto en segundo plano sin pausar el proceso
+    client.readMessages([m.key]).catch(() => {});
     return m.reply(`💙 El comando *${command}* no existe.\n> 🌱 Usa *${usedPrefix}help* para ver la lista de comandos disponibles.`);
   }
   if (cmdData.isOwner && !global.owner.map(num => num + '@s.whatsapp.net').includes(sender)) {
@@ -437,7 +438,7 @@ export default async (client, m) => {
   if (cmdData.isAdmin && !isAdmins) return client.reply(m.chat, mess.admin, m);
   if (cmdData.botAdmin && !isBotAdmins) return client.reply(m.chat, mess.botAdmin, m);
   try {
-    await client.readMessages([m.key]);
+    client.readMessages([m.key]).catch(() => {});
     user.usedcommands = (user.usedcommands || 0) + 1;
     settings.commandsejecut = (settings.commandsejecut || 0) + 1;
     users.usedTime = new Date();
