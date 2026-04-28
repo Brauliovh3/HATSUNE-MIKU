@@ -1,5 +1,24 @@
 import { resolveLidToRealJid } from "../../nucleo/utils.js"
 
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+async function sendMessageWithRetry(client, jid, text, quoted, options = {}, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await client.reply(jid, text, quoted, options)
+    } catch (error) {
+      if (error.data === 429 || error.statusCode === 429) {
+        const waitTime = Math.pow(2, attempt) * 1000
+        console.log(`Rate limit detectado, reintentando en ${waitTime}ms (intento ${attempt}/${maxRetries})`)
+        await delay(waitTime)
+      } else {
+        throw error
+      }
+    }
+  }
+  throw new Error('Rate limit: Máximo de reintentos alcanzado')
+}
+
 export default {
   command: ['addcoin', 'addxp'],
   isOwner: true,
@@ -29,7 +48,7 @@ export default {
         }       
         userData[who].coins += dmt
         await m.react('✔️')
-        return client.reply(m.chat, `💙 *Añadido:*\n» ${dmt} ${currency}\n@${who.split('@')[0]}, recibiste ${dmt} ${currency}`, m, { mentions: [who] })
+        return await sendMessageWithRetry(client, m.chat, `💙 *Añadido:*\n» ${dmt} ${currency}\n@${who.split('@')[0]}, recibiste ${dmt} ${currency}`, m, { mentions: [who] })
       }
       if (command === 'addxp') {
         if (!who) return client.reply(m.chat, '💙 Por favor, menciona al usuario o cita un mensaje.', m)
@@ -49,7 +68,7 @@ export default {
         }
         userData[who].exp += xp
         await m.react('✔️')
-        return client.reply(m.chat, `💙 XP Añadido: *${xp}*\n@${who.split('@')[0]}, recibiste ${xp} XP`, m, { mentions: [who] })
+        return await sendMessageWithRetry(client, m.chat, `💙 XP Añadido: *${xp}*\n@${who.split('@')[0]}, recibiste ${xp} XP`, m, { mentions: [who] })
       }
     } catch (error) {
       console.error(error)
