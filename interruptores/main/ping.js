@@ -18,7 +18,7 @@ export default {
     await client.sendMessage(
       m.chat,
       {
-        text: `🩵✦ *P O N G !* ✦🩵\n${divider}\n\n🎵 *Velocidad:* \`${pingMs} ms\`\n🌿 *Sistema:* ${botName}\n\n${divider}\n🎵 *Hatsune Miku* ✦ *Bot* 🎵`,
+        text: `🩵 *P O N G !* 🩵\n${divider}\n\n🎵 *Velocidad:* \`${pingMs} ms\`\n🌿 *Sistema:* ${botName}\n\n${divider}\n🎵 *Hatsune Miku*   *Bot* 🎵`,
         edit: sent.key,
       }
     )
