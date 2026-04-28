@@ -253,7 +253,8 @@ export async function all(m, { client }) {
           ? [botSettings.prefix]
           : ['/', '!', '.', '#']
   
-  if (!chat.audios && !botSettings.audios) return
+  
+  if (!m.isGroup || !chat.audios) return
 
   const rawText = String(m.text || '').trim()
   if (!rawText) return
