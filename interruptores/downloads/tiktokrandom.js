@@ -3,24 +3,51 @@ import axios from 'axios'
 const MIN_VIDEO_SIZE = 51200
 const PROBE_TIMEOUT = 12000
 
-const queries = [
-  'left4f1',
-  'l4d2humor',
-  'l4d2versus',
-]
+const categories = {
+  l4d2: {
+    queries: ['left4f1', 'l4d2humor', 'left4dead2momentosf1'],
+    title: 'LEFT 4 DEAD 2'
+  },
+  terror: {
+    queries: ['michiparanormal', 'elmichimarcianotecuenta', 'lugaresmalditosdemexico', 'horrorjapones', 'videos de terror', 'casos paranormales'],
+    title: 'VIDEO DE TERROR'
+  },
+  llanta: {
+    queries: ['llantaarmy', 'lallantaarmy', 'sanosky','calsosky', 'llanta army', 'calsosky', 'sanosky'],
+    title: 'LLANTA ARMY'
+  },
+  frases: {
+    queries: ['frasesphonk', 'frasesfunk', 'frases de la vida', 'frases aesthetic', 'frases de reflexion'],
+    title: 'FRASES'
+  },
+  random: {
+    queries: ['videos random', 'shitpost', 'shitposting', 'memes random', 'videos graciosos', 'humor random'],
+    title: 'TIKTOK RANDOM'
+  }
+}
+
+const commandMap = {
+  'l4d2': 'l4d2', 'l4drandom': 'l4d2', 'l4d2random': 'l4d2', 'left4': 'l4d2',
+  'terror': 'terror', 'scary': 'terror', 'horror': 'terror', 'terrorvideo': 'terror',
+  'llantarmy': 'llanta', 'llanta': 'llanta',
+  'frases': 'frases', 'frase': 'frases',
+  'ttrandom': 'random', 'tiktokrandom': 'random', 'shitpost': 'random'
+}
 
 export default {
-  command: ['l4d2', 'l4drandom', 'l4d2random','left4'],
+  command: Object.keys(commandMap),
   category: 'downloader',
-  run: async (client, m) => {
+  run: async (client, m, args, usedPrefix, command) => {
     await m.react('⏳')
     
     try {
-      const randomQuery = queries[Math.floor(Math.random() * queries.length)]
+      const categoryKey = commandMap[command.toLowerCase()] || 'random'
+      const categoryData = categories[categoryKey]
+      const randomQuery = categoryData.queries[Math.floor(Math.random() * categoryData.queries.length)]
       const video = await getRandomVideo(randomQuery)
       
       const caption = `╭───────────╮
-│ 💙 *TIKTOK RANDOM*
+│ 💙 *${categoryData.title}*
 │───────────
 │ 📌 ${video.title}
 ╰───────────╯`
