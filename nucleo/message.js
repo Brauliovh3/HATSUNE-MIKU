@@ -543,9 +543,19 @@ export async function smsg(client, m, store) {
     const dynamicButtons = buttons.map((btn) => ({ name: 'quick_reply', buttonParamsJson: JSON.stringify({ display_text: btn[0], id: btn[1] }), contextInfo: { mentionedJid: null, forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: canalSeleccionado?.id || '', serverMessageId: '0', newsletterName: canalSeleccionado?.nombre || '' }, externalAdReply: { title: botname, body: dev, mediaType: 1, renderLargerThumbnail: false, previewType: `PHOTO`, thumbnailUrl: icon, sourceUrl: redes, }}}))
     if (copy && (typeof copy === 'string' || typeof copy === 'number')) { dynamicButtons.push({ name: 'cta_copy', buttonParamsJson: JSON.stringify({ display_text: 'Copy', copy_code: copy, })}) }
     if (urls && Array.isArray(urls)) { urls.forEach((url) => { dynamicButtons.push({ name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: url[0], url: url[1], merchant_url: url[1] })}) })}
-    const interactiveMessage = { body: { text: text }, footer: { text: footer }, header: { hasMediaAttachment: false, imageMessage: img ? img.imageMessage : null, videoMessage: video ? video.videoMessage : null, }, nativeFlowMessage: { buttons: dynamicButtons, messageParamsJson: '' }}
+    const interactiveMessage = {
+      body: { text: text },
+      footer: { text: footer },
+      header: {
+        hasMediaAttachment: Boolean(img || video),
+        imageMessage: img ? img.imageMessage : null,
+        videoMessage: video ? video.videoMessage : null,
+      },
+      nativeFlowMessage: { buttons: dynamicButtons, messageParamsJson: '' }
+    }
     let msgL = generateWAMessageFromContent(jid, { viewOnceMessage: { message: { interactiveMessage }}}, { userJid: client.user?.jid, quoted })
-    client.relayMessage(jid, msgL.message, { messageId: msgL.key.id, ...options })
+    await client.relayMessage(jid, msgL.message, { messageId: msgL.key.id, ...options })
+    return msgL
   }
 
   client.sendList = async (jid, title, text, buttonText, listSections, quoted, options = {}) => {
