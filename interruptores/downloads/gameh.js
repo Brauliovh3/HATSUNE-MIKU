@@ -17,7 +17,7 @@ const VERIFIED_GAMES = [
   'Coco Nutshake', 'Tentacle Locker', 'PocketSweeties',
   'Night Shift at Fazclaire\'s', 'Innocent Witches',
   'Price of Desire', 'You Let The Next Hero In', 'Bao vs The World',
-  'Life in Woodchester', 'Indecent Wife Hana'
+  'Life in Woodchester', 'Indecent Wife Hana', 'Nemurimouto'
 ];
 
 
@@ -40,7 +40,8 @@ const SEARCH_TERMS = {
   'ddlc': ['ddlc', 'doki', 'berries'],
   'hypno': ['hypno', 'hypnosis', 'magic', 'book'],
   'pocket': ['pocket', 'sweeties', 'smartphone'],
-  'innocent': ['innocent', 'witches', 'harry']
+  'innocent': ['innocent', 'witches', 'harry'],
+  'nemurimouto': ['nemuri', 'mouto', 'nemurimouto']
 };
 
 const showGameList = async (client, m, args, usedPrefix) => {
