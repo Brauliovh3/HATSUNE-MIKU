@@ -1,4 +1,3 @@
-import imageCache from '../../nucleo/system/imageCache.js';
 import axios from 'axios';
 import fs from 'fs';
 

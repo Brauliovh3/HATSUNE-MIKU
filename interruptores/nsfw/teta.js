@@ -1,5 +1,4 @@
 import fetch from 'node-fetch'
-import imageCache from '../../nucleo/system/imageCache.js'
 
 const API_URL = 'https://api.nexylight.xyz/nsfw/boobs?key=nexy-dfc4aa'
 

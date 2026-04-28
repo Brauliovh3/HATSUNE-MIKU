@@ -2,7 +2,6 @@
 import fs_sync from 'fs';
 import path from 'path';
 import { instantiateWaifu, formatPvpLine } from '../../nucleo/gacha/waifuPvp.js'
-import imageCache from '../../nucleo/system/imageCache.js'
 
 const dbPath = path.join(process.cwd(), 'src', 'database');
 const databaseFilePath = path.join(dbPath, 'waifudatabase.json');
