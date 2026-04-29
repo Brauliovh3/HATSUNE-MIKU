@@ -16,6 +16,9 @@ const ALYA_TIMEOUT_MS = Number(process.env.ALYA_TIMEOUT_MS || 15000)
 const ALYA_RETRIES = Number(process.env.ALYA_RETRIES || 2)
 const ALYA_RETRY_DELAY_MS = Number(process.env.ALYA_RETRY_DELAY_MS || 800)
 
+const DIVIDER_START = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
+const DIVIDER_END   = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
+
 const activeYouTubeDownloads = global.activeYouTubeDownloads || (global.activeYouTubeDownloads = new Map())
 
 function extractYouTubeId(url) {
@@ -164,6 +167,18 @@ async function getAudioUrl(youtubeUrl) {
     }
   }
 
+  // Fallback 1: Siputzx
+  try {
+    const siputzx = await fetchJsonWithRetry(`https://api.siputzx.my.id/api/d/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+    if (siputzx?.status && siputzx?.data?.dl) return { downloadUrl: siputzx.data.dl, isGoogleVideo: false, title: 'Audio', thumbnail: null }
+  } catch {}
+
+  // Fallback 2: Ryzendesu
+  try {
+    const ryzen = await fetchJsonWithRetry(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+    if (ryzen?.url) return { downloadUrl: ryzen.url, isGoogleVideo: false, title: 'Audio', thumbnail: null }
+  } catch {}
+
   throw new Error('No se pudo obtener URL de descarga de audio')
 }
 
@@ -182,6 +197,18 @@ async function getVideoUrl(youtubeUrl, quality = '360') {
       thumbnail: alyaJson?.data?.thumbnail || null,
     }
   }
+
+  // Fallback 1: Siputzx
+  try {
+    const siputzx = await fetchJsonWithRetry(`https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+    if (siputzx?.status && siputzx?.data?.dl) return { downloadUrl: siputzx.data.dl, isGoogleVideo: false, title: 'Video', thumbnail: null }
+  } catch {}
+
+  // Fallback 2: Ryzendesu
+  try {
+    const ryzen = await fetchJsonWithRetry(`https://api.ryzendesu.vip/api/downloader/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+    if (ryzen?.url) return { downloadUrl: ryzen.url, isGoogleVideo: false, title: 'Video', thumbnail: null }
+  } catch {}
 
   throw new Error('No se pudo obtener URL de descarga de video')
 }
@@ -262,23 +289,24 @@ function embedCoverArt(mp3Buffer, imageBuffer, title) {
 
 function getMikuMenuText(title, author, duration, views) {
   return (
-    `╭──『 *YOUTUBE PLAY* 』──╮\n` +
-    `│ 💙 *Hatsune Miku Edition* 💙\n` +
-    `╰────────────────╯\n\n` +
-    `🎬 *${String(title).substring(0, 35)}*\n` +
-    (author   ? `👤 ${author}\n`                   : '') +
-    (duration ? `⏱️ ${duration}\n`                 : '') +
-    (views    ? `👁️ ${formatViews(views)} vistas\n` : '') +
-    `\n` +
-    `『 *¿Qué deseas descargar?* 』\n\n` +
-    `1️⃣ *🌱 Audio MP3*\n` +
-    `2️⃣ *🌱 Video 360p*\n` +
-    `3️⃣ *🌱 Documento MP4*\n` +
-    `4️⃣ *🌱 Documento MP3*\n\n` +
-    `────────────────────\n` +
-    `_▸ Responde con el numero (1-4)_\n` +
-    `_▸ Expira en 5 minutos_\n` +
-    `_▸ Costo: 🌱 500 Cebollines_`
+    `${DIVIDER_START}\n` +
+    `│ 💙 *YOUTUBE DOWNLOAD*\n` +
+    `│\n` +
+    `│ 🎵 *Título:* ${String(title).substring(0, 45)}\n` +
+    (author   ? `│ 👤 *Canal:* ${author}\n`                   : '') +
+    (duration ? `│ ⏱️ *Duración:* ${duration}\n`                 : '') +
+    (views    ? `│ 👁️ *Vistas:* ${formatViews(views)}\n` : '') +
+    `│\n` +
+    `│ 『 *OPCIONES DE DESCARGA* 』\n` +
+    `│ 1️⃣ 🌱 Audio MP3\n` +
+    `│ 2️⃣ 🌱 Video 360p\n` +
+    `│ 3️⃣ 🌱 Doc MP4\n` +
+    `│ 4️⃣ 🌱 Doc MP3\n` +
+    `│\n` +
+    `│ ✨ _Responde con el número (1-4)_\n` +
+    `│ ⏳ _Expira en 10 minutos_\n` +
+    `│ 💎 _Costo: 🌱 500 Cebollines_\n` +
+    `${DIVIDER_END}`
   )
 }
 
@@ -291,7 +319,7 @@ function deleteFile(filePath) {
 export async function processDownload(conn, m, videoInfo, option) {
   const lockKey = m.chat
   if (activeYouTubeDownloads.has(lockKey)) {
-    await conn.reply(m.chat, '⏳ Ya hay una descarga en curso en este chat. Espera a que termine.', m)
+    await conn.reply(m.chat, `${DIVIDER_START}\n│ ⏳ *DESCARGA EN PROCESO*\n│\n│ 🎵 Ya hay una descarga activa en este chat.\n│ 🌱 Por favor, espera a que termine.\n${DIVIDER_END}`, m)
     return false
   }
   activeYouTubeDownloads.set(lockKey, { startedAt: Date.now(), sender: m.sender })
@@ -400,7 +428,7 @@ export async function processDownload(conn, m, videoInfo, option) {
   } catch (error) {
     if (tempFilePath) deleteFile(tempFilePath)
     await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-    await conn.reply(m.chat, `💙 Error al descargar: ${error.message}`, m)
+    await conn.reply(m.chat, `${DIVIDER_START}\n│ 💔 *ERROR DE DESCARGA*\n│\n│ 🎵 Hubo un problema al procesar.\n│ 🌱 Detalle: ${error.message}\n│ ✨ Inténtalo de nuevo más tarde.\n${DIVIDER_END}`, m)
     throw error
   } finally {
     activeYouTubeDownloads.delete(lockKey)
@@ -426,18 +454,18 @@ export async function processYouTubeButton(conn, m) {
   }
   if (!buttonId) return false
   let option = null
-  if      (buttonId.includes('youtube_audio_') && !buttonId.includes('_doc')) option = 1
-  else if (buttonId.includes('youtube_video_360_'))                        option = 2
-  else if (buttonId.includes('youtube_video_doc_'))                        option = 3
-  else if (buttonId.includes('youtube_audio_doc_'))                        option = 4
+  if      (buttonId === '1' || (buttonId.includes('youtube_audio_') && !buttonId.includes('_doc'))) option = 1
+  else if (buttonId === '2' || buttonId.includes('youtube_video_360_'))                        option = 2
+  else if (buttonId === '3' || buttonId.includes('youtube_video_doc_'))                        option = 3
+  else if (buttonId === '4' || buttonId.includes('youtube_audio_doc_'))                        option = 4
   if (!option) return false
   const user = global.db?.data?.users?.[m.sender]
   if (!user?.lastYTSearch) {
-    await conn.reply(m.chat, '⏰ No hay búsqueda activa. Realiza una nueva búsqueda.', m)
+    await conn.reply(m.chat, `${DIVIDER_START}\n│ ⏳ *TIEMPO AGOTADO*\n│\n│ 🎵 No hay búsqueda activa.\n│ 🌱 Realiza una nueva búsqueda con .play\n${DIVIDER_END}`, m)
     return false
   }
   if (Date.now() - (user.lastYTSearch.timestamp || 0) > 10 * 60 * 1000) {
-    await conn.reply(m.chat, '⏰ La búsqueda expiró. Realiza una nueva búsqueda.', m)
+    await conn.reply(m.chat, `${DIVIDER_START}\n│ ⏳ *BÚSQUEDA EXPIRADA*\n│\n│ 🎵 La búsqueda expiró.\n│ 🌱 Realiza una nueva búsqueda con .play\n${DIVIDER_END}`, m)
     return false
   }
   user.monedaDeducted = false
@@ -465,9 +493,17 @@ export default {
       if (!args.length) {
         return conn.reply(
           m.chat,
-          `💙 *${usedPrefix}${command}* <canción o URL>\n` +
-          `💙 Ejemplo: *${usedPrefix}${command} Let you down Cyberpunk*\n` +
-          `💙 Costo: *🌱 500 cebollines*`,
+          `${DIVIDER_START}\n` +
+          `│ 💙 *YOUTUBE PLAY*\n` +
+          `│\n` +
+          `│ 🎵 *Uso correcto:*\n` +
+          `│ \`${usedPrefix}${command} <canción o URL>\`\n` +
+          `│\n` +
+          `│ 🌱 *Ejemplo:*\n` +
+          `│ \`${usedPrefix}${command} miku world is mine\`\n` +
+          `│\n` +
+          `│ 💎 _Costo: 🌱 500 Cebollines_\n` +
+          `${DIVIDER_END}`,
           m
         )
       }
@@ -483,7 +519,7 @@ export default {
         const video  = result?.videos?.[0]
         if (!video) {
           await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-          return conn.reply(m.chat, '❌ No se encontraron resultados.', m)
+          return conn.reply(m.chat, `${DIVIDER_START}\n│ 💔 *SIN RESULTADOS*\n│\n│ 🎵 No se encontraron canciones para tu búsqueda.\n${DIVIDER_END}`, m)
         }
         videoUrl       = video.url
         videoTitle     = video.title
@@ -517,7 +553,7 @@ export default {
         await conn.reply(m.chat, infoText, m)
       }
     } catch (error) {
-      await conn.reply(m.chat, `❌ Error: ${error.message}`, m)
+      await conn.reply(m.chat, `${DIVIDER_START}\n│ 💔 *ERROR*\n│\n│ 🎵 Hubo un error de conexión.\n│ 🌱 Detalle: ${error.message}\n${DIVIDER_END}`, m)
     }
   },
 }
