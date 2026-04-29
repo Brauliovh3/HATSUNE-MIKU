@@ -96,7 +96,8 @@ export default async (client, m) => {
     buttonId.includes('youtube_audio_') ||
     buttonId.includes('youtube_video_360_') ||
     buttonId.includes('youtube_video_doc_') ||
-    buttonId.includes('youtube_audio_doc_')
+    buttonId.includes('youtube_audio_doc_') ||
+    (/^[1-4]$/.test(buttonId) && m.quoted?.text?.includes('MIKU YOUTUBE PLAY'))
   )) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat];
     if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) {
@@ -109,6 +110,7 @@ export default async (client, m) => {
     else if (buttonId.includes('youtube_video_360_'))                        option = 2
     else if (buttonId.includes('youtube_video_doc_'))                        option = 3
     else if (buttonId.includes('youtube_audio_doc_'))                        option = 4
+    else if (/^[1-4]$/.test(buttonId))                                       option = parseInt(buttonId)
     if (option) {
       const user = global.db?.data?.users?.[m.sender]
       if (!user?.lastYTSearch) {
@@ -121,7 +123,7 @@ export default async (client, m) => {
       }
       user.monedaDeducted = false
       try {
-        await processDownload(client, m, user.lastYTSearch.videoInfo, option)
+        await processDownload(client, m, user.lastYTSearch.videoInfo, option).catch(() => {});
         user.lastYTSearch = null
       } catch {}
       return
@@ -485,10 +487,11 @@ export default async (client, m) => {
   }
   if (cmdData.isAdmin && !isAdmins) return client.reply(m.chat, mess.admin, m);
   if (cmdData.botAdmin && !isBotAdmins) return client.reply(m.chat, mess.botAdmin, m);
+  if (cmdData.isOwner && !isOwners) return;
 
   if (m.isGroup && (cmdData.nsfw || cmdData.category === 'nsfw') && !chat.nsfw) {
     client.readMessages([m.key]).catch(() => {});
-    return client.reply(m.chat, `💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`, m, global.miku);
+    return client.sendMessage(m.chat, { text: `💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*` }, { quoted: m });
   }
 
   try {
