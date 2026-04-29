@@ -71,7 +71,7 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
       const botType = isOficialBot ? 'Principal/Owner' : 'Sub Bot';
       const users = Object.keys(global.db.data.users).length;
       const device = getDevice(m.key.id);
-      const sender = global.db.data.users[m.sender].name;
+      const sender = global.db.data.users[m.sender]?.name || m.pushName || m.sender.split('@')[0];
       const time = client.uptime ? formatearMs(Date.now() - client.uptime) : "Desconocido";
       const input = normalize(args[0] || '');
       let cat = Object.keys(categoryAliases).find(k => categoryAliases[k].map(normalize).includes(input));

@@ -1,4 +1,5 @@
 import { resolveLidToRealJid } from "../../nucleo/utils.js"
+import { getBuffer } from "../../nucleo/message.js"
 
 const DIVIDER_START = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
 const DIVIDER_END   = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
@@ -35,6 +36,17 @@ export default {
                 `│ ✨ _Tip: Protege tu dinero usando ${usedPrefix}dep all_\n` +
                 `${DIVIDER_END}`
                 
-    await client.sendMessage(chatId, { image: { url: 'https://file.garden/ae-9DPf0ekWVe7ex/banco.png' }, caption: bal }, { quoted: m })
+    const imgBanco = 'https://file.garden/ae-9DPf0ekWVe7ex/banco.png'
+    if (!global.imageBannerCache) global.imageBannerCache = new Map()
+    let imageObj = { url: imgBanco }
+    try {
+      if (!global.imageBannerCache.has(imgBanco)) {
+        const buf = await getBuffer(imgBanco)
+        if (Buffer.isBuffer(buf)) global.imageBannerCache.set(imgBanco, buf)
+      }
+      if (global.imageBannerCache.has(imgBanco)) imageObj = global.imageBannerCache.get(imgBanco)
+    } catch (e) {}
+
+    await client.sendMessage(chatId, { image: imageObj, caption: bal }, { quoted: m })
   }
 };

@@ -9,7 +9,7 @@ export default {
     const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
     const botSettings = db.settings[botId] || {}
     const monedas = botSettings.currency || 'Coins'
-    const banner = botSettings.banner || 'https://i.ibb.co/1Jq1LCPD/miku2.jpg'
+    const imgBoard = 'https://i.ibb.co/1Jq1LCPD/miku2.jpg'
     const canalId = botSettings.id || "120363315369913363@newsletter"
     const canalName = botSettings.nameid || "Hatsune Miku Channel"
     const chatData = db.chats[chatId]
@@ -41,13 +41,13 @@ export default {
       text += `\n╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
 
       if (!global.imageBannerCache) global.imageBannerCache = new Map()
-      let imageObj = { url: banner }
+      let imageObj = { url: imgBoard }
       try {
-        if (!global.imageBannerCache.has(banner)) {
-          const buf = await getBuffer(banner)
-          if (buf) global.imageBannerCache.set(banner, Buffer.from(buf))
+        if (!global.imageBannerCache.has(imgBoard)) {
+          const buf = await getBuffer(imgBoard)
+          if (Buffer.isBuffer(buf)) global.imageBannerCache.set(imgBoard, buf)
         }
-        if (global.imageBannerCache.has(banner)) imageObj = global.imageBannerCache.get(banner)
+        if (global.imageBannerCache.has(imgBoard)) imageObj = global.imageBannerCache.get(imgBoard)
       } catch (e) {}
 
       await client.sendMessage(chatId, {
