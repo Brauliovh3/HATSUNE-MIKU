@@ -488,6 +488,12 @@ export default async (client, m) => {
   }
   if (cmdData.isAdmin && !isAdmins) return client.reply(m.chat, mess.admin, m);
   if (cmdData.botAdmin && !isBotAdmins) return client.reply(m.chat, mess.botAdmin, m);
+
+  if (m.isGroup && cmdData.nsfw && !chat.nsfw) {
+    client.readMessages([m.key]).catch(() => {});
+    return client.reply(m.chat, `💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`, m, global.miku);
+  }
+
   try {
     client.readMessages([m.key]).catch(() => {});
     user.usedcommands = (user.usedcommands || 0) + 1;

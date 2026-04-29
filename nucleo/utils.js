@@ -5,7 +5,7 @@ const metadataTTL = 300000
 
 function getCachedMetadata(groupChatId) {
   const cached = groupMetadataCache.get(groupChatId)
-  if (!cached || Date.now() - cached.timestamp > metadataTTL) return null
+  if (!cached || Date.now() - cached.timestamp > metadataTTL) return undefined
   return cached.metadata
 }
 
@@ -26,7 +26,7 @@ export async function resolveLidToRealJid(lid, client, groupChatId) {
   const lidBase = input.split('@')[0]
   let metadata = getCachedMetadata(groupChatId)
 
-  if (!metadata) {
+  if (metadata === undefined) {
     if (pendingMetadataRequests.has(groupChatId)) {
       metadata = await pendingMetadataRequests.get(groupChatId)
     } else {
@@ -37,11 +37,12 @@ export async function resolveLidToRealJid(lid, client, groupChatId) {
       metadata = await request
       pendingMetadataRequests.delete(groupChatId)
       groupMetadataCache.set(groupChatId, { metadata, timestamp: Date.now() })
-      if (!metadata) {
-        lidCache.set(input, input)
-        return input
-      }
     }
+  }
+
+  if (!metadata) {
+    lidCache.set(input, input)
+    return input
   }
 
   for (const p of metadata.participants || []) {

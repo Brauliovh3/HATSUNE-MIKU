@@ -160,10 +160,17 @@ function normalize(text = '') {
     .trim()
 }
 
-const normalizedAudioMap = Object.fromEntries(
-  Object.entries(audioMap).map(([key, value]) => [normalize(key), value]),
-)
+const existingAudioFiles = new Set(
+  Object.values(audioMap).filter(file => fs.existsSync(path.join(audiosPath, file)))
+);
 
+const filteredAudioMap = Object.fromEntries(
+  Object.entries(audioMap).filter(([, value]) => existingAudioFiles.has(value))
+);
+
+const normalizedAudioMap = Object.fromEntries(
+  Object.entries(filteredAudioMap).map(([key, value]) => [normalize(key), value]),
+)
 
 const audioQueue = []
 let audioProcessing = false
@@ -269,38 +276,34 @@ export async function all(m, { client }) {
 
   if (audioName) {
     const audioFile = path.join(audiosPath, audioName)
-    const exists = fs.existsSync(audioFile)
-    
-    if (exists) {
-      audioQueue.push(async () => {
-        try {
-          let voiceBuffer = opusCache.get(audioFile)
-          if (!voiceBuffer) {
-            const buffer = await fs.promises.readFile(audioFile)
-            if (!buffer || buffer.length < 32) return
-            const inputExt = path.extname(audioFile).toLowerCase() || '.mp3'
-            try {
-              voiceBuffer = await toOpusVoiceNote(buffer, inputExt)
-              opusCache.set(audioFile, voiceBuffer)
-            } catch {
-              voiceBuffer = buffer
-              opusCache.set(audioFile, voiceBuffer)
-            }
-          }
-
-          await client.sendMessage(m.chat, {
-            audio: voiceBuffer,
-            mimetype: 'audio/ogg; codecs=opus',
-            ptt: true
-          }, { quoted: m })
-        } catch (e) {
-          if (!e.message.includes('rate-overlimit')) {
-            console.error('❌ Error enviando audio:', e.message)
+    audioQueue.push(async () => {
+      try {
+        let voiceBuffer = opusCache.get(audioFile)
+        if (!voiceBuffer) {
+          const buffer = await fs.promises.readFile(audioFile)
+          if (!buffer || buffer.length < 32) return
+          const inputExt = path.extname(audioFile).toLowerCase() || '.mp3'
+          try {
+            voiceBuffer = await toOpusVoiceNote(buffer, inputExt)
+            opusCache.set(audioFile, voiceBuffer)
+          } catch {
+            voiceBuffer = buffer
+            opusCache.set(audioFile, voiceBuffer)
           }
         }
-      })
-      processAudioQueue()
-    }
+
+        await client.sendMessage(m.chat, {
+          audio: voiceBuffer,
+          mimetype: 'audio/ogg; codecs=opus',
+          ptt: true
+        }, { quoted: m })
+      } catch (e) {
+        if (!e.message.includes('rate-overlimit')) {
+          console.error('❌ Error enviando audio:', e.message)
+        }
+      }
+    })
+    processAudioQueue()
   }
 }
 
