@@ -1,3 +1,10 @@
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
+import { spawn } from 'child_process'
+import crypto from 'crypto'
+import fetch from 'node-fetch'
+
 const FISHING_RODS = {
   basic: { name: 'Caña Básica', bonus: 0, price: 0 },
   improved: { name: 'Caña Mejorada', bonus: 5, price: 50000 },
@@ -115,30 +122,11 @@ ${fishData.emoji} *RAREZA:* ${rarityLabel}
               newsletterJid: canalId,
               serverMessageId: '',
               newsletterName: canalName
-            },
-            externalAdReply: {
-              title: '🏆 ¡RÉCORD DE PESCA LEGENDARIA!',
-              body: 'Hatsune Miku - RPG',
-              thumbnailUrl: fishData.image,
-              mediaType: 1,
-              renderLargerThumbnail: true
             }
           }
         })
 
-        
-        await client.sendMessage(canalId, {
-          audio: { url: 'https://file.garden/ae-9DPf0ekWVe7ex/legend.mp3' }, 
-          mimetype: 'audio/mpeg',
-          ptt: true,
-          contextInfo: {
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: canalId,
-              serverMessageId: '',
-              newsletterName: canalName
-            }
-          }
-        })
+        await sendLegendaryAudio(client, canalId, canalName)
       }
     }
 
@@ -172,4 +160,54 @@ function msToTime(duration) {
 
 function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)]
+}
+
+async function sendLegendaryAudio(client, canalId, canalName) {
+  try {
+    const res = await fetch('https://file.garden/ae-9DPf0ekWVe7ex/legend.mp3')
+    const buffer = await res.buffer()
+    
+    const id = crypto.randomBytes(6).toString('hex')
+    const inFile = path.join(os.tmpdir(), `miku-legend-${id}.mp3`)
+    const outFile = path.join(os.tmpdir(), `miku-legend-${id}.ogg`)
+    
+    await fs.promises.writeFile(inFile, buffer)
+    
+    await new Promise((resolve, reject) => {
+      const args = [
+        '-y', '-i', inFile,
+        '-vn', '-c:a', 'libopus',
+        '-b:a', '64k', '-vbr', 'on',
+        '-compression_level', '10',
+        outFile
+      ]
+      const p = spawn('ffmpeg', args, { stdio: ['ignore', 'ignore', 'pipe'] })
+      let err = ''
+      p.stderr.on('data', d => err += d.toString())
+      p.on('close', code => {
+        if (code === 0) resolve(true)
+        else reject(new Error(err || `ffmpeg failed (${code})`))
+      })
+    })
+    
+    const opusBuffer = await fs.promises.readFile(outFile)
+    
+    await client.sendMessage(canalId, {
+      audio: opusBuffer,
+      mimetype: 'audio/ogg; codecs=opus',
+      ptt: true,
+      contextInfo: {
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: canalId,
+          serverMessageId: '',
+          newsletterName: canalName
+        }
+      }
+    })
+    
+    try { fs.unlinkSync(inFile) } catch {}
+    try { fs.unlinkSync(outFile) } catch {}
+  } catch (e) {
+    console.log('Error enviando audio legendario:', e)
+  }
 }
