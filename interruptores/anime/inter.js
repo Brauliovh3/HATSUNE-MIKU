@@ -163,8 +163,11 @@ command: ['angry','enojado','enojada','bleh','bored','aburrido','aburrida','clap
     const captionText = captions[currentCommand](fromName, toName, genero)
     const caption = who !== m.sender ? `\`${fromName}.\` ${captionText} \`${toName}.\` ${getRandomSymbol()}.` : `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`
     try {
-      const response = await fetch(`https://api.nexylight.xyz/anime/reaction?type=${currentCommand}&key=${_0x1a2b}`)
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 15000)
+      const response = await fetch(`https://api.nexylight.xyz/anime/reaction?type=${currentCommand}&key=${_0x1a2b}`, { signal: controller.signal })
       const buffer = await response.buffer()
+      clearTimeout(timeout)
       await client.sendMessage(m.chat, { video: buffer, gifPlayback: true, caption, mentions: [who, m.sender] }, { quoted: m })
     } catch (e) {
     await m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)

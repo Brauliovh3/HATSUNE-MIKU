@@ -308,7 +308,7 @@ async function getImageSearchResults(query) {
 
   for (const { url, extractor } of endpoints) {
     try {
-      const res = await axios.get(url)
+      const res = await axios.get(url, { timeout: 10000 })
       const results = extractor(res.data)
       if (results?.length) return results
     } catch {}

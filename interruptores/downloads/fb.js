@@ -91,7 +91,10 @@ async function getFacebookMedia(url) {
 
   for (const { endpoint, extractor } of apis) {
     try {
-      const res = await fetch(endpoint).then(r => r.json())
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10000)
+      const res = await fetch(endpoint, { signal: controller.signal }).then(r => r.json())
+      clearTimeout(timeout)
       const result = extractor(res)
       if (result) return result
     } catch {}

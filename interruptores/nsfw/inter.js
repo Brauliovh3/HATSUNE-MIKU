@@ -72,8 +72,11 @@ export default {
     const captionText = captions[currentCommand](fromName, toName, genero);
     const caption = who !== m.sender ? `\`${fromName}.\` ${captionText} \`${toName}.\` ${getRandomSymbol()}.` : `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`;
     try {
-      const response = await fetch(`https://api.alyacore.xyz/nsfw/interaction?type=${currentCommand}&key=${_0x3c4d}`)
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 15000)
+      const response = await fetch(`https://api.alyacore.xyz/nsfw/interaction?type=${currentCommand}&key=${_0x3c4d}`, { signal: controller.signal })
       const json = await response.json()
+      clearTimeout(timeout)
       const videoUrl = json?.result || json?.url || json?.data
       if (!videoUrl) {
         return await m.reply(`💙 No se pudo obtener el video de la API. Inténtalo de nuevo más tarde.`);

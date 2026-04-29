@@ -183,8 +183,14 @@ async function sendLegendaryAudio(client, canalId, canalName) {
       ]
       const p = spawn('ffmpeg', args, { stdio: ['ignore', 'ignore', 'pipe'] })
       let err = ''
+      const timer = setTimeout(() => {
+        try { p.kill('SIGKILL') } catch {}
+        reject(new Error('ffmpeg timeout'))
+      }, 15000)
       p.stderr.on('data', d => err += d.toString())
+      p.on('error', e => { clearTimeout(timer); reject(e) })
       p.on('close', code => {
+        clearTimeout(timer)
         if (code === 0) resolve(true)
         else reject(new Error(err || `ffmpeg failed (${code})`))
       })

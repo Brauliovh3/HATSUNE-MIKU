@@ -60,7 +60,8 @@ export default {
      
       if (!isMediafireUrl) {
         const res  = await axios.get(
-          `${global.APIs.stellar.url}/search/mediafire?query=${encodeURIComponent(text)}&key=${global.APIs.stellar.key}`
+          `${global.APIs.stellar.url}/search/mediafire?query=${encodeURIComponent(text)}&key=${global.APIs.stellar.key}`,
+          { timeout: 15000 }
         )
         const data = res.data
 
