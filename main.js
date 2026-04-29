@@ -68,7 +68,8 @@ export default async (client, m) => {
     } catch (e) {}
   }
   if (buttonId && (buttonId.startsWith('menu_') || buttonId.startsWith('shop_') || buttonId.startsWith('buy_'))) {
-    if (m.isGroup && !isPrimaryHandler(client, global.db?.data?.chats?.[m.chat])) {
+    const chatDataBtn = global.db?.data?.chats?.[m.chat];
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) {
       return
     }
     
@@ -91,7 +92,8 @@ export default async (client, m) => {
     buttonId.includes('youtube_video_doc_') ||
     buttonId.includes('youtube_audio_doc_')
   )) {
-    if (m.isGroup && !isPrimaryHandler(client, global.db?.data?.chats?.[m.chat])) {
+    const chatDataBtn = global.db?.data?.chats?.[m.chat];
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) {
       return
     }
     
@@ -119,7 +121,8 @@ export default async (client, m) => {
   }
 
   if (buttonId && (buttonId.startsWith('waifu_claim_') || buttonId.startsWith('waifu_sell_'))) {
-    if (m.isGroup && !isPrimaryHandler(client, global.db?.data?.chats?.[m.chat])) {
+    const chatDataBtn = global.db?.data?.chats?.[m.chat];
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) {
       return
     }
     
@@ -213,6 +216,11 @@ export default async (client, m) => {
   }
 
   if (buttonId && (buttonId.startsWith('gallery_prev_') || buttonId.startsWith('gallery_next_'))) {
+    const chatDataBtn = global.db?.data?.chats?.[m.chat];
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) {
+      return;
+    }
+
     const sessionId = buttonId.split('_').slice(2).join('_');
     const session = gallerySessions.get(sessionId);
 
@@ -400,8 +408,7 @@ export default async (client, m) => {
     const allowedInPrivateForUsers = ['allmenu', 'help', 'menu', 'infobot', 'botinfo', 'invite', 'invitar', 'ping', 'speed', 'p', 'status', 'estado', 'report', 'reporte', 'sug', 'suggest', 'token', 'join', 'unir', 'logout', 'reload', 'self', 'setbanner', 'setbotbanner', 'setchannel', 'setbotchannel', 'setbotcurrency', 'setcurrency', 'seticon', 'setboticon', 'setlink', 'setbotlink', 'setbotname', 'setname', 'setbotowner', 'setowner', 'setimage', 'setpfp', 'setprefix', 'setbotprefix', 'setstatus', 'setusername', 'code', 'qr']
     if (!global.owner.map(num => num + '@s.whatsapp.net').includes(sender) && !allowedInPrivateForUsers.includes(command)) return;
   }
-  if (chat?.isBanned && !(command === 'bot' && text === 'on') && !global.owner.map(num => num + '@s.whatsapp.net').includes(sender)) {
-    await m.reply(`💙 El bot *${settings.botname}* está desactivado en este grupo.\n\n> 🌱 Un *administrador* puede activarlo con el comando:\n> » *${usedPrefix}bot on*`);
+  if (chat?.isBanned && !/^(bot|banchat|unbanchat|enable|disable|options)$/i.test(command) && !isOwners) {
     return;
   }
   if (m.text && user.banned && !global.owner.map(num => num + '@s.whatsapp.net').includes(sender)) {

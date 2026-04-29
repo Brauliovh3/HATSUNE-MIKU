@@ -324,9 +324,9 @@ function embedCoverArt(mp3Buffer, imageBuffer, title) {
 function getMikuMenuText(title, author, duration, views) {
   return (
     `${DIVIDER_START}\n` +
-    `│ 💙 *YOUTUBE DOWNLOAD*\n` +
+    `│💙 *MIKU YOUTUBE PLAY*\n` +
     `│\n` +
-    `│ 🎵 *Título:* ${String(title).substring(0, 45)}\n` +
+    `│🎵 *Título:* ${String(title).substring(0, 45)}\n` +
     (author   ? `│ 👤 *Canal:* ${author}\n`                   : '') +
     (duration ? `│ ⏱️ *Duración:* ${duration}\n`                 : '') +
     (views    ? `│ 👁️ *Vistas:* ${formatViews(views)}\n` : '') +
@@ -337,9 +337,9 @@ function getMikuMenuText(title, author, duration, views) {
     `│ 3️⃣ 🌱 Doc MP4\n` +
     `│ 4️⃣ 🌱 Doc MP3\n` +
     `│\n` +
-    `│ ✨ _Responde con el número (1-4)_\n` +
-    `│ ⏳ _Expira en 10 minutos_\n` +
-    `│ 💎 _Costo: 🌱 500 Cebollines_\n` +
+    `│✨ _Responde con número 1-4_\n` +
+    `│⏳ _Expira en 10 minutos_\n` +
+    `│💎 _Costo: 🌱 500 Cebollines_\n` +
     `${DIVIDER_END}`
   )
 }
