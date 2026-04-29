@@ -243,15 +243,19 @@ async function startBot() {
   });
 
   sock.ev.on('messages.upsert', async (chatUpdate) => {
-    try {
-      const kay = chatUpdate.messages[0];
-      if (!kay?.message) return;
-      if (kay.key?.remoteJid === 'status@broadcast') return;
-      kay.message = Object.keys(kay.message)[0] === 'ephemeralMessage' ? kay.message.ephemeralMessage.message : kay.message;
-      const m = await smsg(sock, kay);
-      main(sock, m, chatUpdate);
-    } catch (err) {
-      console.log(log.error('Error:'), err);
+    if (chatUpdate.type !== 'notify') return;
+    for (const kay of chatUpdate.messages) {
+      if (!kay?.message) continue;
+      if (kay.key?.remoteJid === 'status@broadcast') continue;
+      (async () => {
+        try {
+          kay.message = Object.keys(kay.message)[0] === 'ephemeralMessage' ? kay.message.ephemeralMessage.message : kay.message;
+          const m = await smsg(sock, kay);
+          if (m) main(sock, m, chatUpdate);
+        } catch (err) {
+          console.log(log.error('Error:'), err);
+        }
+      })();
     }
   });
   try {

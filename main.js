@@ -443,7 +443,7 @@ export default async (client, m) => {
   if (botprimaryId && hasPrefix && m.isGroup) {
     const normalizedPrimary = normalizeJidDigits(botprimaryId)
     const normalizedCurrent = normalizeJidDigits(botJid)
-    if (normalizedPrimary !== normalizedCurrent) {
+    if (normalizedPrimary !== normalizedCurrent && command !== 'setprimary') {
       return
     }
   }
@@ -473,7 +473,7 @@ export default async (client, m) => {
   const cmdData = global.comandos.get(command);
   if (!cmdData) {
     if (settings.prefix === true) return;
-    // Enviamos el visto en segundo plano sin pausar el proceso
+   
     client.readMessages([m.key]).catch(() => {});
     return m.reply(`💙 El comando *${command}* no existe.\n> 🌱 Usa *${usedPrefix}help* para ver la lista de comandos disponibles.`);
   }
@@ -489,7 +489,7 @@ export default async (client, m) => {
   if (cmdData.isAdmin && !isAdmins) return client.reply(m.chat, mess.admin, m);
   if (cmdData.botAdmin && !isBotAdmins) return client.reply(m.chat, mess.botAdmin, m);
 
-  if (m.isGroup && cmdData.nsfw && !chat.nsfw) {
+  if (m.isGroup && (cmdData.nsfw || cmdData.category === 'nsfw') && !chat.nsfw) {
     client.readMessages([m.key]).catch(() => {});
     return client.reply(m.chat, `💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`, m, global.miku);
   }
