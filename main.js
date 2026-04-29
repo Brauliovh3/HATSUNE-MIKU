@@ -67,6 +67,12 @@ export default async (client, m) => {
       }
     } catch (e) {}
   }
+
+ 
+  if (m.message?.buttonsResponseMessage || m.message?.templateButtonReplyMessage || m.message?.listResponseMessage || m.message?.interactiveResponseMessage) {
+    client.readMessages([m.key]).catch(() => {});
+  }
+
   if (buttonId && (buttonId.startsWith('menu_') || buttonId.startsWith('shop_') || buttonId.startsWith('buy_'))) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat];
     if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) {
@@ -106,10 +112,12 @@ export default async (client, m) => {
     if (option) {
       const user = global.db?.data?.users?.[m.sender]
       if (!user?.lastYTSearch) {
-        return client.reply(m.chat, '⏰ No hay búsqueda activa. Realiza una nueva búsqueda.', m)
+        client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {});
+        return;
       }
       if (Date.now() - (user.lastYTSearch.timestamp || 0) > 10 * 60 * 1000) {
-        return client.reply(m.chat, '⏰ La búsqueda expiró. Realiza una nueva búsqueda.', m)
+        client.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {});
+        return;
       }
       user.monedaDeducted = false
       try {
@@ -147,13 +155,13 @@ export default async (client, m) => {
     if (!Array.isArray(user.waifu.characters)) user.waifu.characters = []
 
     if (!user.waifu.pending) {
-      await client.reply(m.chat, '⚠️ Este personaje ya fue reclamado, vendido o huyó.', m);
+      client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {});
       return;
     }
 
     if (m.sender !== userId) {
       if (buttonId.startsWith('waifu_sell_')) {
-        await client.reply(m.chat, '❌ No puedes vender un personaje que no es tuyo.', m);
+        client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {});
         return;
       }
 
@@ -162,7 +170,10 @@ export default async (client, m) => {
       if (!thiefUser.waifu) thiefUser.waifu = { characters: [], pending: null, cooldown: 0 };
       
       thiefUser.waifu.lastSteal = thiefUser.waifu.lastSteal || 0;
-      if (Date.now() - thiefUser.waifu.lastSteal < 10000) return;
+      if (Date.now() - thiefUser.waifu.lastSteal < 10000) {
+        client.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {});
+        return;
+      }
       thiefUser.waifu.lastSteal = Date.now();
 
       const chance = Math.random();
@@ -256,12 +267,12 @@ export default async (client, m) => {
     const session = gallerySessions.get(sessionId);
 
     if (!session) {
-      await m.reply('❌ Sesión de galería expirada. Usa *.gallery* nuevamente.');
+      client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {});
       return;
     }
 
     if (m.sender !== session.userId) {
-      await m.reply('❌ Esta galería no es tuya.');
+      client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {});
       return;
     }
 
