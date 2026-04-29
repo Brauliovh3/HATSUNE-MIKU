@@ -110,7 +110,7 @@ ${fishData.emoji} *RAREZA:* ${rarityLabel}
       const canalId = global.db.data.settings[botId].id
       const canalName = global.db.data.settings[botId].nameid || 'Canal'
       if (canalId) {
-        const legendCaption = `🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n  ✨ *¡NUEVA LEYENDA EN LOS MARES!* ✨\n🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n\n👤 *Pescador:* \`${userName}\`\n🐠 *Captura:* *${fishName}*\n💎 *Rareza:* 👑 LEGENDARIA\n💰 *Valor:* 🌱 *${reward.toLocaleString()} ${currency}*\n\n> _¡Una hazaña que será recordada por generaciones!_ 🎣🏆`
+        const legendCaption = `🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n ✨ *¡NUEVA LEYENDA EN LOS MARES!* ✨\n🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n\n👤 *Pescador:* \`${userName}\`\n🐠 *Captura:* *${fishName}*\n💎 *Rareza:* 👑 LEGENDARIA\n💰 *Valor:* 🌱 *${reward.toLocaleString()} ${currency}*\n\n> _¡Una hazaña que será recordada por generaciones!_ 🎣🏆`
 
         await client.sendMessage(canalId, {
           image: { url: fishData.image }, 

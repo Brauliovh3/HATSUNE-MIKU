@@ -6,15 +6,14 @@ import cheerio from 'cheerio'
 
 
 const MIKU = {
-  star:    '✦',
+  heart:   '💙',
   note:    '🎵',
-  teal:    '🩵',
-  leaf:    '🌿',
+  leaf:    '',
   sparkle: '✨',
   check:   '✅',
   cross:   '❌',
   wait:    '⏳',
-  file:    '📂',
+  file:    '📦',
   link:    '🔗',
   size:    '⚖️',
   source:  '🌐',
@@ -23,8 +22,8 @@ const MIKU = {
   banner:  'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg',
 }
 
-const divider = `╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌`
-const footer  = `\n${divider}\n🎵 *Hatsune Miku*  *Bot* 🎵`
+const DIVIDER_START = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
+const DIVIDER_END   = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
 
 export default {
   command: ['mediafire', 'mf'],
@@ -35,7 +34,7 @@ export default {
     if (!text) {
       return client.reply(
         m.chat,
-        `🩵✦ *MEDIAFIRE DOWNLOADER* ✦🩵\n${divider}\n\n🎵 Ingresa un enlace de *MediaFire*\n🌿 o una *palabra clave* para buscar.\n\n🔗 *Ejemplo:*\n\`${usedPrefix + command} https://www.mediafire.com/file/xxxx/archivo.zip/file\`\n\n🎵 *Ejemplo búsqueda:*\n\`${usedPrefix + command} photoshop 2024\`${footer}`,
+        `${DIVIDER_START}\n│ 💙 *MEDIAFIRE DOWNLOADER*\n│\n│ 🎵 Ingresa un enlace de *MediaFire*\n│ 🌱 o una *palabra clave* para buscar.\n│\n│ 🔗 *Ejemplo:*\n│ \`${usedPrefix + command} https://www.mediafire.com/file/xxxx/archivo.zip/file\`\n│\n│ 🔍 *Ejemplo búsqueda:*\n│ \`${usedPrefix + command} miku mugen\`\n${DIVIDER_END}`,
         m,
         global.miku,
       )
@@ -52,7 +51,7 @@ export default {
         await m.react(MIKU.cross)
         return client.reply(
           m.chat,
-          `💙 *ENLACE INVÁLIDO* 💙\n${divider}\n\n🎵 Solo se aceptan enlaces de *MediaFire*.\n\n🔗 *Ejemplo correcto:*\n\`${usedPrefix + command} https://www.mediafire.com/file/xxxx/archivo.zip/file\`${footer}`,
+          `${DIVIDER_START}\n│ 💔 *ENLACE INVÁLIDO*\n│\n│ 🎵 Solo se aceptan enlaces de *MediaFire*.\n│\n│ 🔗 *Ejemplo correcto:*\n│ \`${usedPrefix + command} https://www.mediafire.com/file/xxxx/archivo.zip/file\`\n${DIVIDER_END}`,
           m,
           global.miku,
         )
@@ -69,25 +68,21 @@ export default {
           await m.react(MIKU.cross)
           return client.reply(
             m.chat,
-            `💙 *SIN RESULTADOS* 💙\n${divider}\n\n🎵 No se encontraron archivos para:\n🌿 *"${text}"*\n\n✦ Intenta con otras palabras clave.${footer}`,
+            `${DIVIDER_START}\n│ 💙 *SIN RESULTADOS*\n│\n│ 🎵 No se encontraron archivos para:\n│ 🌱 *"${text}"*\n│\n│ ✨ Intenta con otras palabras clave.\n${DIVIDER_END}`,
             m,
             global.miku,
           )
         }
 
-        const icons = ['🩵', '🌿', '🎵', '✦', '🌐']
-        let caption  = `🎵 *MEDIAFIRE SEARCH* 🎵\n${divider}\n\n`
-        caption     += `💙 *Resultados:* ${data.results.length} archivos encontrados\n\n`
+        let caption  = `${DIVIDER_START}\n│ 💙 *MEDIAFIRE SEARCH*\n│\n│ 🔍 *Resultados:* ${data.results.length} archivos encontrados\n│\n`
 
         data.results.forEach((r, i) => {
-          const ico = icons[i % icons.length]
-          caption += `${ico} *${i + 1}. ${r.filename}*\n`
-          caption += `   ${MIKU.size} ${r.filesize}  ${MIKU.source} ${r.source_title}\n`
-          caption += `   ${MIKU.link} ${r.url}\n\n`
+          caption += `│ 💙 *${i + 1}. ${r.filename}*\n`
+          caption += `│    ${MIKU.size} ${r.filesize}  ${MIKU.source} ${r.source_title}\n`
+          caption += `│    ${MIKU.link} ${r.url}\n│\n`
         })
 
-        caption += divider
-        caption += `\n🎵 *Hatsune Miku* ✦ *Bot* 🎵`
+        caption += DIVIDER_END
 
         await m.react(MIKU.check)
         return client.reply(m.chat, caption, m, global.miku)
@@ -100,7 +95,7 @@ export default {
         await m.react(MIKU.cross)
         return client.reply(
           m.chat,
-          `💔 *ARCHIVO NO DISPONIBLE* ✦🩵\n${divider}\n\n🎵 Posibles causas:\n🌿 • El archivo fue eliminado por el dueño\n🩵 • El enlace expiró\n🌿 • MediaFire bloqueó el acceso\n\n✦ Verifica el link e inténtalo de nuevo.${footer}`,
+          `${DIVIDER_START}\n│ 💔 *ARCHIVO NO DISPONIBLE*\n│\n│ 🎵 Posibles causas:\n│ 🌱 • El archivo fue eliminado por el dueño\n│ 🌱 • El enlace expiró\n│ 🌱 • MediaFire bloqueó el acceso\n│\n│ ✨ Verifica el link e inténtalo de nuevo.\n${DIVIDER_END}`,
           m,
           global.miku,
         )
@@ -110,12 +105,12 @@ export default {
       const ext   = path.extname(title) || (scraped.type ? `.${scraped.type}` : '')
       const tipo  = lookup((ext || '').toLowerCase()) || 'application/octet-stream'
 
-      const info = `🎵✦ *MEDIAFIRE DOWNLOAD* ✦🎵\n${divider}\n\n${MIKU.file} *Nombre:* ${title}\n${MIKU.type} *Tipo:* ${tipo}${scraped.size ? `\n${MIKU.size} *Peso:* ${scraped.size}` : ''}${scraped.uploaded ? `\n${MIKU.clock} *Subido:* ${scraped.uploaded}` : ''}\n${divider}\n🎵 *Hatsune Miku* ✦ *Bot* 🎵`
+      const info = `${DIVIDER_START}\n│ 💙 *MEDIAFIRE DOWNLOAD*\n│\n│ ${MIKU.file} *Nombre:* ${title}\n│ ${MIKU.type} *Tipo:* ${tipo}${scraped.size ? `\n│ ${MIKU.size} *Peso:* ${scraped.size}` : ''}${scraped.uploaded ? `\n│ ${MIKU.clock} *Subido:* ${scraped.uploaded}` : ''}\n│\n${DIVIDER_END}`
 
       await client.sendContextInfoIndex(m.chat, info, {}, m, true, null, {
         banner: MIKU.banner,
-        title:  '🎵 Mediafire Downloader',
-        body:   '✦ Descarga de MediaFire',
+        title:  '💙 MediaFire Downloader',
+        body:   '✨ Descarga de MediaFire',
         redes:  global.db.data.settings[client.user.id.split(':')[0] + '@s.whatsapp.net'].link
       })
 
@@ -131,7 +126,7 @@ export default {
       await m.react(MIKU.cross)
       return client.reply(
         m.chat,
-        `💔 *ERROR* 💔\n${divider}\n\n🎵 Ocurrió un error al ejecutar *${usedPrefix + command}*\n\n🌿 *Detalle:* ${e.message}\n\n✦ Inténtalo de nuevo o contacta soporte.${footer}`,
+        `${DIVIDER_START}\n│ 💔 *ERROR*\n│\n│ 🎵 Ocurrió un error al ejecutar *${usedPrefix + command}*\n│\n│ 🌱 *Detalle:* ${e.message}\n│\n│ ✨ Inténtalo de nuevo o contacta soporte.\n${DIVIDER_END}`,
         m,
         global.miku,
       )
