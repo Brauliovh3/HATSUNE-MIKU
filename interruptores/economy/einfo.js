@@ -1,3 +1,5 @@
+import { getBuffer } from "../../nucleo/message.js"
+
 export default {
   command: ['infoeconomy', 'cooldowns', 'economyinfo', 'einfo'],
   category: 'rpg',
@@ -5,6 +7,11 @@ export default {
     const db = global.db.data
     const chatId = m.chat
     const botId = client.user.id.split(':')[0] + "@s.whatsapp.net"
+    const botSettings = db.settings[botId] || {}
+    const monedas = botSettings.currency || 'Coins'
+    const banner = botSettings.banner || 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
+    const canalId = botSettings.id || "120363315369913363@newsletter"
+    const canalName = botSettings.nameid || "Hatsune Miku Channel"
     const chatData = db.chats[chatId]
     if (chatData.adminonly || !chatData.economy) return m.reply(`💙 Los comandos de *Economía* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}economy on*`)
     const user = chatData.users[m.sender]
@@ -36,19 +43,48 @@ export default {
     }
     const coins = user.coins || 0
     const name = db.users[m.sender]?.name || m.sender.split('@')[0]
-    const mensaje = `💙 Usuario \`<${name}>\`
+    const mensaje = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮
+│ 💼 *INFO ECONOMÍA* 💼
+│
+│ 👤 *Usuario ›* ${name}
+│ 🪙 *Coins totales ›* 🌱${coins.toLocaleString()} ${monedas}
+│
+│ ⏱️ *COOLDOWNS (TIEMPOS)*
+│ 💼 *Work ›* ${formatTime(cooldowns.work)}
+│ 💃 *Slut ›* ${formatTime(cooldowns.slut)}
+│ 🥷 *Crime ›* ${formatTime(cooldowns.crime)}
+│ ⛏️ *Mine ›* ${formatTime(cooldowns.mine)}
+│ 🔮 *Ritual ›* ${formatTime(cooldowns.ritual)}
+│ 🕵️ *Steal ›* ${formatTime(cooldowns.steal)}
+│
+│ 🎁 *RECOMPENSAS*
+│ 📅 *Daily ›* ${formatTime(cooldowns.daily)}
+│ 📆 *Weekly ›* ${formatTime(cooldowns.weekly)}
+│ 🗓️ *Monthly ›* ${formatTime(cooldowns.monthly)}
+╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`.trim()
 
-ⴵ Work » *${formatTime(cooldowns.work)}*
-ⴵ Slut » *${formatTime(cooldowns.slut)}*
-ⴵ Crime » *${formatTime(cooldowns.crime)}*
-ⴵ Mine » *${formatTime(cooldowns.mine)}*
-ⴵ Ritual » *${formatTime(cooldowns.ritual)}*
-ⴵ Steal » *${formatTime(cooldowns.steal)}*
-ⴵ Daily » *${formatTime(cooldowns.daily)}*
-ⴵ Weekly » *${formatTime(cooldowns.weekly)}*
-ⴵ Monthly » *${formatTime(cooldowns.monthly)}*
+    if (!global.imageBannerCache) global.imageBannerCache = new Map()
+    let imageObj = { url: banner }
+    try {
+      if (!global.imageBannerCache.has(banner)) {
+        const buf = await getBuffer(banner)
+        if (buf) global.imageBannerCache.set(banner, Buffer.from(buf))
+      }
+      if (global.imageBannerCache.has(banner)) imageObj = global.imageBannerCache.get(banner)
+    } catch (e) {}
 
-💙 Coins totales » 🌱${coins.toLocaleString()} ${global.db.data.settings[botId].currency}`
-    await client.sendMessage(chatId, { text: mensaje }, { quoted: m })
+    await client.sendMessage(chatId, {
+      image: imageObj,
+      caption: mensaje,
+      contextInfo: {
+        mentionedJid: [m.sender],
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: canalId,
+          serverMessageId: '',
+          newsletterName: canalName
+        }
+      }
+    }, { quoted: m })
   }
 }

@@ -1,5 +1,6 @@
 import fs from 'fs'
 import os from 'os'
+import { getBuffer } from '../../nucleo/message.js'
 import { sizeFormatter } from 'human-readable'
 
 function getDefaultHostId() {
@@ -20,7 +21,7 @@ export default {
     const botId = client.user.id.split(':')[0] + "@s.whatsapp.net" || false
     const botSettings = global.db.data.settings[botId] || {}
     const botname = botSettings.botname
-    const logo = botSettings.logo || 'https://files.catbox.moe/lkht6j.png' 
+    const logo = botSettings.logo || 'https://file.garden/ae-9DPf0ekWVe7ex/status.png' 
     
     const userCount = Object.keys(global.db.data.users).length || '0'
     const totalCommands = Object.values(global.db.data.users).reduce((acc, user) => acc + (user.usedcommands || 0), 0)
@@ -55,8 +56,18 @@ export default {
 │ 💙 *Módulos ›* ${format(process.memoryUsage().external)}
 ╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`.trim()
 
+    if (!global.imageBannerCache) global.imageBannerCache = new Map()
+    let imageObj = { url: logo }
+    try {
+      if (!global.imageBannerCache.has(logo)) {
+        const buf = await getBuffer(logo)
+        if (buf) global.imageBannerCache.set(logo, Buffer.from(buf))
+      }
+      if (global.imageBannerCache.has(logo)) imageObj = global.imageBannerCache.get(logo)
+    } catch (e) {}
+
     await client.sendMessage(m.chat, {
-      image: { url: logo },
+      image: imageObj,
       caption: mensajeEstado,
       contextInfo: {
         mentionedJid: [m.sender],

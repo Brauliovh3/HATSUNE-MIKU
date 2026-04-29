@@ -51,21 +51,26 @@ export default {
     const isOficialBot = botId === global.client.user.id.split(':')[0] + "@s.whatsapp.net"
     const botType = isOficialBot ? 'Principal/Owner' : 'Sub Bot'
     try {
-    const message = `💮 Información del bot *${botname}!*
-
-💙 *Nombre Corto ›* ${namebot}
-💙 *Nombre Largo ›* ${botname}
-💙 *Moneda ›* ${monedas}
-💙 *Prefijo${Array.isArray(prefijo) && prefijo.length > 1 ? 's' : ''} ›* ${prefijo === true ? '`sin prefijos`' : (Array.isArray(prefijo) ? prefijo : [prefijo || '/']).map(p => `\`${p}\``).join(', ')}
-
-❒ *Tipo ›* ${botType}
-❒ *Plataforma ›* ${platform}
-❒ *NodeJS ›* ${nodeVersion}
-❒ *Activo desde ›* ${formattedUptimeDate}
-❒ *Sistema Activo ›* ${sistemaUptime}
-❒ *${desar === 'Hombre' ? 'Dueño' : desar === 'Mujer' ? 'Dueña' : 'Dueño(a)'} ›* ${owner ? (!isNaN(owner.replace(/@s\.whatsapp\.net$/, '')) ? `@${owner.split('@')[0]}` : owner) : "Oculto por privacidad"}
-
-> \`Enlace:\` ${link}`.trim()
+    const message = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮
+│ 💮 *INFO DEL SOCKET* 💮
+│
+│ 🤖 *BOT INFO*
+│ 💙 *Nombre Corto ›* ${namebot}
+│ 💙 *Nombre Largo ›* ${botname}
+│ 🪙 *Moneda ›* ${monedas}
+│ 🔤 *Prefijo ›* ${prefijo === true ? 'sin prefijos' : (Array.isArray(prefijo) ? prefijo : [prefijo || '/']).join(', ')}
+│
+│ ⚙️ *SISTEMA*
+│ 🔌 *Tipo ›* ${botType}
+│ 💻 *Plataforma ›* ${platform}
+│ 🟢 *NodeJS ›* ${nodeVersion}
+│ ⏱️ *Activo desde ›* ${formattedUptimeDate}
+│ ⚡ *Uptime ›* ${sistemaUptime}
+│
+│ 👑 *PROPIETARIO*
+│ 👤 *${desar === 'Hombre' ? 'Dueño' : desar === 'Mujer' ? 'Dueña' : 'Dueño(a)'} ›* ${owner ? (!isNaN(owner.replace(/@s\.whatsapp\.net$/, '')) ? `@${owner.split('@')[0]}` : owner) : "Oculto por privacidad"}
+│ 🔗 *Enlace ›* ${link}
+╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`.trim()
 await client.sendMessage(m.chat, banner.includes('.mp4') || banner.includes('.webm') ? {
             video: { url: banner },
             gifPlayback: true,

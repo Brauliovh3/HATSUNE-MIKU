@@ -1,4 +1,5 @@
 import { resolveLidToRealJid } from "../../nucleo/utils.js"
+import { getBuffer } from "../../nucleo/message.js"
 
 export default {
   command: ['topcount', 'topmensajes', 'topmsgcount', 'topmessages'],
@@ -6,6 +7,11 @@ export default {
   run: async (client, m, args, command, text, prefix) => {
     const db = global.db.data
     const chatId = m.chat
+    const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
+    const botSettings = db.settings[botId] || {}
+    const banner = botSettings.banner || 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
+    const canalId = botSettings.id || "120363315369913363@newsletter"
+    const canalName = botSettings.nameid || "Hatsune Miku Channel"
     const chatData = db.chats[chatId]
     const now = new Date()
     const daysArg = args[0] ? parseInt(args[0]) : 1
@@ -37,15 +43,36 @@ export default {
       hour: '2-digit', 
       minute: '2-digit' 
     })
-    let report = `💙 Top de mensajes en los últimos *${daysArg}* día${daysArg > 1 ? 's' : ''}\n\n`
+    let report = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮\n│ 🏆 *TOP MENSAJES* 🏆\n│\n│ 📅 *Periodo:* Últimos ${daysArg} día${daysArg > 1 ? 's' : ''}\n│\n`
     pageRanking.forEach((u, i) => {
       const name = db.users[u.jid]?.name || u.jid.split('@')[0]
-      report += `*${start + i + 1}.* ${name}\n`
-      report += `   » Mensajes: \`${u.totalMsgs}\`, Comandos: \`${u.totalCmds}\`\n`
+      report += `│ 👑 ${start + i + 1} › *${name}*\n`
+      report += `│      💬 \`${u.totalMsgs}\` msgs  ⚡ \`${u.totalCmds}\` cmds\n│\n`
     })
+    report += `│ 📄 *Página:* ${page}/${totalPages}`
     if (page < totalPages) {
-      report += `\n> Para ver la siguiente página › *${prefix + command} ${daysArg} ${page + 1}*`
+      report += `\n│ ➡️ *Siguiente:* ${prefix + command} ${daysArg} ${page + 1}`
     }
-    await client.reply(chatId, report, m)
+    report += `\n╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
+    
+    if (!global.imageBannerCache) global.imageBannerCache = new Map()
+    let imageObj = { url: banner }
+    try {
+      if (!global.imageBannerCache.has(banner)) {
+        const buf = await getBuffer(banner)
+        if (buf) global.imageBannerCache.set(banner, Buffer.from(buf))
+      }
+      if (global.imageBannerCache.has(banner)) imageObj = global.imageBannerCache.get(banner)
+    } catch (e) {}
+
+    await client.sendMessage(chatId, {
+      image: imageObj,
+      caption: report,
+      contextInfo: {
+        mentionedJid: [m.sender],
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: { newsletterJid: canalId, serverMessageId: '', newsletterName: canalName }
+      }
+    }, { quoted: m })
   }
 }
