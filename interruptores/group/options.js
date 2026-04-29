@@ -8,7 +8,8 @@ export default {
     'rpg', 'economy', 'economia',
     'gacha',
     'audios', 'audio',
-    'adminonly', 'onlyadmin'
+    'adminonly', 'onlyadmin',
+    'bot', 'banchat', 'unbanchat'
   ],
   category: 'grupo',
   isAdmin: true,
@@ -35,7 +36,10 @@ export default {
       rpg: 'gacha',
       gacha: 'gacha',
       audios: 'audios',
-      audio: 'audios'
+      audio: 'audios',
+      banchat: 'bot',
+      unbanchat: 'bot',
+      bot: 'bot'
     }
     const featureNames = {
       antilinks: 'el *AntiEnlace*',
@@ -46,7 +50,8 @@ export default {
       gacha: 'los comandos de *Gacha*',
       audios: 'los *Audios*',
       adminonly: 'el modo *Solo Admin*',
-      nsfw: 'los comandos *NSFW*'
+      nsfw: 'los comandos *NSFW*',
+      bot: 'el *Bot en este grupo*'
     }
     const featureTitles = {
       antilinks: 'AntiEnlace',
@@ -57,10 +62,21 @@ export default {
       gacha: 'Gacha',
       audios: 'Audios',
       adminonly: 'AdminOnly',
-      nsfw: 'NSFW'
+      nsfw: 'NSFW',
+      bot: 'Bot'
     }
     const normalizedKey = mapTerms[command] || command
-    const current = chatData[normalizedKey] === true
+
+    if (command === 'banchat') {
+      chatData.isBanned = true
+      return client.reply(m.chat, `💙 Has *desactivado* ${featureNames.bot}.\n_(El bot ya no responderá a ningún comando ni audio en este grupo)_`, m, global.miku)
+    }
+    if (command === 'unbanchat') {
+      chatData.isBanned = false
+      return client.reply(m.chat, `💙 Has *activado* ${featureNames.bot}.`, m, global.miku)
+    }
+
+    const current = normalizedKey === 'bot' ? !chatData.isBanned : chatData[normalizedKey] === true
     const estado = current ? '✅ Activado' : '❌ Desactivado'
     const nombreBonito = featureNames[normalizedKey] || `la función *${normalizedKey}*`
     const titulo = featureTitles[normalizedKey] || normalizedKey
@@ -74,7 +90,11 @@ export default {
     if (chatData[normalizedKey] === enabled) {
       return client.reply(m.chat, `💙 *${titulo}* ya estaba *${enabled ? 'activado' : 'desactivado'}*.`, m, global.miku)
     }
-    chatData[normalizedKey] = enabled
+    if (normalizedKey === 'bot') {
+      chatData.isBanned = !enabled
+    } else {
+      chatData[normalizedKey] = enabled
+    }
     return client.reply(m.chat, `💙 Has *${enabled ? 'activado' : 'desactivado'}* ${nombreBonito}.`, m, global.miku)
   }
 };

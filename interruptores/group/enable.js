@@ -5,12 +5,12 @@ export default {
   run: async (client, m, args, usedPrefix, command) => {
     const chatData = global.db.data.chats[m.chat]
     const feature = args[0]?.toLowerCase()
-    const validFeatures = ['nsfw', 'welcome', 'goodbye', 'alerts', 'antilinks', 'economy', 'gacha', 'audios', 'adminonly']
+    const validFeatures = ['nsfw', 'welcome', 'goodbye', 'alerts', 'antilinks', 'economy', 'gacha', 'audios', 'adminonly', 'bot']
 
     if (!feature) {
       return client.reply(
         m.chat,
-        `💙 *Uso del comando*\n\n💙 _Activar ›_ *${usedPrefix}enable <opción>*\n💙 _Desactivar ›_ *${usedPrefix}disable <opción>*\n\n💙 *Opciones disponibles:*\n• nsfw\n• welcome\n• goodbye\n• alerts\n• antilinks\n• economy\n• gacha\n• audios\n• adminonly\n\n💙 _Ejemplo:_ *${usedPrefix}enable audios*`,
+        `💙 *Uso del comando*\n\n💙 _Activar ›_ *${usedPrefix}enable <opción>*\n💙 _Desactivar ›_ *${usedPrefix}disable <opción>*\n\n💙 *Opciones disponibles:*\n• bot\n• nsfw\n• welcome\n• goodbye\n• alerts\n• antilinks\n• economy\n• gacha\n• audios\n• adminonly\n\n💙 _Ejemplo:_ *${usedPrefix}disable bot*`,
         m,
         global.miku,
       )
@@ -30,9 +30,20 @@ export default {
       gacha: 'los comandos de *Gacha*',
       audios: 'los *Audios*',
       adminonly: 'el modo *Solo Admin*',
+      bot: 'el *Bot en este grupo*',
     }
 
     const enabled = command === 'enable'
+
+    if (feature === 'bot') {
+      const isCurrentlyEnabled = !chatData.isBanned
+      if (isCurrentlyEnabled === enabled) {
+        return client.reply(m.chat, `💙 ${featureNames[feature]} ya estaba *${enabled ? 'activado' : 'desactivado'}*.`, m, global.miku)
+      }
+      chatData.isBanned = !enabled
+      return client.reply(m.chat, `💙 Has *${enabled ? 'activado' : 'desactivado'}* ${featureNames[feature]}.\n${!enabled ? '_(El bot ya no responderá a ningún comando ni audio en este grupo)_' : ''}`, m, global.miku)
+    }
+
     const current = chatData[feature] === true
 
     if (current === enabled) {

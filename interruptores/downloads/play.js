@@ -152,12 +152,10 @@ async function getNewApiDownload(youtubeUrl, type, timeoutMs = 20000) {
 }
 
 async function getAudioUrl(youtubeUrl) {
-  console.log('[PLAY.JS] 🏁 Iniciando carrera de APIs para AUDIO en paralelo...');
   const promises = [
     (async () => {
       const gifted = await fetchJsonWithRetry(`https://api.giftedtech.web.id/api/download/dlmp3?url=${encodeURIComponent(youtubeUrl)}&apikey=gifted`, 15000, 1)
       if (gifted?.success && gifted?.result?.download_url) {
-        console.log('🏆 [PLAY.JS] Gifted API ganó la carrera de Audio!');
         return { downloadUrl: gifted.result.download_url, isGoogleVideo: false, title: gifted.result.title || 'Audio', thumbnail: null }
       }
       throw new Error('Gifted Falló')
@@ -165,7 +163,6 @@ async function getAudioUrl(youtubeUrl) {
     (async () => {
       const david = await fetchJsonWithRetry(`https://api.davidcyriltech.my.id/download/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
       if (david?.success && david?.result?.download_url) {
-        console.log('🏆 [PLAY.JS] DavidCyril API ganó la carrera de Audio!');
         return { downloadUrl: david.result.download_url, isGoogleVideo: false, title: david.result.title || 'Audio', thumbnail: null }
       }
       throw new Error('DavidCyril Falló')
@@ -173,7 +170,6 @@ async function getAudioUrl(youtubeUrl) {
     (async () => {
       const newApiResult = await getNewApiDownload(youtubeUrl, 'audio')
       if (newApiResult) {
-        console.log('🏆 [PLAY.JS] New API Base ganó la carrera de Audio!');
         return newApiResult
       }
       throw new Error('NewAPI Falló')
@@ -183,7 +179,6 @@ async function getAudioUrl(youtubeUrl) {
       const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
       const alyaDl = alyaJson?.status !== false ? extractAlyaDownloadUrl(alyaJson, 'audio') : null
       if (alyaDl) {
-        console.log('🏆 [PLAY.JS] AlyaCore ganó la carrera de Audio!');
         return { downloadUrl: alyaDl, isGoogleVideo: false, title: alyaJson?.data?.title || 'Audio', thumbnail: alyaJson?.data?.thumbnail || null }
       }
       throw new Error('AlyaCore Falló')
@@ -191,7 +186,6 @@ async function getAudioUrl(youtubeUrl) {
     (async () => {
       const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=audio`, 15000, 1)
       if (nxr?.status && nxr?.data?.url) {
-        console.log('🏆 [PLAY.JS] NXR API ganó la carrera de Audio!');
         return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Audio', thumbnail: null }
       }
       throw new Error('NXR Falló')
@@ -206,12 +200,10 @@ async function getAudioUrl(youtubeUrl) {
 }
 
 async function getVideoUrl(youtubeUrl, quality = '360') {
-  console.log('[PLAY.JS] 🏁 Iniciando carrera de APIs para VIDEO en paralelo...');
   const promises = [
     (async () => {
       const gifted = await fetchJsonWithRetry(`https://api.giftedtech.web.id/api/download/dlmp4?url=${encodeURIComponent(youtubeUrl)}&apikey=gifted`, 15000, 1)
       if (gifted?.success && gifted?.result?.download_url) {
-        console.log('🏆 [PLAY.JS] Gifted API ganó la carrera de Video!');
         return { downloadUrl: gifted.result.download_url, isGoogleVideo: false, title: gifted.result.title || 'Video', thumbnail: null }
       }
       throw new Error('Gifted Falló')
@@ -219,7 +211,6 @@ async function getVideoUrl(youtubeUrl, quality = '360') {
     (async () => {
       const david = await fetchJsonWithRetry(`https://api.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
       if (david?.success && david?.result?.download_url) {
-        console.log('🏆 [PLAY.JS] DavidCyril API ganó la carrera de Video!');
         return { downloadUrl: david.result.download_url, isGoogleVideo: false, title: david.result.title || 'Video', thumbnail: null }
       }
       throw new Error('DavidCyril Falló')
@@ -227,7 +218,6 @@ async function getVideoUrl(youtubeUrl, quality = '360') {
     (async () => {
       const newApiResult = await getNewApiDownload(youtubeUrl, 'video', 20000)
       if (newApiResult) {
-        console.log('🏆 [PLAY.JS] New API Base ganó la carrera de Video!');
         return newApiResult
       }
       throw new Error('NewAPI Falló')
@@ -237,7 +227,6 @@ async function getVideoUrl(youtubeUrl, quality = '360') {
       const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
       const alyaDl = alyaJson?.status !== false ? extractAlyaDownloadUrl(alyaJson, 'video') : null
       if (alyaDl) {
-        console.log('🏆 [PLAY.JS] AlyaCore ganó la carrera de Video!');
         return { downloadUrl: alyaDl, isGoogleVideo: /googlevideo\.com/i.test(alyaDl), title: alyaJson?.data?.title || 'Video', thumbnail: alyaJson?.data?.thumbnail || null }
       }
       throw new Error('AlyaCore Falló')
@@ -245,7 +234,6 @@ async function getVideoUrl(youtubeUrl, quality = '360') {
     (async () => {
       const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=video`, 15000, 1)
       if (nxr?.status && nxr?.data?.url) {
-        console.log('🏆 [PLAY.JS] NXR API ganó la carrera de Video!');
         return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Video', thumbnail: null }
       }
       throw new Error('NXR Falló')
