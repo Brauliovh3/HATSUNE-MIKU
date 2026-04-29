@@ -214,6 +214,15 @@ async function getNewApiDownload(youtubeUrl, type, timeoutMs = 20000) {
 }
 
 async function getAudioUrl(youtubeUrl) {
+  try {
+    console.log('[PLAY.JS] Invocando scraper local (Y2Mate) para Audio...');
+    const y2mateUrl = await scrapeY2mate(youtubeUrl, 'mp3')
+    if (y2mateUrl) {
+      console.log('[PLAY.JS] Y2Mate devolvió el audio correctamente.');
+      return { downloadUrl: y2mateUrl, isGoogleVideo: false, title: 'Audio', thumbnail: null }
+    }
+  } catch (e) { console.log('[PLAY.JS] Error atrapado en llamada Y2Mate:', e.message) }
+
   const newApiResult = await getNewApiDownload(youtubeUrl, 'audio')
   if (newApiResult) return newApiResult
   const alyaUrl = `https://api.alyacore.xyz/dl/ytmp3?url=${encodeURIComponent(youtubeUrl)}&key=${encodeURIComponent(ALYA_KEY)}`
@@ -228,16 +237,6 @@ async function getAudioUrl(youtubeUrl) {
       thumbnail: alyaJson?.data?.thumbnail || null,
     }
   }
-
- 
-  try {
-    console.log('[PLAY.JS] Invocando scraper local (Y2Mate) para Audio...');
-    const y2mateUrl = await scrapeY2mate(youtubeUrl, 'mp3')
-    if (y2mateUrl) {
-      console.log('[PLAY.JS] Y2Mate devolvió el audio correctamente.');
-      return { downloadUrl: y2mateUrl, isGoogleVideo: false, title: 'Audio', thumbnail: null }
-    }
-  } catch (e) { console.log('[PLAY.JS] Error atrapado en llamada Y2Mate:', e.message) }
 
   
   try {
