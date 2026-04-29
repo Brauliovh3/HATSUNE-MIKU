@@ -43,6 +43,47 @@ function formatViews(views) {
   return n.toLocaleString()
 }
 
+async function scrapeY2mate(url, type = 'mp3') {
+  try {
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+      'Origin': 'https://www.y2mate.com',
+      'Referer': 'https://www.y2mate.com/en841'
+    }
+    
+    
+    const analyzeRes = await fetch('https://www.y2mate.com/mates/en841/analyzeV2/ajax', {
+      method: 'POST',
+      headers,
+      body: new URLSearchParams({ k_query: url, q_auto: 1 }).toString()
+    })
+    const analyzeData = await analyzeRes.json()
+    if (!analyzeData || analyzeData.status !== 'ok') return null
+
+    const vid = analyzeData.vid
+    const links = analyzeData.links
+    let token = null
+
+    if (type === 'mp3' && links?.mp3) {
+      const qualities = Object.values(links.mp3)
+      if (qualities.length) token = qualities[0].k
+    } else if (type === 'mp4' && links?.mp4) {
+      const qualities = Object.values(links.mp4)
+      const preferred = qualities.find(q => q.q === '360p' || q.q === '480p') || qualities[0]
+      if (preferred) token = preferred.k
+    }
+
+    if (!token) return null
+
+    
+    const convertRes = await fetch('https://www.y2mate.com/mates/en841/convertV2/index', { method: 'POST', headers, body: new URLSearchParams({ vid, k: token }).toString() })
+    const convertData = await convertRes.json()
+    if (convertData && convertData.status === 'ok' && convertData.dlink) return convertData.dlink
+  } catch (e) { return null }
+  return null
+}
+
 async function fetchJson(url, timeoutMs = 15000) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
@@ -167,16 +208,16 @@ async function getAudioUrl(youtubeUrl) {
     }
   }
 
-  // Fallback 1: Siputzx
+ 
   try {
-    const siputzx = await fetchJsonWithRetry(`https://api.siputzx.my.id/api/d/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-    if (siputzx?.status && siputzx?.data?.dl) return { downloadUrl: siputzx.data.dl, isGoogleVideo: false, title: 'Audio', thumbnail: null }
+    const y2mateUrl = await scrapeY2mate(youtubeUrl, 'mp3')
+    if (y2mateUrl) return { downloadUrl: y2mateUrl, isGoogleVideo: false, title: 'Audio', thumbnail: null }
   } catch {}
 
-  // Fallback 2: Ryzendesu
+  
   try {
-    const ryzen = await fetchJsonWithRetry(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-    if (ryzen?.url) return { downloadUrl: ryzen.url, isGoogleVideo: false, title: 'Audio', thumbnail: null }
+    const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=audio`, 15000, 1)
+    if (nxr?.status && nxr?.data?.url) return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Audio', thumbnail: null }
   } catch {}
 
   throw new Error('No se pudo obtener URL de descarga de audio')
@@ -198,16 +239,16 @@ async function getVideoUrl(youtubeUrl, quality = '360') {
     }
   }
 
-  // Fallback 1: Siputzx
+ 
   try {
-    const siputzx = await fetchJsonWithRetry(`https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-    if (siputzx?.status && siputzx?.data?.dl) return { downloadUrl: siputzx.data.dl, isGoogleVideo: false, title: 'Video', thumbnail: null }
+    const y2mateUrl = await scrapeY2mate(youtubeUrl, 'mp4')
+    if (y2mateUrl) return { downloadUrl: y2mateUrl, isGoogleVideo: false, title: 'Video', thumbnail: null }
   } catch {}
 
-  // Fallback 2: Ryzendesu
+ 
   try {
-    const ryzen = await fetchJsonWithRetry(`https://api.ryzendesu.vip/api/downloader/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-    if (ryzen?.url) return { downloadUrl: ryzen.url, isGoogleVideo: false, title: 'Video', thumbnail: null }
+    const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=video`, 15000, 1)
+    if (nxr?.status && nxr?.data?.url) return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Video', thumbnail: null }
   } catch {}
 
   throw new Error('No se pudo obtener URL de descarga de video')
@@ -292,7 +333,7 @@ function getMikuMenuText(title, author, duration, views) {
     `${DIVIDER_START}\n` +
     `│ 💙 *YOUTUBE DOWNLOAD*\n` +
     `│\n` +
-    `│🎵 *Título:* ${String(title).substring(0, 45)}\n` +
+    `│ 🎵 *Título:* ${String(title).substring(0, 45)}\n` +
     (author   ? `│ 👤 *Canal:* ${author}\n`                   : '') +
     (duration ? `│ ⏱️ *Duración:* ${duration}\n`                 : '') +
     (views    ? `│ 👁️ *Vistas:* ${formatViews(views)}\n` : '') +
@@ -303,9 +344,9 @@ function getMikuMenuText(title, author, duration, views) {
     `│ 3️⃣ 🌱 Doc MP4\n` +
     `│ 4️⃣ 🌱 Doc MP3\n` +
     `│\n` +
-    `│✨ _Responde con número 1-4_\n` +
-    `│⏳ _Expira en 10 minutos_\n` +
-    `│💎 _Costo: 🌱 500 Cebollines_\n` +
+    `│ ✨ _Responde con el número (1-4)_\n` +
+    `│ ⏳ _Expira en 10 minutos_\n` +
+    `│ 💎 _Costo: 🌱 500 Cebollines_\n` +
     `${DIVIDER_END}`
   )
 }
