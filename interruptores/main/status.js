@@ -20,7 +20,7 @@ export default {
     const botId = client.user.id.split(':')[0] + "@s.whatsapp.net" || false
     const botSettings = global.db.data.settings[botId] || {}
     const botname = botSettings.botname
-    const banner = botSettings.banner || 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg' // URL del encabezado
+    const logo = botSettings.logo || 'https://files.catbox.moe/lkht6j.png' 
     
     const userCount = Object.keys(global.db.data.users).length || '0'
     const totalCommands = Object.values(global.db.data.users).reduce((acc, user) => acc + (user.usedcommands || 0), 0)
@@ -56,7 +56,7 @@ export default {
 ╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`.trim()
 
     await client.sendMessage(m.chat, {
-      image: { url: banner },
+      image: { url: logo },
       caption: mensajeEstado,
       contextInfo: {
         mentionedJid: [m.sender],
