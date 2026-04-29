@@ -22,6 +22,9 @@ const VIDEO_DOWNLOAD_TIMEOUT = 60000
 const PROBE_TIMEOUT = 8000
 const FETCH_TIMEOUT = 15000
 
+const DIVIDER_START = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
+const DIVIDER_END   = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
+
 function isValidUrl(url) {
   return typeof url === 'string' && /^https?:\/\//i.test(url)
 }
@@ -396,14 +399,14 @@ function formatCaption(data) {
   const comments = (data?.stats?.comments || 0).toLocaleString()
   const shares = (data?.stats?.shares || 0).toLocaleString()
   return (
-    `╭───────────────╮\n` +
-    `│ 💙 *TIKTOK*\n` +
-    `│───────────────\n` +
-    `│ 📌 ${(data?.title || 'Sin titulo').substring(0, 60)}\n` +
-    `│ 👤 ${data?.author?.nickname || 'Desconocido'}\n` +
-    `│ 👁️ ${views}  ❤️ ${likes}\n` +
-    `│ 💬 ${comments}  🔁 ${shares}\n` +
-    `╰───────────────╯`
+    `${DIVIDER_START}\n` +
+    `│ 💙 *TIKTOK DOWNLOAD*\n` +
+    `│\n` +
+    `│ 🎵 *Título:* ${(data?.title || 'Sin titulo').substring(0, 60)}\n` +
+    `│ 👤 *Autor:* ${data?.author?.nickname || 'Desconocido'}\n` +
+    `│ 👁️ *Vistas:* ${views} │ ❤️ *Likes:* ${likes}\n` +
+    `│ 💬 *Comentarios:* ${comments} │ 🔁 *Shares:* ${shares}\n` +
+    `${DIVIDER_END}`
   )
 }
 
@@ -826,8 +829,8 @@ async function _xV(conn, m, entries = []) {
       viewOnceMessage: {
         message: {
           interactiveMessage: proto.Message.InteractiveMessage.fromObject({
-            body: proto.Message.InteractiveMessage.Body.create({ text: '💙 Resultados TikTok' }),
-            footer: proto.Message.InteractiveMessage.Footer.create({ text: '' }),
+                body: proto.Message.InteractiveMessage.Body.create({ text: `${DIVIDER_START}\n│ 🔍 *Resultados de Búsqueda*\n${DIVIDER_END}` }),
+                footer: proto.Message.InteractiveMessage.Footer.create({ text: '🎵 Hatsune Miku Bot' }),
             header: proto.Message.InteractiveMessage.Header.create({ hasMediaAttachment: false }),
             carouselMessage: proto.Message.InteractiveMessage.CarouselMessage.fromObject({ cards }),
           }),
@@ -849,12 +852,18 @@ export default {
     if (!args.length) {
       return conn.reply(
         m.chat,
-        `Uso: *${usedPrefix}${command}* <enlace o busqueda>\n\n` +
-        `Ejemplo:\n` +
-        `• ${usedPrefix}tt https://vm.tiktok.com/xxx\n` +
-        `• ${usedPrefix}ttsearch gato gracioso\n` +
-        `• ${usedPrefix}tiktokimg https://vm.tiktok.com/xxx\n` +
-        `• ${usedPrefix}tiktokmp3 https://vm.tiktok.com/xxx`,
+        `${DIVIDER_START}\n` +
+        `│ 💙 *TIKTOK DOWNLOADER*\n` +
+        `│\n` +
+        `│ 🎵 *Uso correcto:*\n` +
+        `│ \`${usedPrefix}${command} <enlace o búsqueda>\`\n` +
+        `│\n` +
+        `│ 🌱 *Ejemplos:*\n` +
+        `│ • \`${usedPrefix}tt https://vm.tiktok.com/xxx\`\n` +
+        `│ • \`${usedPrefix}ttsearch miku cosplay\`\n` +
+        `│ • \`${usedPrefix}tiktokimg <enlace>\`\n` +
+        `│ • \`${usedPrefix}tiktokmp3 <enlace>\`\n` +
+        `${DIVIDER_END}`,
         m
       )
     }
@@ -870,9 +879,13 @@ export default {
     if ((isDownloadCommand || isImageCommand || isMp3Command) && !isUrl) {
       return conn.reply(
         m.chat,
-        `💙 *Uso correcto*\n\n` +
-        `• ${usedPrefix}${currentCommand} <enlace tiktok>\n` +
-        `• ${usedPrefix}ttsearch <texto>`,
+        `${DIVIDER_START}\n` +
+        `│ 💔 *FORMATO INCORRECTO*\n` +
+        `│\n` +
+        `│ 🎵 *Uso correcto:*\n` +
+        `│ • \`${usedPrefix}${currentCommand} <enlace tiktok>\`\n` +
+        `│ • \`${usedPrefix}ttsearch <texto>\`\n` +
+        `${DIVIDER_END}`,
         m
       )
     }
@@ -880,8 +893,7 @@ export default {
     if (isSearchCommand && isUrl) {
       return conn.reply(
         m.chat,
-        `💙 Ese comando es solo para buscar.\n` +
-        `Usa *${usedPrefix}tt* para enlaces directos.`,
+        `${DIVIDER_START}\n│ 💔 *ERROR*\n│\n│ 🎵 Ese comando es solo para buscar texto.\n│ 🌱 Usa \`${usedPrefix}tt\` para enlaces directos.\n${DIVIDER_END}`,
         m
       )
     }
@@ -895,7 +907,7 @@ export default {
 
         if (validImages.length === 0) {
           await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-          return conn.reply(m.chat, '💙 No se encontraron imágenes en ese TikTok.\nQuizás es un video, usa *.tt* para descargarlo.', m)
+          return conn.reply(m.chat, `${DIVIDER_START}\n│ 💔 *SIN IMÁGENES*\n│\n│ 🎵 No se encontraron imágenes en ese TikTok.\n│ 🌱 Si es un video, usa \`${usedPrefix}tt\`.\n${DIVIDER_END}`, m)
         }
 
         const caption = formatCaption(normalized)
@@ -912,13 +924,13 @@ export default {
         const duration = mp3Data?.music_info?.duration || mp3Data?.duration || ''
 
         const caption =
-          `╭───────────────╮\n` +
-          `│ 🎵 *TIKTOK MP3*\n` +
-          `│───────────────\n` +
-          `│ 🎼 ${musicTitle.substring(0, 60)}\n` +
-          `│ 👤 ${musicAuthor}\n` +
-          (duration ? `│ ⏱️ ${duration}\n` : '') +
-          `╰───────────────╯`
+          `${DIVIDER_START}\n` +
+          `│ 🎵 *TIKTOK AUDIO*\n` +
+          `│\n` +
+          `│ 🎼 *Pista:* ${musicTitle.substring(0, 60)}\n` +
+          `│ 👤 *Autor:* ${musicAuthor}\n` +
+          (duration ? `│ ⏱️ *Duración:* ${duration}\n` : '') +
+          `${DIVIDER_END}`
 
         const audioUrl = mp3Data.dl
         let audioSent = false
@@ -1001,7 +1013,7 @@ export default {
 
       if (videos.length === 0) {
         await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-        return conn.reply(m.chat, '💙 No se encontraron resultados.', m)
+        return conn.reply(m.chat, `${DIVIDER_START}\n│ 💔 *SIN RESULTADOS*\n│\n│ 🎵 No se encontraron videos.\n${DIVIDER_END}`, m)
       }
 
       const seenIds = new Set()
@@ -1044,7 +1056,7 @@ export default {
 
       if (valid.length === 0) {
         await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-        return conn.reply(m.chat, '💙 No se encontraron videos validos.', m)
+        return conn.reply(m.chat, `${DIVIDER_START}\n│ 💔 *SIN VIDEOS VÁLIDOS*\n│\n│ 🎵 Los videos encontrados no se pudieron procesar.\n${DIVIDER_END}`, m)
       }
 
       await _xV(conn, m, valid)
@@ -1053,7 +1065,7 @@ export default {
     } catch (e) {
       console.error('Error en tiktok:', e.message)
       await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-      await conn.reply(m.chat, `💙 Error: ${e.message}`, m)
+      await conn.reply(m.chat, `${DIVIDER_START}\n│ 💔 *ERROR*\n│\n│ 🎵 ${e.message}\n${DIVIDER_END}`, m)
     }
   },
 }
