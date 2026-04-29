@@ -103,14 +103,34 @@ ${fishData.emoji} *RAREZA:* ${rarityLabel}
       const canalId = global.db.data.settings[botId].id
       const canalName = global.db.data.settings[botId].nameid || 'Canal'
       if (canalId) {
+        const legendCaption = `🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n  ✨ *¡NUEVA LEYENDA EN LOS MARES!* ✨\n🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n\n👤 *Pescador:* \`${userName}\`\n🐠 *Captura:* *${fishName}*\n💎 *Rareza:* 👑 LEGENDARIA\n💰 *Valor:* 🌱 *${reward.toLocaleString()} ${currency}*\n\n> _¡Una hazaña que será recordada por generaciones!_ 🎣🏆`
+
         await client.sendMessage(canalId, {
-          text: `🏆 *PESCA LEGENDARIA!* 🏆
+          image: { url: fishData.image }, 
+          caption: legendCaption,
+          contextInfo: {
+            isForwarded: true,
+            forwardingScore: 999,
+            forwardedNewsletterMessageInfo: {
+              newsletterJid: canalId,
+              serverMessageId: '',
+              newsletterName: canalName
+            },
+            externalAdReply: {
+              title: '🏆 ¡RÉCORD DE PESCA LEGENDARIA!',
+              body: 'Hatsune Miku - RPG',
+              thumbnailUrl: fishData.image,
+              mediaType: 1,
+              renderLargerThumbnail: true
+            }
+          }
+        })
 
-👤 *Usuario:* ${userName}
-🐠 *Pez:* ${fishName}
-💰 *Recompensa:* 🌱${reward.toLocaleString()} ${currency}
-
-🎣 ¡Un nuevo leyenda ha nacido en los mares!`,
+        
+        await client.sendMessage(canalId, {
+          audio: { url: 'https://file.garden/ae-9DPf0ekWVe7ex/legend.mp3' }, 
+          mimetype: 'audio/mpeg',
+          ptt: true,
           contextInfo: {
             forwardedNewsletterMessageInfo: {
               newsletterJid: canalId,
