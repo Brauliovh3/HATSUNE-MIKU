@@ -68,7 +68,7 @@ async function cleanCache() {
           const filePath = path.join(tmpFolder, file);
           const stat = await fs.promises.stat(filePath);
          
-          if (stat.size > 10 * 1024 * 1024 || Date.now() - stat.mtimeMs > 60 * 60 * 1000) {
+          if (stat.size > 10 * 1024 * 1024 || Date.now() - stat.mtimeMs > 10 * 60 * 1000) {
             await fs.promises.unlink(filePath);
             cleanedTmp++;
           }
@@ -87,7 +87,7 @@ async function cleanCache() {
           const stat = await fs.promises.stat(filePath);
           if (stat.isDirectory()) {
             await cleanSessionsRecursive(filePath);
-          } else if ((file.startsWith('pre-key-') || file.startsWith('sender-key-') || file.startsWith('app-state-')) && (Date.now() - stat.mtimeMs > 2 * 24 * 60 * 60 * 1000)) {
+          } else if (file !== 'creds.json' && (file.startsWith('pre-key-') || file.startsWith('sender-key-') || file.startsWith('session-') || file.startsWith('app-state-')) && (Date.now() - stat.mtimeMs > 2 * 60 * 60 * 1000)) {
             try { await fs.promises.unlink(filePath); cleanedSessions++; } catch {}
           }
         }
@@ -259,10 +259,10 @@ async function startBot() {
   };
 }
 
-setInterval(cleanCache, 30 * 60 * 1000);
+setInterval(cleanCache, 10 * 60 * 1000);
 cleanCache();
 
-setTimeout(cleanCache, 5 * 60 * 1000);
+setTimeout(cleanCache, 2 * 60 * 1000);
 
 (async () => {
 global.loadDatabase()
@@ -279,7 +279,7 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason) => {
   const msg = String(reason?.message || reason || '');
   const lowerMsg = msg.toLowerCase();
-  if (lowerMsg.includes('rate-overlimit') || lowerMsg.includes('timed out') || lowerMsg.includes('timeout') || lowerMsg.includes('connection closed') || lowerMsg.includes('connection lost') || lowerMsg.includes('etimeout') || lowerMsg.includes('enoent') || lowerMsg.includes('no such file or directory') || lowerMsg.includes('404') || lowerMsg.includes('request failed') || lowerMsg.includes('no sessions') || lowerMsg.includes('unsupported state or unable to authenticate data') || lowerMsg.includes('bad mac')) {
+  if (lowerMsg.includes('rate-overlimit') || lowerMsg.includes('timed out') || lowerMsg.includes('timeout') || lowerMsg.includes('connection closed') || lowerMsg.includes('connection lost') || lowerMsg.includes('etimeout') || lowerMsg.includes('enoent') || lowerMsg.includes('no such file or directory') || lowerMsg.includes('404') || lowerMsg.includes('request failed') || lowerMsg.includes('no sessions') || lowerMsg.includes('unsupported state or unable to authenticate data') || lowerMsg.includes('bad mac') || lowerMsg.includes('enospc')) {
     return;
   }
   console.error(chalk.red('[unhandledRejection]'), msg.slice(0, 120));
