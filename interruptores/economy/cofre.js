@@ -9,7 +9,7 @@ export default {
     const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
     const botSettings = db.settings[botId] || {}
     const monedas = botSettings.currency || 'Coins'
-    const banner = botSettings.banner || 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
+    const imgCofre = 'https://file.garden/ae-9DPf0ekWVe7ex/cofre.png'
     const canalId = botSettings.id || "120363315369913363@newsletter"
     const canalName = botSettings.nameid || "Hatsune Miku Channel"
     const chatData = db.chats[chatId]
@@ -18,7 +18,7 @@ export default {
     
     const user = chatData.users[m.sender]
     const now = Date.now()
-    const cooldown = 8 * 60 * 60 * 1000 // 8 horas de espera
+    const cooldown = 8 * 60 * 60 * 1000 
     
     user.lastcofre = user.lastcofre || 0
     
@@ -27,7 +27,7 @@ export default {
       return m.reply(`💙 Ya has abierto tu cofre mágico.\n> Puedes abrir otro en *${restante}*`)
     }
     
-    const recompensa = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000 // Entre 5k y 15k monedas
+    const recompensa = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000 
     user.coins = (user.coins || 0) + recompensa
     user.lastcofre = now + cooldown
     
@@ -43,13 +43,13 @@ export default {
 ╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`.trim()
 
     if (!global.imageBannerCache) global.imageBannerCache = new Map()
-    let imageObj = { url: banner }
+    let imageObj = { url: imgCofre }
     try {
-      if (!global.imageBannerCache.has(banner)) {
-        const buf = await getBuffer(banner)
-        if (buf) global.imageBannerCache.set(banner, Buffer.from(buf))
+      if (!global.imageBannerCache.has(imgCofre)) {
+        const buf = await getBuffer(imgCofre)
+        if (Buffer.isBuffer(buf)) global.imageBannerCache.set(imgCofre, buf)
       }
-      if (global.imageBannerCache.has(banner)) imageObj = global.imageBannerCache.get(banner)
+      if (global.imageBannerCache.has(imgCofre)) imageObj = global.imageBannerCache.get(imgCofre)
     } catch (e) {}
 
     await client.sendMessage(chatId, { image: imageObj, caption: msg, contextInfo: { mentionedJid: [m.sender], isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: canalId, serverMessageId: '', newsletterName: canalName } } }, { quoted: m })
