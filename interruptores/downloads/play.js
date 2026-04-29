@@ -44,6 +44,7 @@ function formatViews(views) {
 }
 
 async function scrapeY2mate(url, type = 'mp3') {
+  console.log(`\n[Y2MATE SCRAPER] Iniciando proceso para URL: ${url} | Tipo: ${type}`);
   try {
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -53,13 +54,19 @@ async function scrapeY2mate(url, type = 'mp3') {
     }
     
     
+    console.log(`[Y2MATE SCRAPER] [Paso 1] Analizando video...`);
     const analyzeRes = await fetch('https://www.y2mate.com/mates/en841/analyzeV2/ajax', {
       method: 'POST',
       headers,
       body: new URLSearchParams({ k_query: url, q_auto: 1 }).toString()
     })
     const analyzeData = await analyzeRes.json()
-    if (!analyzeData || analyzeData.status !== 'ok') return null
+    console.log(`[Y2MATE SCRAPER] Estado del analisis: ${analyzeData?.status}`);
+
+    if (!analyzeData || analyzeData.status !== 'ok') {
+      console.log(`[Y2MATE SCRAPER] Falló el analisis. Datos devueltos:`, JSON.stringify(analyzeData));
+      return null
+    }
 
     const vid = analyzeData.vid
     const links = analyzeData.links
@@ -74,13 +81,27 @@ async function scrapeY2mate(url, type = 'mp3') {
       if (preferred) token = preferred.k
     }
 
-    if (!token) return null
+    if (!token) {
+      console.log(`[Y2MATE SCRAPER] No se pudo obtener el token (k) de calidad.`);
+      return null
+    }
 
     
+    console.log(`[Y2MATE SCRAPER] [Paso 2] Convirtiendo usando token secreto...`);
     const convertRes = await fetch('https://www.y2mate.com/mates/en841/convertV2/index', { method: 'POST', headers, body: new URLSearchParams({ vid, k: token }).toString() })
     const convertData = await convertRes.json()
-    if (convertData && convertData.status === 'ok' && convertData.dlink) return convertData.dlink
-  } catch (e) { return null }
+    console.log(`[Y2MATE SCRAPER] Estado de la conversión: ${convertData?.status}`);
+    
+    if (convertData && convertData.status === 'ok' && convertData.dlink) {
+      console.log(`[Y2MATE SCRAPER] ¡Éxito! Enlace final extraído correctamente.`);
+      return convertData.dlink
+    } else {
+      console.log(`[Y2MATE SCRAPER] Falló la conversión. Datos devueltos:`, JSON.stringify(convertData));
+    }
+  } catch (e) { 
+    console.log(`[Y2MATE SCRAPER] Error critico en el proceso: ${e.message}`);
+    return null 
+  }
   return null
 }
 
@@ -210,9 +231,13 @@ async function getAudioUrl(youtubeUrl) {
 
  
   try {
+    console.log('[PLAY.JS] Invocando scraper local (Y2Mate) para Audio...');
     const y2mateUrl = await scrapeY2mate(youtubeUrl, 'mp3')
-    if (y2mateUrl) return { downloadUrl: y2mateUrl, isGoogleVideo: false, title: 'Audio', thumbnail: null }
-  } catch {}
+    if (y2mateUrl) {
+      console.log('[PLAY.JS] Y2Mate devolvió el audio correctamente.');
+      return { downloadUrl: y2mateUrl, isGoogleVideo: false, title: 'Audio', thumbnail: null }
+    }
+  } catch (e) { console.log('[PLAY.JS] Error atrapado en llamada Y2Mate:', e.message) }
 
   
   try {
