@@ -408,7 +408,7 @@ export default async (client, m) => {
     const allowedInPrivateForUsers = ['allmenu', 'help', 'menu', 'infobot', 'botinfo', 'invite', 'invitar', 'ping', 'speed', 'p', 'status', 'estado', 'report', 'reporte', 'sug', 'suggest', 'token', 'join', 'unir', 'logout', 'reload', 'self', 'setbanner', 'setbotbanner', 'setchannel', 'setbotchannel', 'setbotcurrency', 'setcurrency', 'seticon', 'setboticon', 'setlink', 'setbotlink', 'setbotname', 'setname', 'setbotowner', 'setowner', 'setimage', 'setpfp', 'setprefix', 'setbotprefix', 'setstatus', 'setusername', 'code', 'qr']
     if (!global.owner.map(num => num + '@s.whatsapp.net').includes(sender) && !allowedInPrivateForUsers.includes(command)) return;
   }
-  if (chat?.isBanned && !/^(bot|banchat|unbanchat|enable|disable|options)$/i.test(command) && !isOwners) {
+  if (chat?.isBanned && !/^(bot|banchat|unbanchat|enable|disable|options)$/i.test(command)) {
     return;
   }
   if (m.text && user.banned && !global.owner.map(num => num + '@s.whatsapp.net').includes(sender)) {
