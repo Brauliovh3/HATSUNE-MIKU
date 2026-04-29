@@ -43,68 +43,6 @@ function formatViews(views) {
   return n.toLocaleString()
 }
 
-async function scrapeY2mate(url, type = 'mp3') {
-  console.log(`\n[Y2MATE SCRAPER] Iniciando proceso para URL: ${url} | Tipo: ${type}`);
-  try {
-    const headers = {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-      'Origin': 'https://www.y2mate.com',
-      'Referer': 'https://www.y2mate.com/en841'
-    }
-    
-    
-    console.log(`[Y2MATE SCRAPER] [Paso 1] Analizando video...`);
-    const analyzeRes = await fetch('https://www.y2mate.com/mates/en841/analyzeV2/ajax', {
-      method: 'POST',
-      headers,
-      body: new URLSearchParams({ k_query: url, q_auto: 1 }).toString()
-    })
-    const analyzeData = await analyzeRes.json()
-    console.log(`[Y2MATE SCRAPER] Estado del analisis: ${analyzeData?.status}`);
-
-    if (!analyzeData || analyzeData.status !== 'ok') {
-      console.log(`[Y2MATE SCRAPER] Falló el analisis. Datos devueltos:`, JSON.stringify(analyzeData));
-      return null
-    }
-
-    const vid = analyzeData.vid
-    const links = analyzeData.links
-    let token = null
-
-    if (type === 'mp3' && links?.mp3) {
-      const qualities = Object.values(links.mp3)
-      if (qualities.length) token = qualities[0].k
-    } else if (type === 'mp4' && links?.mp4) {
-      const qualities = Object.values(links.mp4)
-      const preferred = qualities.find(q => q.q === '360p' || q.q === '480p') || qualities[0]
-      if (preferred) token = preferred.k
-    }
-
-    if (!token) {
-      console.log(`[Y2MATE SCRAPER] No se pudo obtener el token (k) de calidad.`);
-      return null
-    }
-
-    
-    console.log(`[Y2MATE SCRAPER] [Paso 2] Convirtiendo usando token secreto...`);
-    const convertRes = await fetch('https://www.y2mate.com/mates/en841/convertV2/index', { method: 'POST', headers, body: new URLSearchParams({ vid, k: token }).toString() })
-    const convertData = await convertRes.json()
-    console.log(`[Y2MATE SCRAPER] Estado de la conversión: ${convertData?.status}`);
-    
-    if (convertData && convertData.status === 'ok' && convertData.dlink) {
-      console.log(`[Y2MATE SCRAPER] ¡Éxito! Enlace final extraído correctamente.`);
-      return convertData.dlink
-    } else {
-      console.log(`[Y2MATE SCRAPER] Falló la conversión. Datos devueltos:`, JSON.stringify(convertData));
-    }
-  } catch (e) { 
-    console.log(`[Y2MATE SCRAPER] Error critico en el proceso: ${e.message}`);
-    return null 
-  }
-  return null
-}
-
 async function fetchJson(url, timeoutMs = 15000) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
@@ -214,68 +152,111 @@ async function getNewApiDownload(youtubeUrl, type, timeoutMs = 20000) {
 }
 
 async function getAudioUrl(youtubeUrl) {
+  console.log('[PLAY.JS] 🏁 Iniciando carrera de APIs para AUDIO en paralelo...');
+  const promises = [
+    (async () => {
+      const gifted = await fetchJsonWithRetry(`https://api.giftedtech.web.id/api/download/dlmp3?url=${encodeURIComponent(youtubeUrl)}&apikey=gifted`, 15000, 1)
+      if (gifted?.success && gifted?.result?.download_url) {
+        console.log('🏆 [PLAY.JS] Gifted API ganó la carrera de Audio!');
+        return { downloadUrl: gifted.result.download_url, isGoogleVideo: false, title: gifted.result.title || 'Audio', thumbnail: null }
+      }
+      throw new Error('Gifted Falló')
+    })(),
+    (async () => {
+      const david = await fetchJsonWithRetry(`https://api.davidcyriltech.my.id/download/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+      if (david?.success && david?.result?.download_url) {
+        console.log('🏆 [PLAY.JS] DavidCyril API ganó la carrera de Audio!');
+        return { downloadUrl: david.result.download_url, isGoogleVideo: false, title: david.result.title || 'Audio', thumbnail: null }
+      }
+      throw new Error('DavidCyril Falló')
+    })(),
+    (async () => {
+      const newApiResult = await getNewApiDownload(youtubeUrl, 'audio')
+      if (newApiResult) {
+        console.log('🏆 [PLAY.JS] New API Base ganó la carrera de Audio!');
+        return newApiResult
+      }
+      throw new Error('NewAPI Falló')
+    })(),
+    (async () => {
+      const alyaUrl = `https://api.alyacore.xyz/dl/ytmp3?url=${encodeURIComponent(youtubeUrl)}&key=${encodeURIComponent(ALYA_KEY)}`
+      const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
+      const alyaDl = alyaJson?.status !== false ? extractAlyaDownloadUrl(alyaJson, 'audio') : null
+      if (alyaDl) {
+        console.log('🏆 [PLAY.JS] AlyaCore ganó la carrera de Audio!');
+        return { downloadUrl: alyaDl, isGoogleVideo: false, title: alyaJson?.data?.title || 'Audio', thumbnail: alyaJson?.data?.thumbnail || null }
+      }
+      throw new Error('AlyaCore Falló')
+    })(),
+    (async () => {
+      const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=audio`, 15000, 1)
+      if (nxr?.status && nxr?.data?.url) {
+        console.log('🏆 [PLAY.JS] NXR API ganó la carrera de Audio!');
+        return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Audio', thumbnail: null }
+      }
+      throw new Error('NXR Falló')
+    })()
+  ];
+
   try {
-    console.log('[PLAY.JS] Invocando scraper local (Y2Mate) para Audio...');
-    const y2mateUrl = await scrapeY2mate(youtubeUrl, 'mp3')
-    if (y2mateUrl) {
-      console.log('[PLAY.JS] Y2Mate devolvió el audio correctamente.');
-      return { downloadUrl: y2mateUrl, isGoogleVideo: false, title: 'Audio', thumbnail: null }
-    }
-  } catch (e) { console.log('[PLAY.JS] Error atrapado en llamada Y2Mate:', e.message) }
-
-  const newApiResult = await getNewApiDownload(youtubeUrl, 'audio')
-  if (newApiResult) return newApiResult
-  const alyaUrl = `https://api.alyacore.xyz/dl/ytmp3?url=${encodeURIComponent(youtubeUrl)}&key=${encodeURIComponent(ALYA_KEY)}`
-  const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
-  const alyaDl = alyaJson?.status !== false ? extractAlyaDownloadUrl(alyaJson, 'audio') : null
-
-  if (alyaDl) {
-    return {
-      downloadUrl: alyaDl,
-      isGoogleVideo: false,
-      title: alyaJson?.data?.title || 'Audio',
-      thumbnail: alyaJson?.data?.thumbnail || null,
-    }
+    return await Promise.any(promises);
+  } catch (e) {
+    throw new Error('No se pudo obtener URL de descarga de audio. Todas las APIs están lentas o caídas.')
   }
-
-  
-  try {
-    const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=audio`, 15000, 1)
-    if (nxr?.status && nxr?.data?.url) return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Audio', thumbnail: null }
-  } catch {}
-
-  throw new Error('No se pudo obtener URL de descarga de audio')
 }
 
 async function getVideoUrl(youtubeUrl, quality = '360') {
-  const newApiResult = await getNewApiDownload(youtubeUrl, 'video', 20000)
-  if (newApiResult) return newApiResult
-  const alyaUrl = `https://api.alyacore.xyz/dl/ytmp4?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}&key=${encodeURIComponent(ALYA_KEY)}`
-  const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
-  const alyaDl = alyaJson?.status !== false ? extractAlyaDownloadUrl(alyaJson, 'video') : null
+  console.log('[PLAY.JS] 🏁 Iniciando carrera de APIs para VIDEO en paralelo...');
+  const promises = [
+    (async () => {
+      const gifted = await fetchJsonWithRetry(`https://api.giftedtech.web.id/api/download/dlmp4?url=${encodeURIComponent(youtubeUrl)}&apikey=gifted`, 15000, 1)
+      if (gifted?.success && gifted?.result?.download_url) {
+        console.log('🏆 [PLAY.JS] Gifted API ganó la carrera de Video!');
+        return { downloadUrl: gifted.result.download_url, isGoogleVideo: false, title: gifted.result.title || 'Video', thumbnail: null }
+      }
+      throw new Error('Gifted Falló')
+    })(),
+    (async () => {
+      const david = await fetchJsonWithRetry(`https://api.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+      if (david?.success && david?.result?.download_url) {
+        console.log('🏆 [PLAY.JS] DavidCyril API ganó la carrera de Video!');
+        return { downloadUrl: david.result.download_url, isGoogleVideo: false, title: david.result.title || 'Video', thumbnail: null }
+      }
+      throw new Error('DavidCyril Falló')
+    })(),
+    (async () => {
+      const newApiResult = await getNewApiDownload(youtubeUrl, 'video', 20000)
+      if (newApiResult) {
+        console.log('🏆 [PLAY.JS] New API Base ganó la carrera de Video!');
+        return newApiResult
+      }
+      throw new Error('NewAPI Falló')
+    })(),
+    (async () => {
+      const alyaUrl = `https://api.alyacore.xyz/dl/ytmp4?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}&key=${encodeURIComponent(ALYA_KEY)}`
+      const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
+      const alyaDl = alyaJson?.status !== false ? extractAlyaDownloadUrl(alyaJson, 'video') : null
+      if (alyaDl) {
+        console.log('🏆 [PLAY.JS] AlyaCore ganó la carrera de Video!');
+        return { downloadUrl: alyaDl, isGoogleVideo: /googlevideo\.com/i.test(alyaDl), title: alyaJson?.data?.title || 'Video', thumbnail: alyaJson?.data?.thumbnail || null }
+      }
+      throw new Error('AlyaCore Falló')
+    })(),
+    (async () => {
+      const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=video`, 15000, 1)
+      if (nxr?.status && nxr?.data?.url) {
+        console.log('🏆 [PLAY.JS] NXR API ganó la carrera de Video!');
+        return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Video', thumbnail: null }
+      }
+      throw new Error('NXR Falló')
+    })()
+  ];
 
-  if (alyaDl) {
-    return {
-      downloadUrl: alyaDl,
-      isGoogleVideo: /googlevideo\.com/i.test(alyaDl),
-      title: alyaJson?.data?.title || 'Video',
-      thumbnail: alyaJson?.data?.thumbnail || null,
-    }
+  try {
+    return await Promise.any(promises);
+  } catch (e) {
+    throw new Error('No se pudo obtener URL de descarga de video. Todas las APIs están lentas o caídas.')
   }
-
- 
-  try {
-    const y2mateUrl = await scrapeY2mate(youtubeUrl, 'mp4')
-    if (y2mateUrl) return { downloadUrl: y2mateUrl, isGoogleVideo: false, title: 'Video', thumbnail: null }
-  } catch {}
-
- 
-  try {
-    const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=video`, 15000, 1)
-    if (nxr?.status && nxr?.data?.url) return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Video', thumbnail: null }
-  } catch {}
-
-  throw new Error('No se pudo obtener URL de descarga de video')
 }
 
 async function downloadFile(url, filename, isGoogleVideo = false) {
