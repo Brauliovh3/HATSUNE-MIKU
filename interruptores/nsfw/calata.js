@@ -58,18 +58,9 @@ async function getCalataImage() {
 export default {
   command: ['calata', 'waifunsfw'],
   category: 'nsfw',
+  nsfw: true,
   run: async (client, m, args, usedPrefix) => {
     try {
-      if (!global.db.data.chats[m.chat].nsfw) {
-        return m.reply(
-          `💙 El contenido *NSFW* está desactivado en este grupo.
-
-Un *administrador* puede activarlo con el comando:
-» *${usedPrefix}nsfw on*`,
-          m,
-          global.miku
-        );
-      }
       
       await m.react('🕒')
       const image = await getCalataImage()

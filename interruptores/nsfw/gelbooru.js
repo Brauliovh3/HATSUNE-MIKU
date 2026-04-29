@@ -3,9 +3,9 @@ import axios from 'axios'
 export default {
   command: ['gelbooru', 'gbooru'],
   category: 'nsfw',
+  nsfw: true,
   run: async (client, m, args, usedPrefix, command) => {
     try {
-      if (!global.db.data.chats[m.chat].nsfw) return m.reply(`💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`, m, global.miku)
       if (!args[0]) return client.reply(m.chat, `💙 Debes especificar tags para buscar\n> Ejemplo » *${usedPrefix + command} neko*`, m)
       await m.react('🕒')
       const tag = args[0].replace(/\s+/g, '_')

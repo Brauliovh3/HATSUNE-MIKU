@@ -1,11 +1,4 @@
 let handler = async (client, m, args, usedPrefix, command) => {
-  const chat = global.db.data.chats[m.chat] || {};
-  
-  if (!chat.nsfw) {
-    return m.reply(`🔞 *Contenido NSFW Bloqueado*\n\n` +
-      `💙 Este comando requiere que el contenido NSFW esté activado en este chat.\n\n` +
-      `💡 Usa ${usedPrefix}enable nsfw para activarlo.`);
-  }
 
   const games = [
     { name: 'Teaching Feeling v3.0', size: '519 MB', file: 'Teaching-Feeling.apk' },
@@ -87,6 +80,6 @@ let handler = async (client, m, args, usedPrefix, command) => {
 export default {
   command: ['hgames', 'juegosh', 'adultgames', 'gamesh'],
   category: 'nsfw',
-  isNsfw: true,
+  nsfw: true,
   run: handler
 };
