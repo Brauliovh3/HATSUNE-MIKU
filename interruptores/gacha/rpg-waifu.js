@@ -804,7 +804,7 @@ export default {
     }
 };
 
-handler.before = async function (m, { conn, client }) {
+export async function before(m, { conn, client }) {
     if (!m || !m.message) return false;
 
     if (m.isGroup) {

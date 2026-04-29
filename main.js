@@ -70,7 +70,7 @@ export default async (client, m) => {
 
  
   if (m.message?.buttonsResponseMessage || m.message?.templateButtonReplyMessage || m.message?.listResponseMessage || m.message?.interactiveResponseMessage) {
-    client.readMessages([m.key]).catch(() => {});
+    await client.readMessages([m.key]).catch(() => {});
   }
 
   if (buttonId && (buttonId.startsWith('menu_') || buttonId.startsWith('shop_') || buttonId.startsWith('buy_'))) {
@@ -405,21 +405,18 @@ export default async (client, m) => {
   }) : typeof pluginPrefix === 'string' ? [[new RegExp(strRegex(pluginPrefix)).exec(textToMatch), new RegExp(strRegex(pluginPrefix))]] : [[null, null]];
   let match = matchs.find(p => p[0]);
 
-  const beforePromises = [];
   for (const name in global.plugins) {
     const plugin = global.plugins[name];
     if (!plugin || plugin.disabled) continue;
     if (typeof plugin.before === "function") {
-      beforePromises.push((async () => {
-        try {
-          await plugin.before.call(client, m, { client });
-        } catch (err) {
-          console.error(`Error en plugin.before -> ${name}`, err);
-        }
-      })());
+      try {
+        const isHandled = await plugin.before.call(client, m, { client });
+        if (isHandled) return;
+      } catch (err) {
+        console.error(`Error en plugin.before -> ${name}`, err);
+      }
     }
   }
-  Promise.all(beforePromises).catch(() => {});
 
   if (!match) return;
   let usedPrefix = (match[0] || [])[0] || '';
@@ -474,7 +471,7 @@ export default async (client, m) => {
   if (!cmdData) {
     if (settings.prefix === true) return;
    
-    client.readMessages([m.key]).catch(() => {});
+    await client.readMessages([m.key]).catch(() => {});
     return m.reply(`💙 El comando *${command}* no existe.\n> 🌱 Usa *${usedPrefix}help* para ver la lista de comandos disponibles.`);
   }
   if (cmdData.isOwner && !global.owner.map(num => num + '@s.whatsapp.net').includes(sender)) {
@@ -495,7 +492,7 @@ export default async (client, m) => {
   }
 
   try {
-    client.readMessages([m.key]).catch(() => {});
+    await client.readMessages([m.key]).catch(() => {});
     user.usedcommands = (user.usedcommands || 0) + 1;
     settings.commandsejecut = (settings.commandsejecut || 0) + 1;
     users.usedTime = new Date();

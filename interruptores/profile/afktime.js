@@ -58,4 +58,6 @@ if (!target || typeof target.afk !== 'number' || target.afk < 0) continue
 const ms = Date.now() - target.afk
 const tiempo = formatTiempo(ms)
 await client.reply(m.chat,`💙 El usuario *${global.db.data.users[jid].name || 'Usuario'}* está AFK.\n> ○ Motivo » *${target.afkReason || 'sin especificar'}*\n> ○ Tiempo inactivo » *${tiempo}*`, m)
-}}
+}
+return false;
+}

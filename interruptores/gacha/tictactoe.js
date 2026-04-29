@@ -202,6 +202,6 @@ ${isWin ? `@${(isSurrender ? room.game.currentTurn : room.game.winner).split('@'
       }
       delete this.game[room.id];
     }
+    return true;
   }
-  return true;
 }
