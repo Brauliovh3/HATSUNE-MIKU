@@ -1,5 +1,8 @@
 import { resolveLidToRealJid } from "../../nucleo/utils.js"
 
+const DIVIDER_START = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
+const DIVIDER_END   = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
+
 export default {
   command: ['balance', 'bal', 'coins', 'bank'],
   category: 'rpg',
@@ -19,13 +22,19 @@ export default {
     }
     const user = chatData.users[who]
     const total = (user.coins || 0) + (user.bank || 0)
-    const bal = `💙 Usuario \`<${global.db.data.users[who].name}>\`
-
-👝 Cartera › *🌱${user.coins?.toLocaleString() || 0} ${monedas}*
-🏦 Banco › *🌱${user.bank?.toLocaleString() || 0} ${monedas}*
-💰 Total › *🌱${total.toLocaleString()} ${monedas}*
-
-> _Para proteger tu dinero, ¡depósitalo en el banco usando ${usedPrefix}deposit!_`
-    await client.sendMessage(chatId, { text: bal }, { quoted: m })
+    const userName = global.db.data.users[who]?.name || who.split('@')[0]
+    
+    const bal = `${DIVIDER_START}\n` +
+                `│ 🏦 *BANCO CENTRAL MIKU*\n` +
+                `│\n` +
+                `│ 👤 *Cliente:* ${userName}\n` +
+                `│ 👝 *Cartera:* 🌱 ${user.coins?.toLocaleString() || 0} ${monedas}\n` +
+                `│ 🏦 *Banco:* 🌱 ${user.bank?.toLocaleString() || 0} ${monedas}\n` +
+                `│ 💰 *Total:* 🌱 ${total.toLocaleString()} ${monedas}\n` +
+                `│\n` +
+                `│ ✨ _Tip: Protege tu dinero usando ${usedPrefix}dep all_\n` +
+                `${DIVIDER_END}`
+                
+    await client.sendMessage(chatId, { image: { url: 'https://file.garden/ae-9DPf0ekWVe7ex/banco.png' }, caption: bal }, { quoted: m })
   }
 };
