@@ -55,7 +55,10 @@ console.log(chalk.magentaBright('\n💙 Iniciando 01'))
 
 if (!fs.existsSync('./tmp')) fs.mkdirSync('./tmp', { recursive: true });
 
+let isCleaning = false;
 async function cleanCache() {
+  if (isCleaning) return;
+  isCleaning = true;
   try {
     const tmpFolders = ['./tmp', './tmp-descargas', './channel-audios'];
     let cleanedTmp = 0;
@@ -63,7 +66,9 @@ async function cleanCache() {
     for (const tmpFolder of tmpFolders) {
       if (!fs.existsSync(tmpFolder)) continue;
       const files = await fs.promises.readdir(tmpFolder);
-      for (const file of files) {
+      for (let i = 0; i < files.length; i++) {
+        if (i % 50 === 0) await new Promise(resolve => setTimeout(resolve, 5));
+        const file = files[i];
         try {
           const filePath = path.join(tmpFolder, file);
           const stat = await fs.promises.stat(filePath);
@@ -80,9 +85,13 @@ async function cleanCache() {
     const sessionsFolder = './Sessions';
     if (fs.existsSync(sessionsFolder)) {
       let cleanedSessions = 0;
+      let yieldCounter = 0;
       const cleanSessionsRecursive = async (dir) => {
         const files = await fs.promises.readdir(dir);
         for (const file of files) {
+          yieldCounter++;
+          if (yieldCounter % 50 === 0) await new Promise(resolve => setTimeout(resolve, 5));
+          
           const filePath = path.join(dir, file);
           const stat = await fs.promises.stat(filePath);
           if (stat.isDirectory()) {
@@ -97,6 +106,8 @@ async function cleanCache() {
     }
   } catch (e) {
     console.error(chalk.red('Error en cleanCache: '), e);
+  } finally {
+    isCleaning = false;
   }
 }
 

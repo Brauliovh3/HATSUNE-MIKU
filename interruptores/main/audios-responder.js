@@ -167,8 +167,8 @@ const normalizedAudioMap = Object.fromEntries(
 
 const audioQueue = []
 let audioProcessing = false
-const AUDIO_DELAY = 500 // Reducido de 2 segundos a medio segundo
-const opusCache = new Map() // Caché en memoria para evitar saturar el CPU con ffmpeg
+const AUDIO_DELAY = 500 
+const opusCache = new Map() 
 
 async function processAudioQueue() {
   if (audioProcessing || audioQueue.length === 0) return

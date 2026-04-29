@@ -30,7 +30,7 @@ const pendingGroupMeta = new Map();
 async function fetchGroupMetadataCached(client, jid) {
   const now = Date.now();
   const cached = groupMetaCache.get(jid);
-  if (cached && (now - cached.ts < 300000)) return cached.data; // Caché de 5 minutos
+  if (cached && (now - cached.ts < 300000)) return cached.data; 
   
   if (pendingGroupMeta.has(jid)) return await pendingGroupMeta.get(jid);
   const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 5000));

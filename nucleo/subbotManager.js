@@ -223,7 +223,7 @@ class SubBotManager {
             removeFromConns(sessionId);
             optimizer.unregisterSession(sessionId);
 
-            // 1. Manejar reconexiones primero para evitar que 515 sea tratado como error fatal
+            
             if ([428, 408, 500, 503, 515, DisconnectReason.restartRequired].includes(reason)) {
               const etiqueta = {
                 428: 'cierre inesperado',
@@ -251,11 +251,10 @@ class SubBotManager {
               return;
             }
 
-            // 2. Luego manejar cierres de sesión reales (401) o suspensiones (403)
-            // Solo borrar si explícitamente se cerró sesión (401), ignorar el 405 (falsos positivos)
+           
             if (reason === DisconnectReason.loggedOut || reason === 401) {
               console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) desconectado (Sesión cerrada). Eliminando sesión.\n│ El usuario debe escanear QR nuevamente.\n└──────────────────────────────────┘`));
-              try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
+              try { await fs.promises.rm(sessionFolder, { recursive: true, force: true }); } catch {}
               reintentos.delete(sessionId);
               this.startingSubbots.delete(sessionId);
               return;
@@ -263,7 +262,7 @@ class SubBotManager {
 
             if (reason === 403) {
               console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) cerrado o cuenta suspendida (${reason}). Eliminando.\n└──────────────────────────────────┘`));
-              try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
+              try { await fs.promises.rm(sessionFolder, { recursive: true, force: true }); } catch {}
               reintentos.delete(sessionId);
               this.startingSubbots.delete(sessionId);
               return;
