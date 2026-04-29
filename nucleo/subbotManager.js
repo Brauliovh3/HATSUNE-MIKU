@@ -223,6 +223,35 @@ class SubBotManager {
             removeFromConns(sessionId);
             optimizer.unregisterSession(sessionId);
 
+            // 1. Manejar reconexiones primero para evitar que 515 sea tratado como error fatal
+            if ([428, 408, 500, 503, 515, DisconnectReason.restartRequired].includes(reason)) {
+              const etiqueta = {
+                428: 'cierre inesperado',
+                408: 'pérdida de conexión',
+                500: 'conexión perdida',
+                503: 'servicio no disponible',
+                515: 'reinicio requerido',
+              }[reason] || 'reinicio requerido';
+
+              console.log(chalk.bold.magentaBright(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) ${etiqueta}. Razón: ${reason}. Reconectando...\n└──────────────────────────────────┘`));
+
+              if (this.startingSubbots.has(sessionId)) return;
+              this.startingSubbots.add(sessionId);
+
+              try {
+                await reconectar();
+              } catch (err) {
+                console.error(chalk.red(`💙 Error reconectando ${sessionId}:`), err.message);
+                this.startingSubbots.delete(sessionId);
+              }
+              
+              setTimeout(() => {
+                this.startingSubbots.delete(sessionId);
+              }, 5000)
+              return;
+            }
+
+            // 2. Luego manejar cierres de sesión reales (401) o suspensiones (403)
             // Solo borrar si explícitamente se cerró sesión (401), ignorar el 405 (falsos positivos)
             if (reason === DisconnectReason.loggedOut || reason === 401) {
               console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) desconectado (Sesión cerrada). Eliminando sesión.\n│ El usuario debe escanear QR nuevamente.\n└──────────────────────────────────┘`));
@@ -250,33 +279,6 @@ class SubBotManager {
             if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
               reintentos.delete(sessionId);
               this.startingSubbots.delete(sessionId);
-              return;
-            }
-
-            if ([428, 408, 500, 503, 515].includes(reason)) {
-              const etiqueta = {
-                428: 'cierre inesperado',
-                408: 'pérdida de conexión',
-                500: 'conexión perdida',
-                503: 'servicio no disponible',
-                515: 'reinicio requerido',
-              }[reason];
-
-              console.log(chalk.bold.magentaBright(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) ${etiqueta}. Razón: ${reason}. Reconectando...\n└──────────────────────────────────┘`));
-
-              if (this.startingSubbots.has(sessionId)) return;
-              this.startingSubbots.add(sessionId);
-
-              try {
-                await reconectar();
-              } catch (err) {
-                console.error(chalk.red(`💙 Error reconectando ${sessionId}:`), err.message);
-                this.startingSubbots.delete(sessionId);
-              }
-              
-              setTimeout(() => {
-                this.startingSubbots.delete(sessionId);
-              }, 5000)
               return;
             }
 

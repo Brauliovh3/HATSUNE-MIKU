@@ -168,6 +168,7 @@ const normalizedAudioMap = Object.fromEntries(
 const audioQueue = []
 let audioProcessing = false
 const AUDIO_DELAY = 500 // Reducido de 2 segundos a medio segundo
+const opusCache = new Map() // Caché en memoria para evitar saturar el CPU con ffmpeg
 
 async function processAudioQueue() {
   if (audioProcessing || audioQueue.length === 0) return
@@ -273,13 +274,19 @@ export async function all(m, { client }) {
     if (exists) {
       audioQueue.push(async () => {
         try {
-          const buffer = await fs.promises.readFile(audioFile)
-          if (!buffer || buffer.length < 32) return
-          const inputExt = path.extname(audioFile).toLowerCase() || '.mp3'
-          let voiceBuffer = buffer
-          try {
-            voiceBuffer = await toOpusVoiceNote(buffer, inputExt)
-          } catch {}
+          let voiceBuffer = opusCache.get(audioFile)
+          if (!voiceBuffer) {
+            const buffer = await fs.promises.readFile(audioFile)
+            if (!buffer || buffer.length < 32) return
+            const inputExt = path.extname(audioFile).toLowerCase() || '.mp3'
+            try {
+              voiceBuffer = await toOpusVoiceNote(buffer, inputExt)
+              opusCache.set(audioFile, voiceBuffer)
+            } catch {
+              voiceBuffer = buffer
+              opusCache.set(audioFile, voiceBuffer)
+            }
+          }
 
           await client.sendMessage(m.chat, {
             audio: voiceBuffer,

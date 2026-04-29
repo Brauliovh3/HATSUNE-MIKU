@@ -318,16 +318,20 @@ export default async (client, m) => {
   let isAdmins = false
   const isOwners = [botJid, ...(settings.owner ? [settings.owner] : []), ...global.owner.map(num => num + '@s.whatsapp.net')].includes(sender);
 
+  const allPromises = [];
   for (const name in global.plugins) {
     const plugin = global.plugins[name];
     if (plugin && typeof plugin.all === "function") {
-      try {
-        await plugin.all.call(client, m, { client });
-      } catch (err) {
-        console.error(`Error en plugin.all -> ${name}`, err);
-      }
+      allPromises.push((async () => {
+        try {
+          await plugin.all.call(client, m, { client });
+        } catch (err) {
+          console.error(`Error en plugin.all -> ${name}`, err);
+        }
+      })());
     }
   }
+  await Promise.all(allPromises);
 
   const today = new Date().toLocaleDateString('es-CO', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
   if (!users.stats) users.stats = {};
@@ -359,20 +363,21 @@ export default async (client, m) => {
   }) : typeof pluginPrefix === 'string' ? [[new RegExp(strRegex(pluginPrefix)).exec(textToMatch), new RegExp(strRegex(pluginPrefix))]] : [[null, null]];
   let match = matchs.find(p => p[0]);
 
+  const beforePromises = [];
   for (const name in global.plugins) {
     const plugin = global.plugins[name];
-    if (!plugin) continue;
-    if (plugin.disabled) continue;
+    if (!plugin || plugin.disabled) continue;
     if (typeof plugin.before === "function") {
-      try {
-        if (await plugin.before.call(client, m, { client })) {
-          continue;
+      beforePromises.push((async () => {
+        try {
+          await plugin.before.call(client, m, { client });
+        } catch (err) {
+          console.error(`Error en plugin.before -> ${name}`, err);
         }
-      } catch (err) {
-        console.error(`Error en plugin.all -> ${name}`, err);
-      }
+      })());
     }
   }
+  await Promise.all(beforePromises);
 
   if (!match) return;
   let usedPrefix = (match[0] || [])[0] || '';
