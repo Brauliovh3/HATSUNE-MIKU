@@ -139,13 +139,6 @@ export default async (client, m) => {
       return;
     }
 
-    if (m.sender !== userId) {
-      await client.reply(m.chat, '❌ Este personaje no es tuyo. No puedes reclamarlo.', m);
-      return;
-    }
-
-    let userName = global.db.data.users?.[userId]?.name || userId.split('@')[0]
-
     if (!global.db.data) global.db.data = {}
     if (!global.db.data.users) global.db.data.users = {}
     if (!global.db.data.users[userId]) global.db.data.users[userId] = {}
@@ -154,12 +147,52 @@ export default async (client, m) => {
     if (!Array.isArray(user.waifu.characters)) user.waifu.characters = []
 
     if (!user.waifu.pending) {
-      await client.reply(m.chat, '❌ No tienes ningún personaje disponible para reclamar.\n\n💡 Usa *.rw* para obtener un nuevo personaje.', m);
+      await client.reply(m.chat, '⚠️ Este personaje ya fue reclamado, vendido o huyó.', m);
       return;
     }
 
+    if (m.sender !== userId) {
+      if (buttonId.startsWith('waifu_sell_')) {
+        await client.reply(m.chat, '❌ No puedes vender un personaje que no es tuyo.', m);
+        return;
+      }
+
+      const thiefUser = global.db.data.users[m.sender] || {};
+      global.db.data.users[m.sender] = thiefUser;
+      if (!thiefUser.waifu) thiefUser.waifu = { characters: [], pending: null, cooldown: 0 };
+      
+      thiefUser.waifu.lastSteal = thiefUser.waifu.lastSteal || 0;
+      if (Date.now() - thiefUser.waifu.lastSteal < 10000) return;
+      thiefUser.waifu.lastSteal = Date.now();
+
+      const chance = Math.random();
+      const currentWaifu = user.waifu.pending;
+
+      if (chance < 0.20) {
+        const rarityColors = { 'común': '⚪', 'rara': '🔵', 'épica': '🟣', 'ultra rara': '🟡', 'legendaria': '🔴' };
+        const emoji = rarityColors[currentWaifu?.rarity] || '💙';
+        
+        let msg = `🥷 *¡ROBO EXITOSO!* 🥷\n\n`;
+        msg += `Le has robado el personaje a @${userId.split('@')[0]}!\n\n`;
+        msg += `${emoji} *${currentWaifu.name}*\n`;
+        msg += `💎 *${currentWaifu.rarity?.toUpperCase() || 'COMÚN'}*\n`;
+        
+        if (!Array.isArray(thiefUser.waifu.characters)) thiefUser.waifu.characters = [];
+        thiefUser.waifu.characters.push(currentWaifu);
+        user.waifu.pending = null; 
+        
+        await client.reply(m.chat, msg, m, { mentions: [userId] });
+      } else {
+        await client.reply(m.chat, `❌ *ROBO FALLIDO* ❌\n\nIntentaste robar a *${currentWaifu.name}* pero fallaste y huiste.`, m);
+      }
+      return;
+    }
+
+    let userName = user.name || userId.split('@')[0]
+
     if (buttonId.startsWith('waifu_claim_')) {
       const currentWaifu = user.waifu.pending;
+      user.waifu.pending = null;
       const waifuName = currentWaifu?.name || 'personaje';
       const rarityColors = {
         'común': '⚪',
@@ -178,7 +211,6 @@ export default async (client, m) => {
       msg += `🔍 Usa *.miwaifu* para ver tu colección completa\n`;
       
       user.waifu.characters.push(currentWaifu);
-      user.waifu.pending = null;
       
       await m.reply(msg);
       return;
@@ -186,6 +218,7 @@ export default async (client, m) => {
 
     if (buttonId.startsWith('waifu_sell_')) {
       const currentWaifu = user.waifu.pending;
+      user.waifu.pending = null;
       const SELL_PRICES = { 'común': 10, 'rara': 25, 'épica': 50, 'ultra rara': 100, 'legendaria': 200 };
       const sellPrice = SELL_PRICES[currentWaifu?.rarity] || 10;
       
@@ -207,8 +240,6 @@ export default async (client, m) => {
       msg += `💵 *Recibiste:* ${sellPrice} cebollines\n`;
       msg += `💳 *Total cebollines:* ${user.coin}\n\n`;
       msg += `🏪 Usa *.tienda* para gastar tus cebollines`;
-      
-      user.waifu.pending = null;
       
       await m.reply(msg);
       return;
