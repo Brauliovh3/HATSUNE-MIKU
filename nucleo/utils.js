@@ -1,7 +1,7 @@
 const groupMetadataCache = new Map()
 const lidCache = new Map()
-const pendingMetadataRequests = new Map() // Caché de promesas para evitar consultas simultáneas
-const metadataTTL = 300000 // Aumentado a 5 minutos para evitar consultas repetitivas de red
+const pendingMetadataRequests = new Map()
+const metadataTTL = 300000 
 
 function getCachedMetadata(groupChatId) {
   const cached = groupMetadataCache.get(groupChatId)
@@ -30,14 +30,17 @@ export async function resolveLidToRealJid(lid, client, groupChatId) {
     if (pendingMetadataRequests.has(groupChatId)) {
       metadata = await pendingMetadataRequests.get(groupChatId)
     } else {
-      // Timeout de 5s para evitar que un subbot con mala conexión trabe a toda la red global de bots
+      
       const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 5000))
       const request = Promise.race([client.groupMetadata(groupChatId).catch(() => null), timeout])
       pendingMetadataRequests.set(groupChatId, request)
       metadata = await request
       pendingMetadataRequests.delete(groupChatId)
-      if (metadata) groupMetadataCache.set(groupChatId, { metadata, timestamp: Date.now() })
-      else return lidCache.set(input, input), input
+      groupMetadataCache.set(groupChatId, { metadata, timestamp: Date.now() })
+      if (!metadata) {
+        lidCache.set(input, input)
+        return input
+      }
     }
   }
 

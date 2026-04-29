@@ -38,7 +38,7 @@ async function fetchGroupMetadataCached(client, jid) {
   pendingGroupMeta.set(jid, req);
   const data = await req;
   pendingGroupMeta.delete(jid);
-  if (data) groupMetaCache.set(jid, { data, ts: now });
+  groupMetaCache.set(jid, { data, ts: now });
   return data;
 }
 
@@ -373,7 +373,7 @@ export default async (client, m) => {
       })());
     }
   }
-  await Promise.all(allPromises);
+  Promise.all(allPromises).catch(() => {});
 
   const today = new Date().toLocaleDateString('es-CO', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
   if (!users.stats) users.stats = {};
@@ -419,7 +419,7 @@ export default async (client, m) => {
       })());
     }
   }
-  await Promise.all(beforePromises);
+  Promise.all(beforePromises).catch(() => {});
 
   if (!match) return;
   let usedPrefix = (match[0] || [])[0] || '';
