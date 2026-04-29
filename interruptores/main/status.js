@@ -20,34 +20,54 @@ export default {
     const botId = client.user.id.split(':')[0] + "@s.whatsapp.net" || false
     const botSettings = global.db.data.settings[botId] || {}
     const botname = botSettings.botname
+    const banner = botSettings.banner || 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg' // URL del encabezado
+    
     const userCount = Object.keys(global.db.data.users).length || '0'
     const totalCommands = Object.values(global.db.data.users).reduce((acc, user) => acc + (user.usedcommands || 0), 0)
-    const estadoBot = `💙 Estado de *${botname}* (●\´ϖ\`●)
-💙 *Usuarios registrados ›* ${userCount.toLocaleString()}
-💙 *Grupos registrados ›* ${registeredGroups.toLocaleString()}
-💙 *Comandos ejecutados ›* ${toNum(totalCommands)}`
+
     const sistema = os.type()
     const cpu = os.cpus().length
     const ramTotal = format(os.totalmem())
     const ramUsada = format(os.totalmem() - os.freemem())
     const arquitectura = os.arch()
-    const estadoServidor = `🌱 Estado del Servidor *₍ᐢ..ᐢ₎♡*
 
-💙 *Sistema ›* ${sistema}
-💙 *CPU ›* ${cpu} cores
-💙 *RAM ›* ${ramTotal}
-💙 *RAM Usado ›* ${ramUsada}
-💙 *Arquitectura ›* ${arquitectura}
-💙 *Host ID ›* ${hostId}
+    const mensajeEstado = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮
+│ 💙 *ESTADO DEL SISTEMA* 💙
+│
+│ 🤖 *BOT INFO*
+│ 💙 *Nombre ›* ${botname}
+│ 👤 *Usuarios ›* ${userCount.toLocaleString()}
+│ 👥 *Grupos ›* ${registeredGroups.toLocaleString()}
+│ ⚡ *Comandos ›* ${toNum(totalCommands)}
+│
+│ 🖥️ *SERVER INFO*
+│ 💙 *Sistema ›* ${sistema}
+│ ⚙️ *CPU ›* ${cpu} núcleos
+│ 🔋 *RAM Total ›* ${ramTotal}
+│ 📈 *RAM Usada ›* ${ramUsada}
+│ 🏗️ *Arquitectura ›* ${arquitectura}
+│ 🆔 *Host ID ›* ${hostId}
+│
+│ 🧪 *NODEJS MEMORY*
+│ 💙 *RSS ›* ${format(process.memoryUsage().rss)}
+│ 💙 *Heap Total ›* ${format(process.memoryUsage().heapTotal)}
+│ 💙 *Heap Usado ›* ${format(process.memoryUsage().heapUsed)}
+│ 💙 *Módulos ›* ${format(process.memoryUsage().external)}
+╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`.trim()
 
-*🌱 Uso de Memoria NODEJS*
-💙 *Ram Utilizada* › ${format(process.memoryUsage().rss)}
-💙 *Heap Reservado* › ${format(process.memoryUsage().heapTotal)}
-💙 *Heap Usado* › ${format(process.memoryUsage().heapUsed)}
-💙 *Módulos Nativos* › ${format(process.memoryUsage().external)}
-💙 *Buffers de Datos* › ${format(process.memoryUsage().arrayBuffers)}`
-    const mensajeEstado = `${estadoBot}\n\n${estadoServidor}`
-    await client.reply(m.chat, mensajeEstado, m)
+    await client.sendMessage(m.chat, {
+      image: { url: banner },
+      caption: mensajeEstado,
+      contextInfo: {
+        mentionedJid: [m.sender],
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: botSettings.id || "120363315369913363@newsletter",
+          serverMessageId: '',
+          newsletterName: botSettings.nameid || "Hatsune Miku Status"
+        }
+      }
+    }, { quoted: m })
   }
 }
 
