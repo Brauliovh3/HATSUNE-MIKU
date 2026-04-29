@@ -55,45 +55,45 @@ console.log(chalk.magentaBright('\n💙 Iniciando 01'))
 
 if (!fs.existsSync('./tmp')) fs.mkdirSync('./tmp', { recursive: true });
 
-function cleanCache() {
+async function cleanCache() {
   try {
     const tmpFolders = ['./tmp', './tmp-descargas', './channel-audios'];
     let cleanedTmp = 0;
     
     for (const tmpFolder of tmpFolders) {
       if (!fs.existsSync(tmpFolder)) continue;
-      const files = fs.readdirSync(tmpFolder);
+      const files = await fs.promises.readdir(tmpFolder);
       for (const file of files) {
         try {
           const filePath = path.join(tmpFolder, file);
-          const stat = fs.statSync(filePath);
+          const stat = await fs.promises.stat(filePath);
          
           if (stat.size > 10 * 1024 * 1024 || Date.now() - stat.mtimeMs > 60 * 60 * 1000) {
-            fs.unlinkSync(filePath);
+            await fs.promises.unlink(filePath);
             cleanedTmp++;
           }
         } catch {}
       }
     }
-    if (cleanedTmp > 0) console.log(chalk.gray(`[ 🗑️ ] Cache temporal: ${cleanedTmp} archivos basura eliminados`));
+    if (cleanedTmp > 0) log.info(`Cache temporal: ${cleanedTmp} archivos basura eliminados`);
 
     const sessionsFolder = './Sessions';
     if (fs.existsSync(sessionsFolder)) {
       let cleanedSessions = 0;
-      const cleanSessionsRecursive = (dir) => {
-        const files = fs.readdirSync(dir);
+      const cleanSessionsRecursive = async (dir) => {
+        const files = await fs.promises.readdir(dir);
         for (const file of files) {
           const filePath = path.join(dir, file);
-          const stat = fs.statSync(filePath);
+          const stat = await fs.promises.stat(filePath);
           if (stat.isDirectory()) {
-            cleanSessionsRecursive(filePath);
+            await cleanSessionsRecursive(filePath);
           } else if ((file.startsWith('pre-key-') || file.startsWith('sender-key-') || file.startsWith('app-state-')) && (Date.now() - stat.mtimeMs > 2 * 24 * 60 * 60 * 1000)) {
-            try { fs.unlinkSync(filePath); cleanedSessions++; } catch {}
+            try { await fs.promises.unlink(filePath); cleanedSessions++; } catch {}
           }
         }
       };
-      cleanSessionsRecursive(sessionsFolder);
-      if (cleanedSessions > 0) console.log(chalk.yellow(`[ 🗑️ ] Optimización: ${cleanedSessions} llaves antiguas de subbots eliminadas`));
+      await cleanSessionsRecursive(sessionsFolder);
+      if (cleanedSessions > 0) log.warn(`Optimización: ${cleanedSessions} llaves antiguas de subbots eliminadas`);
     }
   } catch (e) {
     console.error(chalk.red('Error en cleanCache: '), e);

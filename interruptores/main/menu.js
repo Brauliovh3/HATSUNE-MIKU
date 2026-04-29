@@ -14,25 +14,33 @@ const execAsync = promisify(exec);
 
 
 const ptvCache = new Map();
+const ptvProcessing = new Map();
 
 async function toVideoNote(url) {
   if (ptvCache.has(url)) return ptvCache.get(url);
+  if (ptvProcessing.has(url)) return await ptvProcessing.get(url);
 
   const tmpIn = `./tmp/ptv_in_${Date.now()}.mp4`;
   const tmpOut = `./tmp/ptv_out_${Date.now()}.mp4`;
-  try {
-    const res = await fetch(url);
-    await pipeline(res.body, createWriteStream(tmpIn));
-    await execAsync(
-      `ffmpeg -y -threads 1 -i ${tmpIn} -t 60 -vf "crop=min(iw\\,ih):min(iw\\,ih),scale=480:480" -c:v libx264 -preset ultrafast -crf 28 -c:a aac -b:a 64k -movflags +faststart ${tmpOut}`
-    );
-    const buf = fs.readFileSync(tmpOut);
-    ptvCache.set(url, buf);
-    return buf;
-  } finally {
-    if (fs.existsSync(tmpIn)) fs.unlinkSync(tmpIn);
-    if (fs.existsSync(tmpOut)) fs.unlinkSync(tmpOut);
-  }
+
+  const process = (async () => {
+    try {
+      const res = await fetch(url);
+      await pipeline(res.body, createWriteStream(tmpIn));
+      await execAsync(
+        `ffmpeg -y -threads 1 -i ${tmpIn} -t 60 -vf "crop=min(iw\\,ih):min(iw\\,ih),scale=480:480" -c:v libx264 -preset ultrafast -crf 28 -c:a aac -b:a 64k -movflags +faststart ${tmpOut}`
+      );
+      const buf = await fs.promises.readFile(tmpOut);
+      ptvCache.set(url, buf);
+      return buf;
+    } finally {
+      try { if (fs.existsSync(tmpIn)) await fs.promises.unlink(tmpIn); } catch {}
+      try { if (fs.existsSync(tmpOut)) await fs.promises.unlink(tmpOut); } catch {}
+    }
+  })();
+
+  ptvProcessing.set(url, process);
+  try { return await process; } finally { ptvProcessing.delete(url); }
 }
 
 

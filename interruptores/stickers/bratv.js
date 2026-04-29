@@ -26,9 +26,9 @@ export default {
       let texto2 = meta1 ? (meta2 ? meta2 : '') : `@${name}`;
       const videoBuffer = await fetchStickerVideo(text);
       const tmpFile = `./tmp/bratv-${Date.now()}.mp4`;
-      fs.writeFileSync(tmpFile, videoBuffer);
+      await fs.promises.writeFile(tmpFile, videoBuffer);
       await client.sendVideoAsSticker(m.chat, tmpFile, m, { packname: texto1, author: texto2 });
-      fs.unlinkSync(tmpFile);
+      try { await fs.promises.unlink(tmpFile); } catch {}
       await m.react('✔️');
     } catch (e) {
       await m.react('✖️');
