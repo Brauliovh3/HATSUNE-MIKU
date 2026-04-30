@@ -9,8 +9,8 @@ import { smsg } from './message.js';
 import optimizer from './system/optimizer.js';
 
 if (!global.conns) global.conns = [];
-const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
-const userDevicesCache  = new NodeCache({ stdTTL: 0, checkperiod: 0 });
+const msgRetryCounterCache = new NodeCache({ stdTTL: 3600, checkperiod: 300, useClones: false });
+const userDevicesCache  = new NodeCache({ stdTTL: 3600, checkperiod: 300, useClones: false });
 const groupCache        = new NodeCache({ stdTTL: 3600, checkperiod: 300 });
 const reintentos        = new Map();
 
@@ -261,7 +261,7 @@ class SubBotManager {
            
             if (reason === DisconnectReason.loggedOut || reason === 401) {
               console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) desconectado (Sesión cerrada). Eliminando sesión.\n│ El usuario debe escanear QR nuevamente.\n└──────────────────────────────────┘`));
-              try { await fs.promises.rm(sessionFolder, { recursive: true, force: true }); } catch {}
+              fs.promises.rm(sessionFolder, { recursive: true, force: true }).catch(() => {});
               reintentos.delete(sessionId);
               this.startingSubbots.delete(sessionId);
               return;
@@ -269,7 +269,7 @@ class SubBotManager {
 
             if (reason === 403) {
               console.log(chalk.red(`\n┌──────────────────────────────────┐\n│ Sub-Bot (${sessionId}) cerrado o cuenta suspendida (${reason}). Eliminando.\n└──────────────────────────────────┘`));
-              try { await fs.promises.rm(sessionFolder, { recursive: true, force: true }); } catch {}
+              fs.promises.rm(sessionFolder, { recursive: true, force: true }).catch(() => {});
               reintentos.delete(sessionId);
               this.startingSubbots.delete(sessionId);
               return;
@@ -398,6 +398,7 @@ class SubBotManager {
         if (!sock || !sock.isInit) {
           if (!this.startingSubbots.has(sessionId)) {
             await this.startSubBot(sessionId);
+            await this.delay(2500); // 💙 Espaciar inicios para evitar asfixiar el CPU
           }
         }
       }

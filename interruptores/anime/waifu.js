@@ -8,9 +8,7 @@ export default {
       const isNSFW = global.db.data.chats[m.chat].nsfw;
       
       if (!isNSFW) {
-        const res = await fetch(`https://api.alyacore.xyz/random/${command}`);
-        const json = await res.json();
-        const imageUrl = json.url || json.data?.url || json.image || json.data?.image;
+        const imageUrl = `https://api.alyacore.xyz/random/${command}`;
         return client.sendFile(m.chat, imageUrl, 'waifu.jpg', `💙 Aquí tienes tu *${command.toUpperCase()}* 💙^•ﻌ•^💙`, m, global.miku);
       }
       
