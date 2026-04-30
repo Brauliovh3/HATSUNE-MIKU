@@ -7,10 +7,12 @@ export default {
     try {
       await m.react('🕒')
       
-      const ne = await fetch('https://raw.githubusercontent.com/ArugaZ/grabbed-results/main/random/anime/neko.txt')
-      const nek = await ne.text()
-      const nekLines = nek.split('\n')
-      const neko = nekLines[Math.floor(Math.random() * nekLines.length)]
+      if (!global.nekoData) {
+        const ne = await fetch('https://raw.githubusercontent.com/ArugaZ/grabbed-results/main/random/anime/neko.txt')
+        const nek = await ne.text()
+        global.nekoData = nek.split('\n')
+      }
+      const neko = global.nekoData[Math.floor(Math.random() * global.nekoData.length)]
       
       if (!neko || neko === '') throw new Error('No se pudo obtener imagen')
       

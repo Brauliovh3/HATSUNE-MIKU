@@ -6,12 +6,12 @@ export default {
   run: async (client, m, args, usedPrefix, command, text) => {
     try {
       await m.react('🕒')
-      let data = await (await fetch('https://raw.githubusercontent.com/ShirokamiRyzen/WAbot-DB/main/fitur_db/ppcp.json')).json()
-      let cita = data[Math.floor(Math.random() * data.length)]
-      let cowi = Buffer.from(await (await fetch(cita.cowo)).arrayBuffer())
-      await client.sendFile(m.chat, cowi, '', '*Masculino* ♂', m)
-      let ciwi = Buffer.from(await (await fetch(cita.cewe)).arrayBuffer())
-      await client.sendFile(m.chat, ciwi, '', '*Femenina* ♀', m)
+      if (!global.ppcpData) {
+        global.ppcpData = await (await fetch('https://raw.githubusercontent.com/ShirokamiRyzen/WAbot-DB/main/fitur_db/ppcp.json')).json()
+      }
+      let cita = global.ppcpData[Math.floor(Math.random() * global.ppcpData.length)]
+      await client.sendFile(m.chat, cita.cowo, '', '*Masculino* ♂', m)
+      await client.sendFile(m.chat, cita.cewe, '', '*Femenina* ♀', m)
       await m.react('✔️')
     } catch (e) {
       await m.react('✖️')

@@ -11,14 +11,12 @@ export default {
         const res = await fetch(`https://api.alyacore.xyz/random/${command}`);
         const json = await res.json();
         const imageUrl = json.url || json.data?.url || json.image || json.data?.image;
-        const img = Buffer.from(await (await fetch(imageUrl)).arrayBuffer());
-        return client.sendFile(m.chat, img, 'waifu.jpg', `💙 Aquí tienes tu *${command.toUpperCase()}* 💙^•ﻌ•^💙`, m, global.miku);
+        return client.sendFile(m.chat, imageUrl, 'waifu.jpg', `💙 Aquí tienes tu *${command.toUpperCase()}* 💙^•ﻌ•^💙`, m, global.miku);
       }
       
       const res = await fetch('https://api.waifu.pics/nsfw/waifu');
       const json = await res.json();
-      const img = Buffer.from(await (await fetch(json.url)).arrayBuffer());
-      await client.sendFile(m.chat, img, 'waifu.jpg', '💙 Aquí tienes tu *WAIFU* 💙^•ﻌ•^💙', m, global.miku);
+      await client.sendFile(m.chat, json.url, 'waifu.jpg', '💙 Aquí tienes tu *WAIFU* 💙^•ﻌ•^💙', m, global.miku);
     } catch (e) {
       await m.react('✖️')
       await m.reply(`💙 An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if it persists.\n> [Error: *${e.message}*]`)
