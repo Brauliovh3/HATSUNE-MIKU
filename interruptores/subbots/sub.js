@@ -242,26 +242,16 @@ export default {
 
           const { state } = await useMultiFileAuthState(sessionFolder);
           if (!state.creds.registered) {
-            
-           
-            await client.sendMessage(m.chat, {
-              text: caption,
-              ...global.miku
-            }, { quoted: m });
-            
-            await new Promise(r => setTimeout(r, 1500)); 
-            if (done) return;
-            
             const code          = await sock.requestPairingCode(phoneNumber);
             const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
 
             if (done) return;
-
             codeRequested = true; 
 
             await client.sendMessage(m.chat, {
-              text: formattedCode
-            });
+              text: `${caption}\n\n*${formattedCode}*`,
+              ...global.miku
+            }, { quoted: m });
           }
 
         } catch (err) {

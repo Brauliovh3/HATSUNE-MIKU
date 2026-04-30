@@ -36,8 +36,10 @@ const shouldProcessRaw = (sock, raw) => {
     return normalizeJid(primaryBotId) === normalizeJid(currentBotId);
   }
 
-  const mainBotId = getMainBotDigits();
-  return normalizeJid(currentBotId) === mainBotId;
+  if (global.db?.data?.chats?.[chatJid]) {
+    global.db.data.chats[chatJid].primaryBot = currentBotId;
+  }
+  return true;
 };
 
 const removeFromConns = (sessionId) => {

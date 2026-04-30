@@ -345,6 +345,11 @@ export default async (client, m) => {
   const botJid = getBotJid(client);
   const chat = global.db.data.chats[m.chat] || {}
   const settings = global.db.data.settings[botJid] || {}
+
+  if (m.isGroup && chat && !chat.primaryBot) {
+    chat.primaryBot = botJid;
+  }
+
   const user = global.db.data.users[sender] ||= {}
   const users = chat.users[sender] || {}
   const pushname = m.pushName || 'Sin nombre';
