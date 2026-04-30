@@ -1,6 +1,19 @@
 import axios from 'axios';
 import fetch from 'node-fetch';
 
+// Caché inteligente para interceptar axios y evitar descargas repetidas de GitHub
+const originalAxiosGet = axios.get;
+const jsonCache = new Map();
+axios.get = async (url, config) => {
+  if (typeof url === 'string' && url.includes('raw.githubusercontent.com')) {
+    if (jsonCache.has(url)) return { data: jsonCache.get(url) };
+    const response = await originalAxiosGet(url, config);
+    jsonCache.set(url, response.data);
+    return response;
+  }
+  return originalAxiosGet(url, config);
+};
+
 export default {
   command: ['nsfwloli', 'nsfwfoot', 'nsfwass', 'nsfwbdsm', 'nsfwcum', 'nsfwero', 'nsfwfemdom', 'nsfwglass', 'nsfworgy', 'yuri2', 'yaoi', 'yaoi2', 'panties', 'booty', 'ecchi', 'furro', 'hentai', 'trapito', 'imagenlesbians', 'pene', 'porno', 'randomxxx', 'pechos'],
   category: 'nsfw',

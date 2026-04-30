@@ -16,7 +16,7 @@ const reintentos        = new Map();
 
 const cleanJid = (jid = '') => jid.replace(/:\d+/, '').split('@')[0];
 
-const normalizeJid = (jid) => {
+const normalizeJid = (jid = '') => {
   if (!jid) return '';
   return String(jid).split(':')[0].replace(/\D/g, '');
 };
@@ -25,12 +25,19 @@ const getMainBotDigits = () => normalizeJid(global.client?.user?.id || '');
 
 const shouldProcessRaw = (sock, raw) => {
   const chatJid = raw.key?.remoteJid;
+  
   if (!chatJid || !chatJid.endsWith('@g.us')) return true;
+
   const chat = global.db?.data?.chats?.[chatJid] || {};
-  const primaryBot = chat?.primaryBot;
-  if (!primaryBot) return true;
-  const botJid = (sock.user?.id?.split(':')[0] || '') + '@s.whatsapp.net';
-  return normalizeJid(primaryBot) === normalizeJid(botJid);
+  const primaryBotId = chat?.primaryBot;
+  const currentBotId = sock.user?.id;
+
+  if (primaryBotId) {
+    return normalizeJid(primaryBotId) === normalizeJid(currentBotId);
+  }
+
+  const mainBotId = getMainBotDigits();
+  return normalizeJid(currentBotId) === mainBotId;
 };
 
 const removeFromConns = (sessionId) => {

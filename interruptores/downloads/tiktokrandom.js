@@ -102,24 +102,31 @@ async function probeVideoUrl(url) {
   return false
 }
 
+const tikwmCache = new Map()
+
 async function getRandomVideo(query) {
-  const response = await axios({
-    method: 'POST',
-    url: 'https://tikwm.com/api/feed/search',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      'Cookie': 'current_language=en',
-      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
-    },
-    data: {
-      keywords: query,
-      count: 10,
-      cursor: 0,
-      HD: 1
-    }
-  })
+  let videos = tikwmCache.get(query)
   
-  const videos = response.data.data.videos
+  if (!videos) {
+    const response = await axios({
+      method: 'POST',
+      url: 'https://tikwm.com/api/feed/search',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'Cookie': 'current_language=en',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
+      },
+      data: {
+        keywords: query,
+        count: 10,
+        cursor: 0,
+        HD: 1
+      }
+    })
+    videos = response.data.data.videos
+    if (videos && videos.length > 0) tikwmCache.set(query, videos)
+  }
+
   if (!videos || videos.length === 0) throw new Error('No se encontraron videos')
   
   const randomVideo = videos[Math.floor(Math.random() * videos.length)]
