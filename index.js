@@ -333,7 +333,8 @@ process.on('unhandledRejection', (reason) => {
     lowerMsg.includes('no sessions')       || lowerMsg.includes('unsupported state')         ||
     lowerMsg.includes('bad mac')           || lowerMsg.includes('enospc')                    ||
     lowerMsg.includes('enotfound')         || lowerMsg.includes('eai_again')                 ||
-    lowerMsg.includes('fetch failed')
+    lowerMsg.includes('fetch failed')      || lowerMsg.includes('not-acceptable')            ||
+    lowerMsg.includes('conflict')
   ) return
   console.error(chalk.red('[unhandledRejection]'), msg.slice(0, 120))
 })
