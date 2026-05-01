@@ -151,100 +151,88 @@ async function getNewApiDownload(youtubeUrl, type, timeoutMs = 20000) {
   return null
 }
 
-async function getAudioUrl(youtubeUrl) {
-  const promises = [
-    (async () => {
-      const gifted = await fetchJsonWithRetry(`https://api.giftedtech.web.id/api/download/dlmp3?url=${encodeURIComponent(youtubeUrl)}&apikey=gifted`, 15000, 1)
-      if (gifted?.success && gifted?.result?.download_url) {
-        return { downloadUrl: gifted.result.download_url, isGoogleVideo: false, title: gifted.result.title || 'Audio', thumbnail: null }
-      }
-      throw new Error('Gifted Falló')
-    })(),
-    (async () => {
-      const david = await fetchJsonWithRetry(`https://api.davidcyriltech.my.id/download/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-      if (david?.success && david?.result?.download_url) {
-        return { downloadUrl: david.result.download_url, isGoogleVideo: false, title: david.result.title || 'Audio', thumbnail: null }
-      }
-      throw new Error('DavidCyril Falló')
-    })(),
-    (async () => {
-      const newApiResult = await getNewApiDownload(youtubeUrl, 'audio')
-      if (newApiResult) {
-        return newApiResult
-      }
-      throw new Error('NewAPI Falló')
-    })(),
-    (async () => {
+function getAudioApis(youtubeUrl) {
+  return [
+    async () => {
       const alyaUrl = `https://api.alyacore.xyz/dl/ytmp3?url=${encodeURIComponent(youtubeUrl)}&key=${encodeURIComponent(ALYA_KEY)}`
       const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
       const alyaDl = alyaJson?.status !== false ? extractAlyaDownloadUrl(alyaJson, 'audio') : null
-      if (alyaDl) {
-        return { downloadUrl: alyaDl, isGoogleVideo: false, title: alyaJson?.data?.title || 'Audio', thumbnail: alyaJson?.data?.thumbnail || null }
-      }
+      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: false, title: alyaJson?.data?.title || 'Audio', thumbnail: alyaJson?.data?.thumbnail || null }
       throw new Error('AlyaCore Falló')
-    })(),
-    (async () => {
+    },
+    async () => {
+      const siputzx = await fetchJsonWithRetry(`https://api.siputzx.my.id/api/d/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+      if (siputzx?.data?.dl) return { downloadUrl: siputzx.data.dl, isGoogleVideo: false, title: siputzx.data?.title || 'Audio', thumbnail: siputzx.data?.thumbnail || null }
+      throw new Error('Siputzx Falló')
+    },
+    async () => {
+      const ryzen = await fetchJsonWithRetry(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+      if (ryzen?.url) return { downloadUrl: ryzen.url, isGoogleVideo: false, title: ryzen?.title || 'Audio', thumbnail: ryzen?.thumbnail || null }
+      throw new Error('Ryzen Falló')
+    },
+    async () => {
+      const newApiResult = await getNewApiDownload(youtubeUrl, 'audio')
+      if (newApiResult) return newApiResult
+      throw new Error('NewAPI Falló')
+    },
+    async () => {
       const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=audio`, 15000, 1)
-      if (nxr?.status && nxr?.data?.url) {
-        return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Audio', thumbnail: null }
-      }
+      if (nxr?.status && nxr?.data?.url) return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Audio', thumbnail: null }
       throw new Error('NXR Falló')
-    })()
+    },
+    async () => {
+      const gifted = await fetchJsonWithRetry(`https://api.giftedtech.web.id/api/download/dlmp3?url=${encodeURIComponent(youtubeUrl)}&apikey=gifted`, 15000, 1)
+      if (gifted?.success && gifted?.result?.download_url) return { downloadUrl: gifted.result.download_url, isGoogleVideo: false, title: gifted.result?.title || 'Audio', thumbnail: null }
+      throw new Error('Gifted Falló')
+    },
+    async () => {
+      const david = await fetchJsonWithRetry(`https://api.davidcyriltech.my.id/download/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+      if (david?.success && david?.result?.download_url) return { downloadUrl: david.result.download_url, isGoogleVideo: false, title: david.result?.title || 'Audio', thumbnail: null }
+      throw new Error('DavidCyril Falló')
+    }
   ];
-
-  try {
-    return await Promise.any(promises);
-  } catch (e) {
-    throw new Error('No se pudo obtener URL de descarga de audio. Todas las APIs están lentas o caídas.')
-  }
 }
 
-async function getVideoUrl(youtubeUrl, quality = '360') {
-  const promises = [
-    (async () => {
-      const gifted = await fetchJsonWithRetry(`https://api.giftedtech.web.id/api/download/dlmp4?url=${encodeURIComponent(youtubeUrl)}&apikey=gifted`, 15000, 1)
-      if (gifted?.success && gifted?.result?.download_url) {
-        return { downloadUrl: gifted.result.download_url, isGoogleVideo: false, title: gifted.result.title || 'Video', thumbnail: null }
-      }
-      throw new Error('Gifted Falló')
-    })(),
-    (async () => {
-      const david = await fetchJsonWithRetry(`https://api.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-      if (david?.success && david?.result?.download_url) {
-        return { downloadUrl: david.result.download_url, isGoogleVideo: false, title: david.result.title || 'Video', thumbnail: null }
-      }
-      throw new Error('DavidCyril Falló')
-    })(),
-    (async () => {
-      const newApiResult = await getNewApiDownload(youtubeUrl, 'video', 20000)
-      if (newApiResult) {
-        return newApiResult
-      }
-      throw new Error('NewAPI Falló')
-    })(),
-    (async () => {
+function getVideoApis(youtubeUrl, quality = '360') {
+  return [
+    async () => {
       const alyaUrl = `https://api.alyacore.xyz/dl/ytmp4?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}&key=${encodeURIComponent(ALYA_KEY)}`
       const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
       const alyaDl = alyaJson?.status !== false ? extractAlyaDownloadUrl(alyaJson, 'video') : null
-      if (alyaDl) {
-        return { downloadUrl: alyaDl, isGoogleVideo: /googlevideo\.com/i.test(alyaDl), title: alyaJson?.data?.title || 'Video', thumbnail: alyaJson?.data?.thumbnail || null }
-      }
+      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: /googlevideo\.com/i.test(alyaDl), title: alyaJson?.data?.title || 'Video', thumbnail: alyaJson?.data?.thumbnail || null }
       throw new Error('AlyaCore Falló')
-    })(),
-    (async () => {
+    },
+    async () => {
+      const siputzx = await fetchJsonWithRetry(`https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+      if (siputzx?.data?.dl) return { downloadUrl: siputzx.data.dl, isGoogleVideo: false, title: siputzx.data?.title || 'Video', thumbnail: siputzx.data?.thumbnail || null }
+      throw new Error('Siputzx Falló')
+    },
+    async () => {
+      const ryzen = await fetchJsonWithRetry(`https://api.ryzendesu.vip/api/downloader/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+      if (ryzen?.url) return { downloadUrl: ryzen.url, isGoogleVideo: false, title: ryzen?.title || 'Video', thumbnail: ryzen?.thumbnail || null }
+      throw new Error('Ryzen Falló')
+    },
+    async () => {
+      const newApiResult = await getNewApiDownload(youtubeUrl, 'video', 20000)
+      if (newApiResult) return newApiResult
+      throw new Error('NewAPI Falló')
+    },
+    async () => {
       const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=video`, 15000, 1)
-      if (nxr?.status && nxr?.data?.url) {
-        return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Video', thumbnail: null }
-      }
+      if (nxr?.status && nxr?.data?.url) return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Video', thumbnail: null }
       throw new Error('NXR Falló')
-    })()
+    },
+    async () => {
+      const gifted = await fetchJsonWithRetry(`https://api.giftedtech.web.id/api/download/dlmp4?url=${encodeURIComponent(youtubeUrl)}&apikey=gifted`, 15000, 1)
+      if (gifted?.success && gifted?.result?.download_url) return { downloadUrl: gifted.result.download_url, isGoogleVideo: false, title: gifted.result?.title || 'Video', thumbnail: null }
+      throw new Error('Gifted Falló')
+    },
+    async () => {
+      const david = await fetchJsonWithRetry(`https://api.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
+      if (david?.success && david?.result?.download_url) return { downloadUrl: david.result.download_url, isGoogleVideo: false, title: david.result?.title || 'Video', thumbnail: null }
+      throw new Error('DavidCyril Falló')
+    }
   ];
-
-  try {
-    return await Promise.any(promises);
-  } catch (e) {
-    throw new Error('No se pudo obtener URL de descarga de video. Todas las APIs están lentas o caídas.')
-  }
 }
 
 async function downloadFile(url, filename, isGoogleVideo = false) {
@@ -252,7 +240,7 @@ async function downloadFile(url, filename, isGoogleVideo = false) {
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true })
   const tempPath = path.join(tempDir, filename)
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 60000)
+  const timer = setTimeout(() => controller.abort(), 90000)
   const headers = isGoogleVideo
     ? {
         'User-Agent': 'com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip',
@@ -364,93 +352,104 @@ export async function processDownload(conn, m, videoInfo, option) {
   const ext        = isAudio ? 'mp3' : 'mp4'
   const mimetype   = isAudio ? 'audio/mpeg' : 'video/mp4'
   let tempFilePath = null
+  let success = false
+  let lastError = null
+
+  const apis = isAudio ? getAudioApis(videoInfo.url) : getVideoApis(videoInfo.url, '360')
+
+  for (const api of apis) {
+    try {
+      const data = await api()
+      if (!data || !data.downloadUrl) continue
+
+      let thumbnailBuffer = null
+      if (isAudio) {
+        const thumbUrl = data.thumbnail || videoInfo.thumbnail || `https://i.ytimg.com/vi/${extractYouTubeId(videoInfo.url) || ''}/hqdefault.jpg`
+        thumbnailBuffer = await fetchThumbnailBuffer(thumbUrl)
+      }
+
+      let retries = 3
+      let delay = 2000
+      while (retries > 0) {
+        try {
+          tempFilePath = await downloadFile(data.downloadUrl, `${Date.now()}_${fileName}.${ext}`, data.isGoogleVideo ?? false)
+          const fileBuffer = fs.readFileSync(tempFilePath)
+
+          const adReply = {
+            title: videoInfo.title ? videoInfo.title.substring(0, 60) : 'Descarga',
+            body: '💙 Hatsune Miku Bot',
+            sourceUrl: videoInfo.url,
+            mediaType: 1,
+            renderLargerThumbnail: false
+          }
+          if (thumbnailBuffer) {
+            adReply.thumbnail = thumbnailBuffer
+          } else {
+            adReply.thumbnailUrl = videoInfo.thumbnail || `https://i.ytimg.com/vi/${extractYouTubeId(videoInfo.url) || ''}/hqdefault.jpg`
+          }
+
+          if (asDocument) {
+            await conn.sendMessage(m.chat, {
+              document: fileBuffer,
+              mimetype,
+              fileName: `${fileName}.${ext}`,
+              caption: `📄 ${videoInfo.title}`,
+              contextInfo: { externalAdReply: adReply }
+            }, { quoted: m })
+          } else if (isAudio) {
+            const audioBuffer = thumbnailBuffer
+              ? embedCoverArt(fileBuffer, thumbnailBuffer, videoInfo.title)
+              : fileBuffer
+            
+            adReply.body = '🎵 Hatsune Miku Audio'
+            await conn.sendMessage(m.chat, {
+              audio: audioBuffer,
+              mimetype: 'audio/mpeg',
+              ptt: false,
+              fileName: `${fileName}.mp3`,
+              contextInfo: { externalAdReply: adReply }
+            }, { quoted: m })
+          } else {
+            await conn.sendMessage(m.chat, {
+              video: fileBuffer,
+              mimetype: 'video/mp4',
+              fileName: `${fileName}.mp4`,
+              caption: `🎬 ${videoInfo.title}`,
+            }, { quoted: m })
+          }
+
+          success = true
+          break
+        } catch (e) {
+          if (tempFilePath) {
+            deleteFile(tempFilePath)
+            tempFilePath = null
+          }
+          retries--
+          if (retries === 0) throw e
+          if (e.message?.includes('rate-overlimit') || e.message?.includes('timed out') || e.message?.includes('timeout') || e.message?.includes('socket hang up')) {
+            await new Promise(resolve => setTimeout(resolve, delay))
+            delay *= 2
+          } else {
+            throw e
+          }
+        }
+      }
+
+      if (success) {
+        break
+      }
+    } catch (e) {
+      lastError = e
+      continue
+    }
+  }
+
   try {
-    const data = isAudio
-      ? await getAudioUrl(videoInfo.url)
-      : await getVideoUrl(videoInfo.url, '360')
-    let thumbnailBuffer = null
-    if (isAudio) {
-      const thumbUrl = data.thumbnail || videoInfo.thumbnail ||
-        `https://i.ytimg.com/vi/${extractYouTubeId(videoInfo.url) || ''}/hqdefault.jpg`
-      thumbnailBuffer = await fetchThumbnailBuffer(thumbUrl)
+    if (!success) {
+      throw lastError || new Error('Todas las APIs están caídas o devuelven archivos corruptos.')
     }
-    if (asDocument) {
-      let retries = 3
-      let delay = 2000
-      while (retries > 0) {
-        try {
-          await conn.sendMessage(m.chat, {
-            document: { url: data.downloadUrl },
-            mimetype,
-            fileName: `${fileName}.${ext}`,
-            caption: `📄 ${videoInfo.title}`,
-          }, { quoted: m })
-          break
-        } catch (e) {
-          retries--
-          if (retries === 0) throw e
-          if (e.message?.includes('rate-overlimit') || e.message?.includes('timed out')) {
-            await new Promise(resolve => setTimeout(resolve, delay))
-            delay *= 2
-          } else {
-            throw e
-          }
-        }
-      }
-    } else if (isAudio) {
-      tempFilePath = await downloadFile(data.downloadUrl, `${Date.now()}_${fileName}.${ext}`, data.isGoogleVideo ?? false)
-      const fileBuffer = fs.readFileSync(tempFilePath)
-      const audioBuffer = thumbnailBuffer
-        ? embedCoverArt(fileBuffer, thumbnailBuffer, videoInfo.title)
-        : fileBuffer
-      let retries = 3
-      let delay = 2000
-      while (retries > 0) {
-        try {
-          await conn.sendMessage(m.chat, {
-            audio: audioBuffer,
-            mimetype: 'audio/mpeg',
-            ptt: false,
-            fileName: `${fileName}.mp3`,
-          }, { quoted: m })
-          break
-        } catch (e) {
-          retries--
-          if (retries === 0) throw e
-          if (e.message?.includes('rate-overlimit') || e.message?.includes('timed out')) {
-            await new Promise(resolve => setTimeout(resolve, delay))
-            delay *= 2
-          } else {
-            throw e
-          }
-        }
-      }
-      deleteFile(tempFilePath)
-      tempFilePath = null
-    } else {
-      let retries = 3
-      let delay = 2000
-      while (retries > 0) {
-        try {
-          await conn.sendMessage(m.chat, {
-            video: { url: data.downloadUrl },
-            mimetype: 'video/mp4',
-            fileName: `${fileName}.mp4`,
-            caption: `🎬 ${videoInfo.title}`,
-          }, { quoted: m })
-          break
-        } catch (e) {
-          retries--
-          if (retries === 0) throw e
-          if (e.message?.includes('rate-overlimit') || e.message?.includes('timed out')) {
-            await new Promise(resolve => setTimeout(resolve, delay))
-            delay *= 2
-          } else {
-            throw e
-          }
-        }
-      }
-    }
+
     await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
     const user = global.db?.data?.users?.[m.sender]
     if (user && !user.monedaDeducted) {
@@ -460,7 +459,6 @@ export async function processDownload(conn, m, videoInfo, option) {
     }
     return true
   } catch (error) {
-    if (tempFilePath) deleteFile(tempFilePath)
     await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
     await conn.reply(m.chat, `${DIVIDER_START}\n│ 💔 *ERROR DE DESCARGA*\n│\n│ 🎵 Hubo un problema al procesar.\n│ 🌱 Detalle: ${error.message}\n│ ✨ Inténtalo de nuevo más tarde.\n${DIVIDER_END}`, m)
     throw error
