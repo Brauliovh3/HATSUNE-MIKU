@@ -128,32 +128,6 @@ ${zoneData.emoji} *ZONA:* ${zoneData.name} (Nivel ${zoneLevel})
       await client.sendMessage(m.chat, { text: caption }, { quoted: m })
     }
 
-    if (zoneLevel >= 4) {
-      const userName = global.db.data.users[m.sender]?.name || m.sender.split('@')[0]
-      const canalId = global.db.data.settings[botId]?.id
-      const canalName = global.db.data.settings[botId]?.nameid || 'Canal'
-      if (canalId) {
-        const broadcastCaption = `🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n ✨ *¡NUEVA CRIATURA MÍTICA PESCADA!* ✨\n🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n\n👤 *Pescador:* \`${userName}\`\n🐠 *Captura:* *${fish.name}*\n🌊 *Zona:* ${zoneData.emoji} ${zoneData.name}\n� *Valor:* 🌱 *${reward.toLocaleString()} ${currency}*\n\n> _¡Una hazaña que será recordada por generaciones!_ 🎣🏆`
-
-        const msgObj = { 
-          caption: broadcastCaption, 
-          contextInfo: { 
-            isForwarded: true, 
-            forwardingScore: 999, 
-            forwardedNewsletterMessageInfo: { newsletterJid: canalId, serverMessageId: '', newsletterName: canalName } 
-          } 
-        }
-        if (fish.image && fish.image.startsWith('http')) {
-          msgObj.image = { url: fish.image }
-        }
-        await client.sendMessage(canalId, msgObj)
-
-        if (zoneData.audioUrl && zoneData.audioUrl.startsWith('http')) {
-          await sendChannelAudio(client, canalId, canalName, zoneData.audioUrl)
-        }
-      }
-    }
-
     user.lastfish = Date.now() + 1 * 60 * 60 * 1000
   },
 }
@@ -184,60 +158,4 @@ function msToTime(duration) {
 
 function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)]
-}
-
-async function sendChannelAudio(client, canalId, canalName, audioUrl) {
-  try {
-    const res = await fetch(audioUrl)
-    const buffer = await res.buffer()
-    
-    const id = crypto.randomBytes(6).toString('hex')
-    const inFile = path.join(os.tmpdir(), `miku-legend-${id}.mp3`)
-    const outFile = path.join(os.tmpdir(), `miku-legend-${id}.ogg`)
-    
-    await fs.promises.writeFile(inFile, buffer)
-    
-    await new Promise((resolve, reject) => {
-      const args = [
-        '-y', '-i', inFile,
-        '-vn', '-c:a', 'libopus',
-        '-b:a', '64k', '-vbr', 'on',
-        '-compression_level', '10',
-        outFile
-      ]
-      const p = spawn('ffmpeg', args, { stdio: ['ignore', 'ignore', 'pipe'] })
-      let err = ''
-      const timer = setTimeout(() => {
-        try { p.kill('SIGKILL') } catch {}
-        reject(new Error('ffmpeg timeout'))
-      }, 15000)
-      p.stderr.on('data', d => err += d.toString())
-      p.on('error', e => { clearTimeout(timer); reject(e) })
-      p.on('close', code => {
-        clearTimeout(timer)
-        if (code === 0) resolve(true)
-        else reject(new Error(err || `ffmpeg failed (${code})`))
-      })
-    })
-    
-    const opusBuffer = await fs.promises.readFile(outFile)
-    
-    await client.sendMessage(canalId, {
-      audio: opusBuffer,
-      mimetype: 'audio/ogg; codecs=opus',
-      ptt: true,
-      contextInfo: {
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: canalId,
-          serverMessageId: '',
-          newsletterName: canalName
-        }
-      }
-    })
-    
-    try { fs.unlinkSync(inFile) } catch {}
-    try { fs.unlinkSync(outFile) } catch {}
-  } catch (e) {
-    console.log('Error enviando audio legendario:', e)
-  }
 }
