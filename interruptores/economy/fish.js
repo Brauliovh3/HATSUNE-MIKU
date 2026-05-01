@@ -12,17 +12,43 @@ const FISHING_RODS = {
   legendary: { name: 'Caña Legendaria', bonus: 25, price: 500000 }
 }
 
-const FISH_RARITY = {
-  common: { chance: 65, minReward: 1000, maxReward: 5000, emoji: '🐟', color: '#8B8B8B', image: 'https://file.garden/ae-9DPf0ekWVe7ex/pez-comun.png' },
-  epic: { chance: 25, minReward: 8000, maxReward: 20000, emoji: '🌟', color: '#9B59B6', image: 'https://file.garden/ae-9DPf0ekWVe7ex/pez-epica.png' },
-  ultra: { chance: 8, minReward: 30000, maxReward: 80000, emoji: '💎', color: '#F1C40F', image: 'https://file.garden/ae-9DPf0ekWVe7ex/pez-ultra.png' },
-  legend: { chance: 2, minReward: 150000, maxReward: 300000, emoji: '👑', color: '#E74C3C', image: 'https://file.garden/ae-9DPf0ekWVe7ex/pez-legend.png' }
+const FISH_ZONES = {
+  1: {
+    name: 'Mar de Oriente', chance: 55, minReward: 1000, maxReward: 5000, emoji: '🌊',
+    fishes: [
+      { name: 'Sardina Común', image: 'https://file.garden/ae-9DPf0ekWVe7ex/sardina-comun.png' },
+      { name: 'Pez Gato', image: 'https://file.garden/ae-9DPf0ekWVe7ex/pez-gato.png' }
+    ]
+  },
+  2: {
+    name: 'Mar de Cristal', chance: 25, minReward: 8000, maxReward: 20000, emoji: '❄️',
+    fishes: [
+      { name: 'Raya Luminosa', image: 'https://file.garden/ae-9DPf0ekWVe7ex/pez-raya.png' },
+      { name: 'Pez Espada de Cristal', image: 'https://file.garden/ae-9DPf0ekWVe7ex/pez-espada.png' }
+    ]
+  },
+  3: {
+    name: 'Abismo Profundo', chance: 12, minReward: 30000, maxReward: 80000, emoji: '🕳️',
+    fishes: [
+      { name: 'Anguila Ciega', image: 'https://file.garden/ae-9DPf0ekWVe7ex/anguila-ciega.png' },
+      { name: 'Kraken Bebé', image: 'https://file.garden/ae-9DPf0ekWVe7ex/kraken-bebe.png' }
+    ]
+  },
+  4: {
+    name: 'Mar de las Sombras', chance: 6, minReward: 100000, maxReward: 250000, emoji: '🌑', audioUrl: 'https://file.garden/ae-9DPf0ekWVe7ex/victory2.mp3',
+    fishes: [
+      { name: 'Tiburón Espectral', image: 'https://file.garden/ae-9DPf0ekWVe7ex/tiburon-espectro.png' },
+      { name: 'Leviatán Oscuro', image: 'https://file.garden/ae-9DPf0ekWVe7ex/leviatan-bebe.png' }
+    ]
+  },
+  5: {
+    name: 'Mar del Infierno', chance: 2, minReward: 300000, maxReward: 800000, emoji: '🌋', audioUrl: 'https://file.garden/ae-9DPf0ekWVe7ex/victory1.mp3',
+    fishes: [
+      { name: 'LEVIATAN', image: 'https://file.garden/ae-9DPf0ekWVe7ex/leviatan.png' },
+      { name: 'CUCHUTLUU', image: 'https://file.garden/ae-9DPf0ekWVe7ex/cuchutluu.png' }
+    ]
+  }
 }
-
-const COMMON_FISH = ['Salmón', 'Trucha', 'Pez Payaso', 'Carpa', 'Atún', 'Caballa', 'Sardina', 'Merluza', 'Lubina', 'Mero']
-const EPIC_FISH = ['Tiburón Dorado', 'Pez Ángel Real', 'Pez Disco Brillante', 'Manta Raya', 'Anguila Luminosa', 'Pez Koi Imperial']
-const ULTRA_FISH = ['Pez Dragón', 'Leviatán Marino', 'Fénix Acuático', 'Kraken Bebé', 'Sirena Menor', 'Coloso Abisal']
-const LEGEND_FISH = ['Pez Legendario Ancestral', 'Guardián del Océano', 'Rey del Mar', 'Dragón Primordial', 'Leviatán Dorado', 'Fénix Marino Legendario']
 
 export default {
   command: ['pescar', 'fish', 'canas', 'fishingrod'],
@@ -57,76 +83,74 @@ export default {
     if (user.fishingRing) bonus += 20
     
     const rand = Math.random() * 100
-    let rarity
+    let zoneLevel = 1
     
-    const legendChance = FISH_RARITY.legend.chance + (bonus * 0.2)
-    const ultraChance = FISH_RARITY.ultra.chance + (bonus * 0.5)
-    const epicChance = FISH_RARITY.epic.chance + bonus
+    const lvl5Chance = FISH_ZONES[5].chance + (bonus * 0.15)
+    const lvl4Chance = FISH_ZONES[4].chance + (bonus * 0.25)
+    const lvl3Chance = FISH_ZONES[3].chance + (bonus * 0.4)
+    const lvl2Chance = FISH_ZONES[2].chance + bonus
     
-    if (rand < legendChance) {
-      rarity = 'legend'
-    } else if (rand < legendChance + ultraChance) {
-      rarity = 'ultra'
-    } else if (rand < legendChance + ultraChance + epicChance) {
-      rarity = 'epic'
+    if (rand < lvl5Chance) {
+      zoneLevel = 5
+    } else if (rand < lvl5Chance + lvl4Chance) {
+      zoneLevel = 4
+    } else if (rand < lvl5Chance + lvl4Chance + lvl3Chance) {
+      zoneLevel = 3
+    } else if (rand < lvl5Chance + lvl4Chance + lvl3Chance + lvl2Chance) {
+      zoneLevel = 2
     } else {
-      rarity = 'common'
+      zoneLevel = 1
     }
 
-    const fishData = FISH_RARITY[rarity]
-    const reward = Math.floor(Math.random() * (fishData.maxReward - fishData.minReward + 1)) + fishData.minReward
+    const zoneData = FISH_ZONES[zoneLevel]
+    const reward = Math.floor(Math.random() * (zoneData.maxReward - zoneData.minReward + 1)) + zoneData.minReward
     
-    let fishName
-    if (rarity === 'common') fishName = pickRandom(COMMON_FISH)
-    else if (rarity === 'epic') fishName = pickRandom(EPIC_FISH)
-    else if (rarity === 'ultra') fishName = pickRandom(ULTRA_FISH)
-    else fishName = pickRandom(LEGEND_FISH)
+    const fish = pickRandom(zoneData.fishes)
 
     user.coins ||= 0
     user.coins += reward
     
     user.fishCollection ||= {}
-    user.fishCollection[fishName] = (user.fishCollection[fishName] || 0) + 1
-    
-    const rarityLabel = rarity === 'common' ? 'COMÚN' : rarity === 'epic' ? 'ÉPICO' : rarity === 'ultra' ? 'ULTRA' : 'LEGENDARIO'
+    user.fishCollection[fish.name] = (user.fishCollection[fish.name] || 0) + 1
     
     const caption = `💙 *PESCADO!* 💙
 
-${fishData.emoji} *RAREZA:* ${rarityLabel}
-🐠 *Pez:* ${fishName}
+${zoneData.emoji} *ZONA:* ${zoneData.name} (Nivel ${zoneLevel})
+🐠 *Pez:* ${fish.name}
 💰 *Recompensa:* 🌱${reward.toLocaleString()} ${currency}
 🎣 *Caña:* ${rod.name}
 
 💡 *Mejora tu equipo:* ${usedPrefix}pescaderia`
 
-    if (fishData.image) {
-      await client.sendMessage(m.chat, { image: { url: fishData.image }, caption }, { quoted: m })
+    if (fish.image && fish.image.startsWith('http')) {
+      await client.sendMessage(m.chat, { image: { url: fish.image }, caption }, { quoted: m })
     } else {
       await client.sendMessage(m.chat, { text: caption }, { quoted: m })
     }
 
-    if (rarity === 'legend') {
+    if (zoneLevel >= 4) {
       const userName = global.db.data.users[m.sender]?.name || m.sender.split('@')[0]
-      const canalId = global.db.data.settings[botId].id
-      const canalName = global.db.data.settings[botId].nameid || 'Canal'
+      const canalId = global.db.data.settings[botId]?.id
+      const canalName = global.db.data.settings[botId]?.nameid || 'Canal'
       if (canalId) {
-        const legendCaption = `🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n ✨ *¡NUEVA LEYENDA EN LOS MARES!* ✨\n🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n\n👤 *Pescador:* \`${userName}\`\n🐠 *Captura:* *${fishName}*\n💎 *Rareza:* 👑 LEGENDARIA\n💰 *Valor:* 🌱 *${reward.toLocaleString()} ${currency}*\n\n> _¡Una hazaña que será recordada por generaciones!_ 🎣🏆`
+        const broadcastCaption = `🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n ✨ *¡NUEVA CRIATURA MÍTICA PESCADA!* ✨\n🌊 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ 🌊\n\n👤 *Pescador:* \`${userName}\`\n🐠 *Captura:* *${fish.name}*\n🌊 *Zona:* ${zoneData.emoji} ${zoneData.name}\n� *Valor:* 🌱 *${reward.toLocaleString()} ${currency}*\n\n> _¡Una hazaña que será recordada por generaciones!_ 🎣🏆`
 
-        await client.sendMessage(canalId, {
-          image: { url: fishData.image }, 
-          caption: legendCaption,
-          contextInfo: {
-            isForwarded: true,
-            forwardingScore: 999,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: canalId,
-              serverMessageId: '',
-              newsletterName: canalName
-            }
-          }
-        })
+        const msgObj = { 
+          caption: broadcastCaption, 
+          contextInfo: { 
+            isForwarded: true, 
+            forwardingScore: 999, 
+            forwardedNewsletterMessageInfo: { newsletterJid: canalId, serverMessageId: '', newsletterName: canalName } 
+          } 
+        }
+        if (fish.image && fish.image.startsWith('http')) {
+          msgObj.image = { url: fish.image }
+        }
+        await client.sendMessage(canalId, msgObj)
 
-        await sendLegendaryAudio(client, canalId, canalName)
+        if (zoneData.audioUrl && zoneData.audioUrl.startsWith('http')) {
+          await sendChannelAudio(client, canalId, canalName, zoneData.audioUrl)
+        }
       }
     }
 
@@ -162,9 +186,9 @@ function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)]
 }
 
-async function sendLegendaryAudio(client, canalId, canalName) {
+async function sendChannelAudio(client, canalId, canalName, audioUrl) {
   try {
-    const res = await fetch('https://file.garden/ae-9DPf0ekWVe7ex/legend.mp3')
+    const res = await fetch(audioUrl)
     const buffer = await res.buffer()
     
     const id = crypto.randomBytes(6).toString('hex')
