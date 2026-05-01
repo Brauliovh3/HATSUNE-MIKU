@@ -154,41 +154,23 @@ async function getNewApiDownload(youtubeUrl, type, timeoutMs = 20000) {
 function getAudioApis(youtubeUrl) {
   return [
     async () => {
+      const alyaUrl = `https://api.alyacore.xyz/dl/ytmp3v2?url=${encodeURIComponent(youtubeUrl)}&key=${encodeURIComponent(ALYA_KEY)}`
+      const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
+      const alyaDl = alyaJson?.status !== false ? (alyaJson?.data?.dl || extractAlyaDownloadUrl(alyaJson, 'audio')) : null
+      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: false, title: alyaJson?.data?.title || 'Audio', thumbnail: alyaJson?.data?.thumbnail || null }
+      throw new Error('AlyaCore v2 Falló')
+    },
+    async () => {
       const alyaUrl = `https://api.alyacore.xyz/dl/ytmp3?url=${encodeURIComponent(youtubeUrl)}&key=${encodeURIComponent(ALYA_KEY)}`
       const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
-      const alyaDl = alyaJson?.status !== false ? extractAlyaDownloadUrl(alyaJson, 'audio') : null
+      const alyaDl = alyaJson?.status !== false ? (alyaJson?.data?.dl || extractAlyaDownloadUrl(alyaJson, 'audio')) : null
       if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: false, title: alyaJson?.data?.title || 'Audio', thumbnail: alyaJson?.data?.thumbnail || null }
-      throw new Error('AlyaCore Falló')
-    },
-    async () => {
-      const siputzx = await fetchJsonWithRetry(`https://api.siputzx.my.id/api/d/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-      if (siputzx?.data?.dl) return { downloadUrl: siputzx.data.dl, isGoogleVideo: false, title: siputzx.data?.title || 'Audio', thumbnail: siputzx.data?.thumbnail || null }
-      throw new Error('Siputzx Falló')
-    },
-    async () => {
-      const ryzen = await fetchJsonWithRetry(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-      if (ryzen?.url) return { downloadUrl: ryzen.url, isGoogleVideo: false, title: ryzen?.title || 'Audio', thumbnail: ryzen?.thumbnail || null }
-      throw new Error('Ryzen Falló')
+      throw new Error('AlyaCore v1 Falló')
     },
     async () => {
       const newApiResult = await getNewApiDownload(youtubeUrl, 'audio')
       if (newApiResult) return newApiResult
       throw new Error('NewAPI Falló')
-    },
-    async () => {
-      const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=audio`, 15000, 1)
-      if (nxr?.status && nxr?.data?.url) return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Audio', thumbnail: null }
-      throw new Error('NXR Falló')
-    },
-    async () => {
-      const gifted = await fetchJsonWithRetry(`https://api.giftedtech.web.id/api/download/dlmp3?url=${encodeURIComponent(youtubeUrl)}&apikey=gifted`, 15000, 1)
-      if (gifted?.success && gifted?.result?.download_url) return { downloadUrl: gifted.result.download_url, isGoogleVideo: false, title: gifted.result?.title || 'Audio', thumbnail: null }
-      throw new Error('Gifted Falló')
-    },
-    async () => {
-      const david = await fetchJsonWithRetry(`https://api.davidcyriltech.my.id/download/ytmp3?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-      if (david?.success && david?.result?.download_url) return { downloadUrl: david.result.download_url, isGoogleVideo: false, title: david.result?.title || 'Audio', thumbnail: null }
-      throw new Error('DavidCyril Falló')
     }
   ];
 }
@@ -196,41 +178,23 @@ function getAudioApis(youtubeUrl) {
 function getVideoApis(youtubeUrl, quality = '360') {
   return [
     async () => {
+      const alyaUrl = `https://api.alyacore.xyz/dl/ytmp4v2?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}&key=${encodeURIComponent(ALYA_KEY)}`
+      const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
+      const alyaDl = alyaJson?.status !== false ? (alyaJson?.data?.dl || extractAlyaDownloadUrl(alyaJson, 'video')) : null
+      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: /googlevideo\.com/i.test(alyaDl), title: alyaJson?.data?.title || 'Video', thumbnail: alyaJson?.data?.thumbnail || null }
+      throw new Error('AlyaCore v2 Falló')
+    },
+    async () => {
       const alyaUrl = `https://api.alyacore.xyz/dl/ytmp4?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}&key=${encodeURIComponent(ALYA_KEY)}`
       const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
-      const alyaDl = alyaJson?.status !== false ? extractAlyaDownloadUrl(alyaJson, 'video') : null
+      const alyaDl = alyaJson?.status !== false ? (alyaJson?.data?.dl || extractAlyaDownloadUrl(alyaJson, 'video')) : null
       if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: /googlevideo\.com/i.test(alyaDl), title: alyaJson?.data?.title || 'Video', thumbnail: alyaJson?.data?.thumbnail || null }
-      throw new Error('AlyaCore Falló')
-    },
-    async () => {
-      const siputzx = await fetchJsonWithRetry(`https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-      if (siputzx?.data?.dl) return { downloadUrl: siputzx.data.dl, isGoogleVideo: false, title: siputzx.data?.title || 'Video', thumbnail: siputzx.data?.thumbnail || null }
-      throw new Error('Siputzx Falló')
-    },
-    async () => {
-      const ryzen = await fetchJsonWithRetry(`https://api.ryzendesu.vip/api/downloader/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-      if (ryzen?.url) return { downloadUrl: ryzen.url, isGoogleVideo: false, title: ryzen?.title || 'Video', thumbnail: ryzen?.thumbnail || null }
-      throw new Error('Ryzen Falló')
+      throw new Error('AlyaCore v1 Falló')
     },
     async () => {
       const newApiResult = await getNewApiDownload(youtubeUrl, 'video', 20000)
       if (newApiResult) return newApiResult
       throw new Error('NewAPI Falló')
-    },
-    async () => {
-      const nxr = await fetchJsonWithRetry(`https://yt.nxr.my.id/yt2?url=${encodeURIComponent(youtubeUrl)}&type=video`, 15000, 1)
-      if (nxr?.status && nxr?.data?.url) return { downloadUrl: nxr.data.url, isGoogleVideo: false, title: 'Video', thumbnail: null }
-      throw new Error('NXR Falló')
-    },
-    async () => {
-      const gifted = await fetchJsonWithRetry(`https://api.giftedtech.web.id/api/download/dlmp4?url=${encodeURIComponent(youtubeUrl)}&apikey=gifted`, 15000, 1)
-      if (gifted?.success && gifted?.result?.download_url) return { downloadUrl: gifted.result.download_url, isGoogleVideo: false, title: gifted.result?.title || 'Video', thumbnail: null }
-      throw new Error('Gifted Falló')
-    },
-    async () => {
-      const david = await fetchJsonWithRetry(`https://api.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, 15000, 1)
-      if (david?.success && david?.result?.download_url) return { downloadUrl: david.result.download_url, isGoogleVideo: false, title: david.result?.title || 'Video', thumbnail: null }
-      throw new Error('DavidCyril Falló')
     }
   ];
 }
