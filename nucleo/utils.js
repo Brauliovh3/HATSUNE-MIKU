@@ -1,7 +1,9 @@
-const groupMetadataCache = new Map()
-const lidCache = new Map()
-const pendingMetadataRequests = new Map()
-const metadataTTL = 300000 
+const groupMetadataCache = new Map()  
+const lidCache           = new Map()   
+const pendingMetadataRequests = new Map() 
+const metadataTTL = 5 * 60 * 1000   
+
+
 
 function getCachedMetadata(groupChatId) {
   const cached = groupMetadataCache.get(groupChatId)
@@ -15,6 +17,58 @@ function normalizeToJid(phone) {
   return base ? `${base}@s.whatsapp.net` : null
 }
 
+
+
+/**
+ * 
+ * 
+ * 
+ *
+ * @param {object} client   instancia de Baileys
+ * @param {string} jid      JID del grupo  (@g.us)
+ * @returns {object|null}   groupMetadata o null
+ */
+export async function getGroupMetadata(client, jid) {
+  if (!jid?.endsWith('@g.us')) return null
+
+  const cached = getCachedMetadata(jid)
+  if (cached !== undefined) return cached
+
+  
+  if (pendingMetadataRequests.has(jid)) {
+    return pendingMetadataRequests.get(jid)
+  }
+
+  const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 5000))
+  const request = Promise.race([
+    client.groupMetadata(jid).catch(() => null),
+    timeout,
+  ])
+  pendingMetadataRequests.set(jid, request)
+
+  const metadata = await request
+  pendingMetadataRequests.delete(jid)
+  groupMetadataCache.set(jid, { metadata, timestamp: Date.now() })
+
+  return metadata
+}
+
+
+export function invalidateGroupCache(jid) {
+  groupMetadataCache.delete(jid)
+}
+
+
+export function pruneGroupCache() {
+  const now = Date.now()
+  for (const [jid, entry] of groupMetadataCache) {
+    if (now - entry.timestamp > metadataTTL) groupMetadataCache.delete(jid)
+  }
+ 
+  if (lidCache.size > 2000) lidCache.clear()
+}
+
+
 export async function resolveLidToRealJid(lid, client, groupChatId) {
   const input = lid?.toString().trim()
   if (!input || !groupChatId?.endsWith('@g.us')) return input
@@ -24,21 +78,7 @@ export async function resolveLidToRealJid(lid, client, groupChatId) {
   if (lidCache.has(input)) return lidCache.get(input)
 
   const lidBase = input.split('@')[0]
-  let metadata = getCachedMetadata(groupChatId)
-
-  if (metadata === undefined) {
-    if (pendingMetadataRequests.has(groupChatId)) {
-      metadata = await pendingMetadataRequests.get(groupChatId)
-    } else {
-      
-      const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 5000))
-      const request = Promise.race([client.groupMetadata(groupChatId).catch(() => null), timeout])
-      pendingMetadataRequests.set(groupChatId, request)
-      metadata = await request
-      pendingMetadataRequests.delete(groupChatId)
-      groupMetadataCache.set(groupChatId, { metadata, timestamp: Date.now() })
-    }
-  }
+  const metadata = await getGroupMetadata(client, groupChatId)
 
   if (!metadata) {
     lidCache.set(input, input)
@@ -46,12 +86,15 @@ export async function resolveLidToRealJid(lid, client, groupChatId) {
   }
 
   for (const p of metadata.participants || []) {
-    const idBase = p?.id?.split('@')[0]?.trim()
-    const phoneRaw = p?.phoneNumber
-    const phone = normalizeToJid(phoneRaw)
+    const idBase  = p?.id?.split('@')[0]?.trim()
+    const phone   = normalizeToJid(p?.phoneNumber)
     if (!idBase || !phone) continue
-    if (idBase === lidBase) return lidCache.set(input, phone), phone
+    if (idBase === lidBase) {
+      lidCache.set(input, phone)
+      return phone
+    }
   }
 
-  return lidCache.set(input, input), input
+  lidCache.set(input, input)
+  return input
 }
