@@ -14,7 +14,7 @@ import { getGroupAdmins }   from './nucleo/message.js'
 import { getGroupMetadata } from './nucleo/utils.js'
 
 
-healthCheck.start()  
+
 
 seeCommands()
 
@@ -39,6 +39,19 @@ async function runWithLimit(tasks, limit = 5) {
     if (pool.length >= limit) await Promise.race(pool)
   }
   if (pool.length) await Promise.all(pool)
+}
+
+
+// en operaciones como delete, react, readMessages que no son críticas.
+function safeMsg(fn) {
+  return fn().catch(err => {
+    const msg = err?.message || ''
+    if (
+      msg.includes('rate-overlimit') || msg.includes('429') ||
+      msg.includes('Internal Server Error') || msg.includes('timed out')
+    ) return
+    throw err
+  })
 }
 
 
@@ -75,7 +88,8 @@ export default async (client, m) => {
   
   if (m.message?.buttonsResponseMessage || m.message?.templateButtonReplyMessage
       || m.message?.listResponseMessage  || m.message?.interactiveResponseMessage) {
-    await client.readMessages([m.key]).catch(() => {})
+    
+    await safeMsg(() => client.readMessages([m.key]))
   }
 
   
@@ -116,11 +130,11 @@ export default async (client, m) => {
     if (option) {
       const user = global.db?.data?.users?.[m.sender]
       if (!user?.lastYTSearch) {
-        client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
+        safeMsg(() => client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }))
         return
       }
       if (Date.now() - (user.lastYTSearch.timestamp || 0) > 10 * 60 * 1000) {
-        client.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
+        safeMsg(() => client.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }))
         return
       }
       user.monedaDeducted = false
@@ -152,13 +166,13 @@ export default async (client, m) => {
     if (!Array.isArray(user.waifu.characters)) user.waifu.characters = []
 
     if (!user.waifu.pending) {
-      client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
+      safeMsg(() => client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }))
       return
     }
 
     if (m.sender !== userId) {
       if (buttonId.startsWith('waifu_sell_')) {
-        client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
+        safeMsg(() => client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }))
         return
       }
 
@@ -166,7 +180,7 @@ export default async (client, m) => {
       if (!thiefUser.waifu) thiefUser.waifu = { characters: [], pending: null, cooldown: 0 }
       thiefUser.waifu.lastSteal = thiefUser.waifu.lastSteal || 0
       if (Date.now() - thiefUser.waifu.lastSteal < 10_000) {
-        client.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }).catch(() => {})
+        safeMsg(() => client.sendMessage(m.chat, { react: { text: '⏳', key: m.key } }))
         return
       }
       thiefUser.waifu.lastSteal = Date.now()
@@ -238,11 +252,11 @@ export default async (client, m) => {
     const sessionId = buttonId.split('_').slice(2).join('_')
     const session   = gallerySessions.get(sessionId)
     if (!session) {
-      client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
+      safeMsg(() => client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }))
       return
     }
     if (m.sender !== session.userId) {
-      client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }).catch(() => {})
+      safeMsg(() => client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }))
       return
     }
 
@@ -464,7 +478,7 @@ export default async (client, m) => {
   const cmdData = global.comandos.get(command)
   if (!cmdData) {
     if (settings.prefix === true) return
-    await client.readMessages([m.key]).catch(() => {})
+    await safeMsg(() => client.readMessages([m.key]))
     return m.reply(`💙 El comando *${command}* no existe.\n> 🌱 Usa *${usedPrefix}help* para ver la lista de comandos disponibles.`)
   }
   if (cmdData.isOwner && !global.owner.map(n => n + '@s.whatsapp.net').includes(sender)) {
@@ -482,13 +496,13 @@ export default async (client, m) => {
   if (cmdData.isOwner  && !isOwners)    return
 
   if (m.isGroup && (cmdData.nsfw || cmdData.category === 'nsfw') && !chat.nsfw) {
-    client.readMessages([m.key]).catch(() => {})
+    safeMsg(() => client.readMessages([m.key]))
     return client.sendMessage(m.chat, { text: `💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*` }, { quoted: m })
   }
 
   
   try {
-    await client.readMessages([m.key]).catch(() => {})
+    await safeMsg(() => client.readMessages([m.key]))
     user.usedcommands           = (user.usedcommands  || 0) + 1
     settings.commandsejecut     = (settings.commandsejecut || 0) + 1
     users.usedTime              = new Date()
@@ -498,7 +512,13 @@ export default async (client, m) => {
     users.stats[today].cmds++
     await cmdData.run(client, m, args, usedPrefix, command, text)
   } catch (error) {
-    await client.sendMessage(m.chat, { text: `💙 *ERROR*\n\n💙 Ocurrió un error al ejecutar el comando.\n🌱 *Error:* ${error.message || error}` }, { quoted: m })
+    
+    const errMsg = error?.message || String(error)
+    if (
+      errMsg.includes('rate-overlimit') || errMsg.includes('429') ||
+      errMsg.includes('Internal Server Error')
+    ) return
+    await client.sendMessage(m.chat, { text: `💙 *ERROR*\n\n💙 Ocurrió un error al ejecutar el comando.\n🌱 *Error:* ${errMsg}` }, { quoted: m })
   }
 
   level(m)

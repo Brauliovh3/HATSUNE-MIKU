@@ -145,10 +145,33 @@ if (methodCodeQR) {
 let reconexion = 0
 const intentos = 15
 
+
+const _sendQueue   = []
+let   _sendRunning = false
+
+async function _flushSendQueue() {
+  if (_sendRunning) return
+  _sendRunning = true
+  while (_sendQueue.length > 0) {
+    const { fn, resolve, reject } = _sendQueue.shift()
+    try { resolve(await fn()) } catch (e) { reject(e) }
+    
+    if (_sendQueue.length > 0) await new Promise(r => setTimeout(r, 300))
+  }
+  _sendRunning = false
+}
+
+function enqueueMsg(fn) {
+  return new Promise((resolve, reject) => {
+    _sendQueue.push({ fn, resolve, reject })
+    _flushSendQueue()
+  })
+}
+
+
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState(global.sessionName)
 
- 
   if (!global.baileysVersion) {
     const { version } = await fetchLatestBaileysVersion()
     global.baileysVersion = version
@@ -179,6 +202,12 @@ async function startBot() {
   global.client = sock
   sock.isInit   = false
   sock.ev.on("creds.update", saveCreds)
+
+  
+  const _origSendMessage = sock.sendMessage.bind(sock)
+  sock.sendMessage = (jid, content, options) =>
+    enqueueMsg(() => _origSendMessage(jid, content, options))
+  
 
   if (opcion === "2" && !fs.existsSync("./Sessions/Owner/creds.json")) {
     setTimeout(async () => {
@@ -244,6 +273,12 @@ async function startBot() {
       const userName = sock.user.name || "Desconocido"
       console.log(chalk.green.bold(`💙 Conectado a: ${userName}`))
 
+     
+      if (!healthCheck._started) {
+        healthCheck._started = true
+        healthCheck.start()
+      }
+
       if (!optimizer.active) {
         optimizer.start()
         optimizer.registerSession('owner', 'Owner', { userName })
@@ -269,9 +304,9 @@ async function startBot() {
     }
   })
 
-  
+ 
   let _msgSlots = 0
-  const _MSG_LIMIT = 8
+  const _MSG_LIMIT = 4
 
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return
@@ -279,10 +314,9 @@ async function startBot() {
       if (!kay?.message)                                  continue
       if (kay.key?.remoteJid === 'status@broadcast')      continue
       if (_msgSlots >= _MSG_LIMIT) {
-        await new Promise(r => setImmediate(r))  
+        await new Promise(r => setImmediate(r))
       }
       _msgSlots++
-      
 
       healthCheck.recordMessage()
       
@@ -300,11 +334,15 @@ async function startBot() {
           healthCheck.recordError(err)
           const errorMsg = err?.message || 'Unknown error'
           
+          
           if (!errorMsg.includes('rate-overlimit') && 
               !errorMsg.includes('timed out') && 
               !errorMsg.includes('Connection Closed') &&
-              !errorMsg.includes('connection lost')) {
-            console.log(log.error('Error procesando mensaje:'), errorMsg.slice(0, 100))
+              !errorMsg.includes('connection lost') &&
+              !errorMsg.includes('rate_overlimit') &&
+              !errorMsg.includes('429') &&
+              !errorMsg.includes('Internal Server Error')) {
+            console.log(chalk.red('[ERROR msg]'), errorMsg.slice(0, 100))
           }
         } finally {
           _msgSlots--
@@ -344,7 +382,11 @@ setTimeout(cleanCache, 2 * 60 * 1000)
 
 process.on('uncaughtException', (err) => {
   const msg = err?.message || ''
-  if (msg.includes('rate-overlimit') || msg.includes('timed out') || msg.includes('Connection Closed')) return
+  if (
+    msg.includes('rate-overlimit') || msg.includes('timed out')     ||
+    msg.includes('Connection Closed') || msg.includes('429')        ||
+    msg.includes('Internal Server Error')
+  ) return
   console.error(chalk.red('[uncaughtException]'), msg.slice(0, 120))
 })
 
@@ -361,7 +403,8 @@ process.on('unhandledRejection', (reason) => {
     lowerMsg.includes('bad mac')           || lowerMsg.includes('enospc')                    ||
     lowerMsg.includes('enotfound')         || lowerMsg.includes('eai_again')                 ||
     lowerMsg.includes('fetch failed')      || lowerMsg.includes('not-acceptable')            ||
-    lowerMsg.includes('conflict')
+    lowerMsg.includes('conflict')          || lowerMsg.includes('internal server error')     ||
+    lowerMsg.includes('429')
   ) return
   console.error(chalk.red('[unhandledRejection]'), msg.slice(0, 120))
 })
