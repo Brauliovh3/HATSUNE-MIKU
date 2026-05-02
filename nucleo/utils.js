@@ -1,7 +1,8 @@
-const groupMetadataCache = new Map()  
-const lidCache           = new Map()   
-const pendingMetadataRequests = new Map() 
-const metadataTTL = 5 * 60 * 1000   
+const groupMetadataCache = new Map()
+const lidCache           = new Map()
+const pendingMetadataRequests = new Map()
+const metadataTTL = 5 * 60 * 1000
+const MAX_CACHE_SIZE = 500   
 
 
 
@@ -61,11 +62,23 @@ export function invalidateGroupCache(jid) {
 
 export function pruneGroupCache() {
   const now = Date.now()
+  let deleted = 0
   for (const [jid, entry] of groupMetadataCache) {
-    if (now - entry.timestamp > metadataTTL) groupMetadataCache.delete(jid)
+    if (now - entry.timestamp > metadataTTL) {
+      groupMetadataCache.delete(jid)
+      deleted++
+    }
   }
- 
-  if (lidCache.size > 2000) lidCache.clear()
+
+  if (groupMetadataCache.size > MAX_CACHE_SIZE) {
+    const entries = Array.from(groupMetadataCache.entries())
+    const toDelete = entries.length - MAX_CACHE_SIZE
+    for (let i = 0; i < toDelete; i++) {
+      groupMetadataCache.delete(entries[i][0])
+    }
+  }
+
+  if (lidCache.size > 1000) lidCache.clear()
 }
 
 

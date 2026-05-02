@@ -163,12 +163,38 @@ class HealthCheck {
     const memUsage = process.memoryUsage();
     const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
     const rssMB = memUsage.rss / 1024 / 1024;
-    
-    
-    if (rssMB > 1024 || heapUsedMB > 512) {
-      console.log(chalk.yellow(`[HealthCheck] Alta memoria detectada: RSS ${rssMB.toFixed(2)}MB, Heap ${heapUsedMB.toFixed(2)}MB`));
-      
-      
+    const externalMB = memUsage.external / 1024 / 1024;
+
+    if (rssMB > 2048 || heapUsedMB > 1024) {
+      console.log(chalk.red(`[HealthCheck] Memoria CRÍTICA: RSS ${rssMB.toFixed(2)}MB, Heap ${heapUsedMB.toFixed(2)}MB, External ${externalMB.toFixed(2)}MB`));
+
+      if (global.gallerySessions) global.gallerySessions.clear();
+      this.cleanStuckDownloads();
+
+      if (global.client?.chats && global.client.chats.size > 50) {
+        const chats = global.client.chats;
+        const now = Date.now();
+        let deleted = 0;
+        for (const [jid, chat] of chats) {
+          const lastMsgTime = chat?.lastMessage?.messageTimestamp
+            ? chat.lastMessage.messageTimestamp * 1000
+            : 0;
+          if (now - lastMsgTime > 48 * 60 * 60 * 1000) {
+            chats.delete(jid);
+            deleted++;
+          }
+        }
+        if (deleted > 0) console.log(chalk.gray(`[HealthCheck] ${deleted} chats antiguos eliminados`));
+      }
+
+      this.forceGC();
+
+      if (rssMB > 3072) {
+        console.log(chalk.red('[HealthCheck] Memoria insostenible, reinicio necesario'));
+      }
+    } else if (rssMB > 1024 || heapUsedMB > 512) {
+      console.log(chalk.yellow(`[HealthCheck] Alta memoria: RSS ${rssMB.toFixed(2)}MB, Heap ${heapUsedMB.toFixed(2)}MB`));
+
       if (global.gallerySessions) this.cleanGallerySessions();
       this.cleanStuckDownloads();
       this.forceGC();

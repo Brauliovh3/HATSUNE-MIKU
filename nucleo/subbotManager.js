@@ -405,7 +405,48 @@ class SubBotManager {
 
   delay(ms) { return new Promise(r => setTimeout(r, ms)) }
 
-  
+  pruneSubbotChats() {
+    const now = Date.now()
+    const MAX_CHATS = 100
+    const CHAT_AGE = 24 * 60 * 60 * 1000
+
+    for (const [sessionId, sock] of this.subbots) {
+      if (!sock?.chats) continue
+
+      const chats = sock.chats
+      let deleted = 0
+
+      for (const [jid, chat] of chats) {
+        const lastMsgTime = chat?.lastMessage?.messageTimestamp
+          ? chat.lastMessage.messageTimestamp * 1000
+          : 0
+
+        if (now - lastMsgTime > CHAT_AGE) {
+          chats.delete(jid)
+          deleted++
+        }
+      }
+
+      if (chats.size > MAX_CHATS) {
+        const sorted = Array.from(chats.entries())
+          .sort((a, b) => {
+            const tA = a[1]?.lastMessage?.messageTimestamp || 0
+            const tB = b[1]?.lastMessage?.messageTimestamp || 0
+            return tB - tA
+          })
+        const toDelete = chats.size - MAX_CHATS
+        for (let i = sorted.length - 1; i >= sorted.length - toDelete; i--) {
+          chats.delete(sorted[i][0])
+          deleted++
+        }
+      }
+
+      if (deleted > 0) {
+        console.log(chalk.gray(`💙 Subbot ${sessionId}: ${deleted} chats limpiados`))
+      }
+    }
+  }
+
   startHealthCheck() {
     setInterval(async () => {
       const subsPath = './Sessions/subbots'
@@ -430,6 +471,8 @@ class SubBotManager {
           this._healthDebounce.set(sessionId, handle)
         }
       }
+
+      this.pruneSubbotChats()
     }, 60_000)
   }
 }

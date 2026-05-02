@@ -18,9 +18,9 @@ const MP3_COMMANDS = new Set(['tiktokmp3', 'ttmp3'])
 
 const MIN_VIDEO_SIZE = 51200 
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024 
-const VIDEO_DOWNLOAD_TIMEOUT = 60000 
-const PROBE_TIMEOUT = 8000
-const FETCH_TIMEOUT = 15000
+const VIDEO_DOWNLOAD_TIMEOUT = 45000
+const PROBE_TIMEOUT = 5000
+const FETCH_TIMEOUT = 12000
 
 const DIVIDER_START = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
 const DIVIDER_END   = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
@@ -57,7 +57,7 @@ async function fetchJson(url, options, timeoutMs = FETCH_TIMEOUT) {
   }
 }
 
-async function fetchJsonWithRetry(url, options, maxRetries = 3, baseDelay = 2000) {
+async function fetchJsonWithRetry(url, options, maxRetries = 2, baseDelay = 1500) {
   let lastError
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -65,7 +65,7 @@ async function fetchJsonWithRetry(url, options, maxRetries = 3, baseDelay = 2000
     } catch (error) {
       lastError = error
       if (attempt < maxRetries) {
-        const delay = baseDelay * Math.pow(2, attempt - 1)
+        const delay = baseDelay * attempt
         await new Promise(resolve => setTimeout(resolve, delay))
       }
     }
@@ -254,8 +254,8 @@ async function getTikTokData(url, options = {}) {
     const json = await fetchJsonWithRetry(
       `${NEW_API_BASE}/api/v1/descargas/tiktok?apikey=${encodeURIComponent(NEW_API_KEY)}&url=${encodeURIComponent(url)}`,
       undefined,
-      2,
-      2000
+      1,
+      1000
     )
     if (json?.status !== true) throw new Error(json?.msg || 'status false')
     const d = json?.data
@@ -287,8 +287,8 @@ async function getTikTokData(url, options = {}) {
     const json = await fetchJsonWithRetry(
       `${ALYA_BASE}/dl/tiktok?url=${encodeURIComponent(url)}&key=${encodeURIComponent(ALYA_KEY)}`,
       undefined,
-      2,
-      2000
+      1,
+      1000
     )
     if (json?.status === false) throw new Error(json?.message || 'status false')
     const payload = extractApiPayload(json)
@@ -311,12 +311,12 @@ async function getTikTokData(url, options = {}) {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
           Cookie: 'current_language=en',
-          'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/116.0.0.0 Mobile Safari/537.36',
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
         },
         body: new URLSearchParams({ url, hd: '1' }),
       },
-      2,
-      2000
+      1,
+      1000
     )
     if (!r?.data) throw new Error('sin datos')
     if (r.code !== 0 && r.code !== undefined) throw new Error(r.msg || 'error')
