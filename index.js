@@ -151,14 +151,32 @@ let _processing = false
 
 
 let _msgSlots = 0
+let _prioritySlots = 0
 const _MSG_LIMIT = 6
-const _acquireSlot = async () => {
+const _PRIORITY_LIMIT = 2
+
+const _acquireSlot = async (isPriority = false) => {
+  if (isPriority) {
+    while (_prioritySlots >= _PRIORITY_LIMIT) {
+      await new Promise(r => setTimeout(r, 30))
+    }
+    _prioritySlots++
+    _msgSlots++
+    return 'priority'
+  }
   while (_msgSlots >= _MSG_LIMIT) {
     await new Promise(r => setTimeout(r, 50))
   }
   _msgSlots++
+  return 'normal'
 }
-const _releaseSlot = () => { _msgSlots = Math.max(0, _msgSlots - 1) }
+
+const _releaseSlot = (type = 'normal') => {
+  _msgSlots = Math.max(0, _msgSlots - 1)
+  if (type === 'priority') {
+    _prioritySlots = Math.max(0, _prioritySlots - 1)
+  }
+}
 
 export { _acquireSlot, _releaseSlot }
 
@@ -331,7 +349,11 @@ async function startBot() {
       if (!kay?.message)                                  continue
       if (kay.key?.remoteJid === 'status@broadcast')      continue
 
-      await _acquireSlot()
+      const sender = kay.key?.participant || kay.key?.remoteJid
+      const senderNum = sender?.split('@')[0]?.replace(/\D/g, '')
+      const isOwner = global.owner?.some(o => senderNum?.includes(String(o)))
+
+      const slotType = await _acquireSlot(isOwner)
       healthCheck.recordMessage()
       
       ;(async () => {
@@ -357,7 +379,7 @@ async function startBot() {
             console.log(chalk.red('[ERROR msg]'), errorMsg.slice(0, 100))
           }
         } finally {
-          _releaseSlot()
+          _releaseSlot(slotType)
         }
       })()
     }
