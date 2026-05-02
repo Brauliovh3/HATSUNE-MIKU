@@ -1,10 +1,10 @@
 import fetch from 'node-fetch'
 
-const API_BASE = 'https://api.alyacore.xyz/nsfw'
+const API_BASE = 'https://api.alyacore.xyz/nsfw/image'
 
 async function getBoobsImage(category) {
   try {
-    const response = await fetch(`${API_BASE}/${category}`, {
+    const response = await fetch(`${API_BASE}?cat=${category}`, {
       headers: {
         'User-Agent': 'Mozilla/5.0',
         'Accept': 'image/*,text/plain'

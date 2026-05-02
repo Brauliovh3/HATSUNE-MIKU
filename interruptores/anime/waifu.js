@@ -1,11 +1,11 @@
 import fetch from 'node-fetch'
 
 async function getWaifuImage(type) {
-  const endpoint = type === 'nsfw' 
-    ? 'https://api.alyacore.xyz/nsfw/waifu'
-    : 'https://api.alyacore.xyz/sfw/waifu'
+  const baseUrl = type === 'nsfw' 
+    ? 'https://api.alyacore.xyz/nsfw/image'
+    : 'https://api.alyacore.xyz/sfw/image'
     
-  const res = await fetch(endpoint, {
+  const res = await fetch(`${baseUrl}?cat=waifu`, {
     headers: {
       'User-Agent': 'Mozilla/5.0',
       'Accept': 'image/*,text/plain'
