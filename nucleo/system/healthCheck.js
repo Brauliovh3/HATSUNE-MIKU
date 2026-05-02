@@ -30,7 +30,7 @@ class HealthCheck {
     this.schedule('stats-cleanup', () => this.cleanOldStats(), 30 * 60 * 1000);
     
    
-    this.schedule('connection-check', () => this.checkConnection(), 30 * 1000);
+    this.schedule('connection-check', () => this.checkConnection(), 2 * 60 * 1000);
     
    
     this.schedule('download-cleanup', () => this.cleanStuckDownloads(), 5 * 60 * 1000);
@@ -112,31 +112,20 @@ class HealthCheck {
     const client = global.client;
     
     if (!client) {
-      console.log(chalk.red('[HealthCheck] Cliente no disponible'));
       this.isHealthy = false;
       return;
     }
     
     
-    if (client.ws?.readyState !== 1) { 
-      console.log(chalk.red('[HealthCheck] WebSocket no está conectado'));
-      this.isHealthy = false;
-      this.stats.reconnections++;
-      
-     
-      if (client.ev?.emit) {
-        try {
-          client.ev.emit('connection.update', { 
-            connection: 'close',
-            lastDisconnect: { error: new Error('HealthCheck forced reconnect') }
-          });
-        } catch (err) {
-          console.error(chalk.red('[HealthCheck] Error forzando reconexión:'), err.message);
-        }
-      }
-    } else {
+    if (client.ws?.readyState === 1) {
       this.isHealthy = true;
       this.lastPing = Date.now();
+    } else {
+      
+      if (this.isHealthy) {
+        console.log(chalk.yellow('[HealthCheck] WebSocket desconectado, esperando reconexión natural...'));
+      }
+      this.isHealthy = false;
     }
   }
 
