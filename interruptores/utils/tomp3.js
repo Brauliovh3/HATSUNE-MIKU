@@ -20,7 +20,7 @@ export default {
       const media = await q.download()
       if (!media) throw new Error('No se pudo descargar el archivo.')
       
-      const ext = mime.split('/')[1] || 'mp4'
+      const ext = mime.split('/')[1]?.split(';')[0] || 'mp4'
       const mp3Buffer = await toMp3(media, ext)
 
       const caption = `${DIVIDER_START}\n│ 💙 *CONVERSIÓN A MP3*\n│\n│ 🎵 *Estado:* Completado ✓\n│ 🌱 *Origen:* ${mime.split('/')[1].toUpperCase()}\n${DIVIDER_END}`
@@ -30,11 +30,14 @@ export default {
         mimetype: 'audio/mpeg',
         ptt: false,
         contextInfo: {
-          ...global.miku.contextInfo,
+          isForwarded: true,
+          forwardingScore: 999,
           externalAdReply: {
-            ...global.miku.contextInfo.externalAdReply,
             title: '💙 Miku MP3 Converter',
             body: '✨ Conversión finalizada con éxito',
+            mediaType: 1,
+            thumbnailUrl: 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg',
+            renderLargerThumbnail: false
           }
         }
       }, { quoted: m })
@@ -42,7 +45,6 @@ export default {
       await m.react('✅')
     } catch (e) {
       await m.react('❌')
-      console.error(e)
       m.reply(`${DIVIDER_START}\n│ 💔 *ERROR DE CONVERSIÓN*\n│\n│ 🌱 Detalle: ${e.message}\n│ ✨ Inténtalo de nuevo.\n${DIVIDER_END}`)
     }
   }
