@@ -150,7 +150,12 @@ grupo: `╭━━━👥 GRUPOS (Admin) 👥━━━╮
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 
 nsfw: `╭━━━🔞 NSFW +18 🔞━━━╮
-│ 🔞 .waifu - Waifu NSFW
+│ 🔞 .waifu / .calata - Waifu NSFW (AlyaCore)
+│ 🔞 .boobs / .tetas - Boobs (AlyaCore)
+│ 🔞 .bigboobs / .bigtetas - Big Boobs (AlyaCore)
+│ 🔞 .pussy / .coño / .vagina - Pussy (AlyaCore)
+│ 🔞 .bikini / .nsfwbikini - Bikini (AlyaCore)
+│ 🔞 .nekonsfw / .nsfwneko / .lewdneko - Neko NSFW (AlyaCore)
 │ 🔞 .rule34 - Buscar en Rule34
 │ 🔞 .danbooru - Danbooru images
 │ 🔞 .gelbooru - Gelbooru images
@@ -166,13 +171,17 @@ nsfw: `╭━━━🔞 NSFW +18 🔞━━━╮
 │ 🔞 .grabboobs / .lickpussy / .sixnine - Interacciones
 │ 🔞 .spank / .suckboobs / .undress - Interacciones
 │ 🔞 .yuri / .yaoi / .trapito / .panties - Categorías
-│ 🔞 .tetas / .booty / .ecchi / .furro - Categorías
+│ 🔞 .booty / .ecchi / .furro - Categorías
 │ 🔞 .hentai / .nsfworgy / .randomxxx - Categorías
 │ 🔞 .pechos / .imagenlesbians / .pene - Categorías
 │ 🔞 .porno / .nsfwloli / .nsfwfoot - Categorías
 │ 🔞 .nsfwass / .nsfwbdsm / .nsfwcum - Categorías
 │ 🔞 .nsfwero / .nsfwfemdom / .nsfwglass - Categorías
-│ 🔞 .calata / .hgames / .gameh - Juegos H
+╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+╭━━━🎮 JUEGOS H 🎮━━━╮
+│ 🎮 .hgames / .juegosh / .adultgames - Lista de juegos H
+│ 🎮 .gameh - Juegos H (alternativo)
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 
 anime: `╭━━━🎌 ANIME & REACCIONES 🎌━━━╮

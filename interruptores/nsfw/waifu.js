@@ -56,7 +56,7 @@ async function getCalataImage() {
 }
 
 export default {
-  command: ['calata', 'waifunsfw'],
+  command: ['waifu', 'calata', 'waifunsfw'],
   category: 'nsfw',
   nsfw: true,
   run: async (client, m, args, usedPrefix) => {
@@ -68,7 +68,7 @@ export default {
         m.chat,
         {
           image: image.type === 'buffer' ? image.data : { url: image.data },
-          caption: '💙 *WAIFU NSFW*',
+          caption: `� *WAIFU NSFW*\n\n💙 Solicitado por: @${m.sender.split('@')[0]}`,
           mentions: [m.sender],
         },
         { quoted: m }
