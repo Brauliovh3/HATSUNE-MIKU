@@ -7,16 +7,29 @@ async function getCalataImage() {
   const res = await fetch(API_URL, {
     headers: {
       'User-Agent': 'Mozilla/5.0',
-      'Accept': 'image/*'
+      'Accept': 'image/*,text/plain'
     },
     redirect: 'follow',
   })
 
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  
+  const contentType = res.headers.get('content-type') || ''
+  
+  
+  if (contentType.includes('image')) {
+    const buffer = Buffer.from(await res.arrayBuffer())
+    if (buffer.length < 1024) throw new Error('La API devolvio una imagen vacia')
+    return { type: 'buffer', data: buffer }
+  }
+  
 
-  const buffer = Buffer.from(await res.arrayBuffer())
-  if (buffer.length < 1024) throw new Error('La API devolvio una imagen vacia')
-  return buffer
+  const text = await res.text()
+  if (text.startsWith('http')) {
+    return { type: 'url', data: text.trim() }
+  }
+  
+  throw new Error('Formato de respuesta no válido')
 }
 
 export default {
@@ -31,7 +44,7 @@ export default {
       await client.sendMessage(
         m.chat,
         {
-          image: image,
+          image: image.type === 'buffer' ? image.data : { url: image.data },
           caption: `💙 *WAIFU NSFW*\n\n💙 Solicitado por: @${m.sender.split('@')[0]}`,
           mentions: [m.sender],
         },

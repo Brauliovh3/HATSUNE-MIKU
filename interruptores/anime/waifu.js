@@ -1,34 +1,62 @@
 import fetch from 'node-fetch'
 
+async function getWaifuImage(type) {
+  const endpoint = type === 'nsfw' 
+    ? 'https://api.alyacore.xyz/nsfw/waifu'
+    : 'https://api.alyacore.xyz/sfw/waifu'
+    
+  const res = await fetch(endpoint, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0',
+      'Accept': 'image/*,text/plain'
+    },
+    redirect: 'follow'
+  })
+  
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  
+  const contentType = res.headers.get('content-type') || ''
+  
+  
+  if (contentType.includes('image')) {
+    const buffer = Buffer.from(await res.arrayBuffer())
+    if (buffer.length < 1000) throw new Error('Imagen vacía')
+    return { type: 'buffer', data: buffer }
+  }
+  
+  
+  const text = await res.text()
+  if (text.startsWith('http')) {
+    return { type: 'url', data: text.trim() }
+  }
+  
+  throw new Error('Formato de respuesta no válido')
+}
+
 export default {
   command: ['waifu'],
   category: 'anime',
-  run: async (client, m, args, usedPrefix, command, text) => {
+  run: async (client, m, args, usedPrefix, command) => {
     try {
-      const isNSFW = global.db.data.chats[m.chat].nsfw;
+      await m.react('🕒')
       
-      if (!isNSFW) {
-        const res = await fetch(`https://api.alyacore.xyz/random/${command}`, {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-          redirect: 'follow'
-        });
-        const contentType = String(res.headers.get('content-type')).toLowerCase();
-        let imagePayload;
-        if (contentType.includes('application/json')) {
-          const json = await res.json();
-          imagePayload = { url: json.url || json.data?.url || json.image };
-        } else {
-          imagePayload = await res.buffer();
-        }
-        return client.sendMessage(m.chat, { image: imagePayload, caption: `💙 Aquí tienes tu *${command.toUpperCase()}* 💙^•ﻌ•^💙` }, { quoted: m });
-      }
+      const isNSFW = global.db?.data?.chats?.[m.chat]?.nsfw || false
+      const image = await getWaifuImage(isNSFW ? 'nsfw' : 'sfw')
       
-      const res = await fetch('https://api.waifu.pics/nsfw/waifu');
-      const json = await res.json();
-      await client.sendMessage(m.chat, { image: { url: json.url }, caption: '💙 Aquí tienes tu *WAIFU* 💙^•ﻌ•^💙' }, { quoted: m });
+      const caption = isNSFW 
+        ? `🔞 *WAIFU NSFW*\n\n💙 Solicitado por: @${m.sender.split('@')[0]}`
+        : `💙 Aquí tienes tu *WAIFU* 💙^•ﻌ•^💙`
+      
+      await client.sendMessage(m.chat, {
+        image: image.type === 'buffer' ? image.data : { url: image.data },
+        caption: caption,
+        mentions: [m.sender]
+      }, { quoted: m })
+      
+      await m.react('✔️')
     } catch (e) {
       await m.react('✖️')
-      await m.reply(`💙 An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if it persists.\n> [Error: *${e.message}*]`)
+      await m.reply(`💙 Error al obtener waifu: *${e.message}*`)
     }
   },
 }

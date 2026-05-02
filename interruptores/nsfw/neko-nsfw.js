@@ -7,16 +7,28 @@ async function getNekoNsfwImage() {
     const response = await fetch(`${API_BASE}/neko`, {
       headers: {
         'User-Agent': 'Mozilla/5.0',
-        'Accept': 'image/*'
+        'Accept': 'image/*,text/plain'
       }
     })
     
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     
-    const buffer = Buffer.from(await response.arrayBuffer())
-    if (buffer.length < 1000) throw new Error('Imagen vacía')
+    const contentType = response.headers.get('content-type') || ''
     
-    return buffer
+    
+    if (contentType.includes('image')) {
+      const buffer = Buffer.from(await response.arrayBuffer())
+      if (buffer.length < 1000) throw new Error('Imagen vacía')
+      return { type: 'buffer', data: buffer }
+    }
+    
+   
+    const text = await response.text()
+    if (text.startsWith('http')) {
+      return { type: 'url', data: text.trim() }
+    }
+    
+    throw new Error('Formato de respuesta no válido')
   } catch (error) {
     console.error(`[AlyaNekoNSFW] Error:`, error.message)
     return null
@@ -39,7 +51,7 @@ export default {
       }
       
       await client.sendMessage(m.chat, {
-        image: image,
+        image: image.type === 'buffer' ? image.data : { url: image.data },
         caption: `🔞 *NEKO NSFW*\n\n💙 Solicitado por: @${m.sender.split('@')[0]}`,
         mentions: [m.sender]
       }, { quoted: m })
