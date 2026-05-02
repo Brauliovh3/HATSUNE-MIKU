@@ -89,6 +89,7 @@ async function cleanCache() {
         for (const file of files) {
           yieldCounter++
           if (yieldCounter % 10 === 0) await yield_()   
+          const filePath = path.join(dir, file)
           const stat     = await fs.promises.stat(filePath)
           if (stat.isDirectory()) {
             await cleanSessionsRecursive(filePath)
