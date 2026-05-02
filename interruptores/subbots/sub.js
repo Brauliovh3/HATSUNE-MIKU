@@ -323,22 +323,25 @@ export default {
       if (!isQR) {
         ;(async () => {
           try {
-            await new Promise(r => setTimeout(r, 3000));
+            await new Promise(r => setTimeout(r, 2000));
             if (done) return;
 
-            
             await client.sendMessage(m.chat, {
               text: MSG.codeInstructions(usedPrefix),
               ...global.miku
             }, { quoted: m });
 
             const { state } = await useMultiFileAuthState(sessionFolder);
-            if (!state.creds.registered) {
-              const code          = await sock.requestPairingCode(phoneNumber);
+            if (!state.creds.registered && !done) {
+              const codePromise = sock.requestPairingCode(phoneNumber);
+              const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Timeout generando código')), 15000)
+              );
+
+              const code = await Promise.race([codePromise, timeoutPromise]);
               const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
               if (done) return;
 
-              
               await client.sendMessage(m.chat, {
                 text: MSG.pairingCode(formattedCode),
                 ...global.miku
