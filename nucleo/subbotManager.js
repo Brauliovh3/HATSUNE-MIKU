@@ -12,7 +12,7 @@ import main       from '../main.js'
 import { smsg }   from './message.js'
 import optimizer  from './system/optimizer.js'
 import events     from '../interruptores/events.js'
-import { _acquireSlot, _releaseSlot } from '../index.js'
+import { _maybeYield } from '../index.js'
 
 if (!global.conns) global.conns = []
 
@@ -340,15 +340,13 @@ class SubBotManager {
           for (const raw of messages) {
             if (!raw.message) continue
             if (!shouldProcessRaw(sock, raw)) continue
-            await _acquireSlot()
+            _maybeYield()
             ;(async () => {
               try {
                 const m = await smsg(sock, raw)
                 if (m) await main(sock, m, messages)
               } catch (err) {
                 console.error(`Error en subbot ${sessionId}:`, err.message)
-              } finally {
-                _releaseSlot()
               }
             })()
           }

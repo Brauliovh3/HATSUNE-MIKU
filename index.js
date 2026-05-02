@@ -145,40 +145,20 @@ if (methodCodeQR) {
 let reconexion = 0
 const intentos = 15
 
-
 const _sendQueue = []
 let _processing = false
 
+let _msgCount = 0
+const _yieldEvery = 10
 
-let _msgSlots = 0
-let _prioritySlots = 0
-const _MSG_LIMIT = 6
-const _PRIORITY_LIMIT = 2
-
-const _acquireSlot = async (isPriority = false) => {
-  if (isPriority) {
-    while (_prioritySlots >= _PRIORITY_LIMIT) {
-      await new Promise(r => setTimeout(r, 30))
-    }
-    _prioritySlots++
-    _msgSlots++
-    return 'priority'
-  }
-  while (_msgSlots >= _MSG_LIMIT) {
-    await new Promise(r => setTimeout(r, 50))
-  }
-  _msgSlots++
-  return 'normal'
-}
-
-const _releaseSlot = (type = 'normal') => {
-  _msgSlots = Math.max(0, _msgSlots - 1)
-  if (type === 'priority') {
-    _prioritySlots = Math.max(0, _prioritySlots - 1)
+const _maybeYield = async () => {
+  _msgCount++
+  if (_msgCount % _yieldEvery === 0) {
+    await new Promise(r => setImmediate(r))
   }
 }
 
-export { _acquireSlot, _releaseSlot }
+export { _maybeYield }
 
 async function processQueue() {
   if (_processing) return
@@ -205,7 +185,6 @@ function enqueueMsg(fn) {
     processQueue()
   })
 }
-
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState(global.sessionName)
@@ -241,11 +220,9 @@ async function startBot() {
   sock.isInit   = false
   sock.ev.on("creds.update", saveCreds)
 
-  
   const _origSendMessage = sock.sendMessage.bind(sock)
   sock.sendMessage = (jid, content, options) =>
     enqueueMsg(() => _origSendMessage(jid, content, options))
-  
 
   if (opcion === "2" && !fs.existsSync("./Sessions/Owner/creds.json")) {
     setTimeout(async () => {
@@ -311,7 +288,6 @@ async function startBot() {
       const userName = sock.user.name || "Desconocido"
       console.log(chalk.green.bold(`💙 Conectado a: ${userName}`))
 
-     
       if (!healthCheck._started) {
         healthCheck._started = true
         healthCheck.start()
@@ -342,19 +318,14 @@ async function startBot() {
     }
   })
 
- 
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return
     for (const kay of chatUpdate.messages) {
       if (!kay?.message)                                  continue
       if (kay.key?.remoteJid === 'status@broadcast')      continue
 
-      const sender = kay.key?.participant || kay.key?.remoteJid
-      const senderNum = sender?.split('@')[0]?.replace(/\D/g, '')
-      const isOwner = global.owner?.some(o => senderNum?.includes(String(o)))
-
-      const slotType = await _acquireSlot(isOwner)
       healthCheck.recordMessage()
+      _maybeYield()
       
       ;(async () => {
         try {
@@ -378,8 +349,6 @@ async function startBot() {
               !errorMsg.includes('Internal Server Error')) {
             console.log(chalk.red('[ERROR msg]'), errorMsg.slice(0, 100))
           }
-        } finally {
-          _releaseSlot(slotType)
         }
       })()
     }
