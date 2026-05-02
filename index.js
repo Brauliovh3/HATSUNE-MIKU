@@ -149,6 +149,19 @@ const intentos = 15
 const _sendQueue = []
 let _processing = false
 
+
+let _msgSlots = 0
+const _MSG_LIMIT = 6
+const _acquireSlot = async () => {
+  while (_msgSlots >= _MSG_LIMIT) {
+    await new Promise(r => setTimeout(r, 50))
+  }
+  _msgSlots++
+}
+const _releaseSlot = () => { _msgSlots = Math.max(0, _msgSlots - 1) }
+
+export { _acquireSlot, _releaseSlot }
+
 async function processQueue() {
   if (_processing) return
   _processing = true
@@ -312,19 +325,13 @@ async function startBot() {
   })
 
  
-  let _msgSlots = 0
-  const _MSG_LIMIT = 4
-
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return
     for (const kay of chatUpdate.messages) {
       if (!kay?.message)                                  continue
       if (kay.key?.remoteJid === 'status@broadcast')      continue
-      if (_msgSlots >= _MSG_LIMIT) {
-        await new Promise(r => setImmediate(r))
-      }
-      _msgSlots++
 
+      await _acquireSlot()
       healthCheck.recordMessage()
       
       ;(async () => {
@@ -340,8 +347,6 @@ async function startBot() {
         } catch (err) {
           healthCheck.recordError(err)
           const errorMsg = err?.message || 'Unknown error'
-          
-          
           if (!errorMsg.includes('rate-overlimit') && 
               !errorMsg.includes('timed out') && 
               !errorMsg.includes('Connection Closed') &&
@@ -352,7 +357,7 @@ async function startBot() {
             console.log(chalk.red('[ERROR msg]'), errorMsg.slice(0, 100))
           }
         } finally {
-          _msgSlots--
+          _releaseSlot()
         }
       })()
     }
