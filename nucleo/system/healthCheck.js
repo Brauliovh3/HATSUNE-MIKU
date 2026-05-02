@@ -59,8 +59,10 @@ class HealthCheck {
     
     this.intervals.set(name, timer);
     
-  
-    fn().catch(() => {});
+    const result = fn();
+    if (result && typeof result.catch === 'function') {
+      result.catch(() => {});
+    }
   }
 
   cleanGallerySessions() {
