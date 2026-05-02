@@ -162,6 +162,7 @@ async function processQueue() {
     }
 
     await Promise.resolve()
+    processQueue()
   }
 
   _processing = false
@@ -171,13 +172,6 @@ function enqueueMsg(fn) {
   return new Promise((resolve, reject) => {
     _sendQueue.push({ fn, resolve, reject })
     processQueue()
-  })
-}
-
-function enqueueMsg(fn) {
-  return new Promise((resolve, reject) => {
-    _sendQueue.push({ fn, resolve, reject })
-    _flushSendQueue()
   })
 }
 
