@@ -11,6 +11,7 @@ import NodeCache  from 'node-cache'
 import main       from '../main.js'
 import { smsg }   from './message.js'
 import optimizer  from './system/optimizer.js'
+import events     from '../interruptores/events.js'
 
 if (!global.conns) global.conns = []
 
@@ -245,6 +246,8 @@ class SubBotManager {
 
             if (!optimizer.active) optimizer.start()
             optimizer.registerSession(sessionId, 'Sub', { userId: sock.userId })
+
+            try { await events(sock, null) } catch (e) {}
 
             console.log(chalk.green(`💙 Subbot conectado: ${sock.userId} (sesión: ${sessionId})`))
             return

@@ -1,7 +1,5 @@
 export default {
   command: [
-    'welcome', 'bienvenida',
-    'goodbye', 'despedida',
     'alerts', 'alertas',
     'nsfw',
     'antilink', 'antienlaces', 'antilinks',
@@ -22,10 +20,6 @@ export default {
       antilinks: 'antilinks',
       antienlaces: 'antilinks',
       antilink: 'antilinks',
-      welcome: 'welcome',
-      bienvenida: 'welcome',
-      goodbye: 'goodbye',
-      despedida: 'goodbye',
       alerts: 'alerts',
       alertas: 'alerts',
       economy: 'economy',      
@@ -43,8 +37,6 @@ export default {
     }
     const featureNames = {
       antilinks: 'el *AntiEnlace*',
-      welcome: 'el mensaje de *Bienvenida*',
-      goodbye: 'el mensaje de *Despedida*',
       alerts: 'las *Alertas*',
       economy: 'los comandos de *Economía*',
       gacha: 'los comandos de *Gacha*',
@@ -55,9 +47,6 @@ export default {
     }
     const featureTitles = {
       antilinks: 'AntiEnlace',
-      welcome: 'Bienvenida',
-      goodbye: 'Despedida',
-      alerts: 'Alertas',
       economy: 'Economía',
       gacha: 'Gacha',
       audios: 'Audios',
