@@ -116,6 +116,7 @@ utils: `╭━━━🛠️ UTILIDADES 🛠️━━━╮
 │ 🤖 .ia / .chatgpt - ChatGPT AI
 │ 🔍 .inspect - Inspeccionar código
 │ 📋 .get / .fetch - Obtener datos URL
+│ 📊 .status / .estado / .diag - Estado del bot
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 
 grupo: `╭━━━👥 GRUPOS (Admin) 👥━━━╮

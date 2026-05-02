@@ -17,6 +17,7 @@ import { smsg }      from "./nucleo/message.js"
 import db            from "./nucleo/system/database.js"
 import optimizer     from './nucleo/system/optimizer.js'
 import subBotManager from './nucleo/subbotManager.js'
+import healthCheck   from './nucleo/system/healthCheck.js'
 import { pruneGroupCache } from './nucleo/utils.js'   
 import { exec }      from "child_process"
 
@@ -281,15 +282,30 @@ async function startBot() {
         await new Promise(r => setImmediate(r))  
       }
       _msgSlots++
+      
+
+      healthCheck.recordMessage()
+      
       ;(async () => {
         try {
           kay.message = Object.keys(kay.message)[0] === 'ephemeralMessage'
             ? kay.message.ephemeralMessage.message
             : kay.message
           const m = await smsg(sock, kay)
-          if (m) main(sock, m, chatUpdate)
+          if (m) {
+            await main(sock, m, chatUpdate)
+            healthCheck.recordCommand()
+          }
         } catch (err) {
-          console.log(log.error('Error:'), err)
+          healthCheck.recordError(err)
+          const errorMsg = err?.message || 'Unknown error'
+          
+          if (!errorMsg.includes('rate-overlimit') && 
+              !errorMsg.includes('timed out') && 
+              !errorMsg.includes('Connection Closed') &&
+              !errorMsg.includes('connection lost')) {
+            console.log(log.error('Error procesando mensaje:'), errorMsg.slice(0, 100))
+          }
         } finally {
           _msgSlots--
         }

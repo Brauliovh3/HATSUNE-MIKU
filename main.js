@@ -7,10 +7,14 @@ import gradient from 'gradient-string'
 
 import seeCommands from './nucleo/system/commandLoader.js'
 import initDB      from './nucleo/system/initDB.js'
+import healthCheck from './nucleo/system/healthCheck.js'
 import antilink    from './interruptores/antilink.js'
 import level       from './interruptores/level.js'
 import { getGroupAdmins }   from './nucleo/message.js'
-import { getGroupMetadata } from './nucleo/utils.js'  
+import { getGroupMetadata } from './nucleo/utils.js'
+
+
+healthCheck.start()  
 
 seeCommands()
 
@@ -275,7 +279,7 @@ export default async (client, m) => {
       null, null, m,
     )
 
-    gallerySessions.set(sessionId, { index: newIndex, chat: m.chat, userId: session.userId, characters: userCharacters })
+    gallerySessions.set(sessionId, { index: newIndex, chat: m.chat, userId: session.userId, characters: userCharacters, lastAccess: Date.now() })
     return
   }
 
