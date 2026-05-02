@@ -21,13 +21,10 @@ function normalizeToJid(phone) {
 
 
 /**
- * 
- * 
- * 
- *
- * @param {object} client   instancia de Baileys
- * @param {string} jid      JID del grupo  (@g.us)
- * @returns {object|null}   groupMetadata o null
+
+ * @param {object} client   
+ * @param {string} jid      
+ * @returns {object|null}   
  */
 export async function getGroupMetadata(client, jid) {
   if (!jid?.endsWith('@g.us')) return null
@@ -49,7 +46,9 @@ export async function getGroupMetadata(client, jid) {
 
   const metadata = await request
   pendingMetadataRequests.delete(jid)
-  groupMetadataCache.set(jid, { metadata, timestamp: Date.now() })
+  if (metadata) {
+    groupMetadataCache.set(jid, { metadata, timestamp: Date.now() })
+  }
 
   return metadata
 }
