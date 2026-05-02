@@ -1,76 +1,93 @@
 export const menuObject = {
 economia: `╭━━━💰 ECONOMÍA & RPG 💰━━━╮
-│ 💼 .work - Trabajar y ganar dinero
-│ ⛏️ .mine - Minar recursos valiosos
-│ 🎰 .slot - Máquina tragamondas
-│ 🎲 .ruleta - Ruleta rusa por apuestas
-│ 🛒 .comprar - Comprar artículos
-│ 💸 .steal - Robar dinero a usuarios
-│ 💰 .withdraw - Retirar del banco
-│ 🎫 .weekly - Regalo semanal especial
-│ 🗓️ .monthly - Regalo mensual exclusivo
-│ 🏹 .hunt - Cazar animales
-│ 🎯 .ppt - Piedra Papel Tijera
+│ 💼 .work / .w / .chamba - Trabajar
 │ ⛏️ .mine - Minar recursos
+│ 🎰 .slots / .slot - Máquina tragamonedas
+│ 🎲 .roulette / .ruleta - Ruleta de apuestas
+│ 🛒 .comprar - Comprar artículos
+│ 💸 .steal / .rob - Robar a usuarios
+│ 💰 .withdraw - Retirar del banco
+│ 🏦 .deposit - Depositar al banco
+│ 💵 .balance / .bal - Ver balance
+│ 🎫 .weekly - Regalo semanal
+│ 🗓️ .monthly - Regalo mensual
+│ 🎁 .daily - Recompensa diaria
+│ 🏹 .hunt - Cazar animales
+│ 🎣 .fish / .pescar - Pescar peces
+│ 🐟 .pescaderia - Tienda de pesca
+│ 🎯 .ptt / .ppt - Piedra Papel Tijera
 │ 🧮 .math - Resolver matemáticas
-│ 🎇 .roulette - Ruleta de apuestas
-│ 🛕 .ritual - Ritual de invocación
-╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+│ 🏰 .dungeon - Mazmorra de aventura
+│ 🌟 .adventure - Aventura de exploración
+│ 🎭 .ritual - Ritual de invocación
+│ 🎰 .casino - Juegos de casino
+│ 🪙 .coinflip - Lanzar moneda
+│ 🗡️ .crime - Cometer crímenes
+│ 💖 .slut - Comando slut
+│ 💊 .heal - Curar heridas
+│ 📊 .economyboard / .einfo - Info economía
+│ 🎁 .cofre - Abrir cofres
+│ 💝 .givecoins - Dar monedas
+│ ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+
 gacha: `╭━━━🎯 GACHA & WAIFUS 🎯━━━╮
 │ 🎲 .rw - Invocar waifu aleatoria
-│ ❤️ .c - Reclamar personaje
-│ 🛒 .v - Vender personaje
-│ 👥 .coleccion - Colección RPG
+│ ❤️ .c / .save / .guardar / .reclamar - Reclamar personaje
+│ 🛒 .v / .sell - Vender personaje
+│ 👥 .coleccion / .collection / .col / .personajes / .harem / .waifus / .miwaifu - Colección
 │ 🎨 .gallery - Galería con imágenes
-│ 🐟 .pescar - Pescar peces
-│ 🎣 .pescaderia - Tienda de pesca
+│ 🏆 .waifupvp - Batalla PVP
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+
 downloads: `╭━━━📥 DESCARGAS 📥━━━╮
-│ 🎵 .play - Música/video de YouTube
-│ 📱 .tiktok - Videos de TikTok
-│ 📷 .instagram - Posts de Instagram
-│ 💙 .facebook - Videos de Facebook
-│ 📁 .mediafire - Archivos MediaFire
-│ 🐦 .twitter - Videos Twitter/X
-│ 🎬 .ytmp3 - YouTube a MP3
-│ 🎬 .ytmp4 - YouTube a MP4
-│ 📌 .pinvid - Videos de Pinterest
-│ 📦 .terabox - Archivos Terabox
-│ 🌿 .gitclone - Clonar repositorios
+│ 🎵 .play - Música/video YouTube
+│ 📱 .tiktok / .tt - Videos TikTok
+│ 🔍 .tiktoksearch / .ttsearch / .tts - Buscar TikTok
+│ 🖼️ .tiktokimg / .ttimg - Imágenes TikTok
+│ 🎵 .tiktokmp3 / .ttmp3 - Audio TikTok
+│ 📷 .instagram / .ig - Posts Instagram
+│ 💙 .facebook / .fb - Videos Facebook
+│ 📁 .mediafire / .mf - Archivos MediaFire
+│ 🐦 .twitter / .x - Videos Twitter/X
+│ 🎬 .ytmp3 / .ytmp4 - YouTube directo
+│ 📌 .pinterest / .pinvid - Videos Pinterest
+│ 🌿 .gitclone - Clonar repos
 │ 📲 .apk - APKs de Aptoide
 │ 🎥 .imagen - Imagen de URL
 │ 📁 .grive - Google Drive
-│ 🎮 .gameh - Juegos H+18
+│ 🔍 .ytsearch / .search - Buscar YouTube
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+
 profile: `╭━━━📝 PERFIL & USUARIO 📝━━━╮
 │ 👤 .profile - Ver perfil completo
-│ 💍 .marry - Casarse con alguien
+│ 💍 .marry - Casarse
 │ 💔 .divorce - Divorciarse
 │ ⚥ .setgenre - Establecer género
 │ ❌ .delgenre - Eliminar género
-│ 🎂 .setbirth - Fecha de nacimiento
+│ 🎂 .setbirth - Fecha nacimiento
 │ ❌ .delbirth - Eliminar fecha
 │ 📄 .setdesc - Establecer descripción
 │ ❌ .deldesc - Eliminar descripción
 │ 🎮 .sethobby - Establecer hobby
-│ 🏆 .lb - Top usuarios por XP
-│ 📊 .level - Ver nivel actual
-│ 📈 .lboard - Ranking de niveles
+│ 🏆 .lb / .levelboard - Top por XP
+│ 📊 .level - Ver nivel
+│ 📈 .lboard - Ranking niveles
 │ 😴 .afk - Modo ausente
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+
 sockets: `╭━━━⚙️ INFORMACIÓN & CONFIG ⚙️━━━╮
 │ 📡 .ping - Velocidad del bot
 │ 📊 .status - Estado del bot
 │ 🤖 .bots - Lista de subbots
-│ 💙 .sub - Vincular subbot
+│ 💙 .sub / .subbot - Vincular subbot
 │ 🗑️ .deletebot - Desvincular subbot
 │ ℹ️ .infobot - Información completa
-│  .suggest - Sugerir comando
+│ 💡 .suggest - Sugerir comando
 │ 🐛 .reporte - Reportar errores
 │ 🚪 .leave - Salir del grupo
 │ ➕ .join - Unirse a grupo
-│ 📝 .setname - Cambiar nombre
-│ 🖼️ .setpfp - Cambiar foto
+│ 📝 .setname - Cambiar nombre bot
+│ 🖼️ .setpfp - Cambiar foto bot
 │ 📋 .setstatus - Cambiar estado
 │ 🔗 .setlink - Cambiar enlace
 │ 🎨 .setbanner - Cambiar banner
@@ -79,39 +96,45 @@ sockets: `╭━━━⚙️ INFORMACIÓN & CONFIG ⚙️━━━╮
 │ 💰 .setcurrency - Cambiar moneda
 │ 🔤 .setprefix - Cambiar prefijo
 │ 🤖 .self - Modo self
+│ 🔔 .bc / .broadcast - Anuncio global
+│ 📢 .canalpost - Publicar en canal
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
-utils: `╭━━━🛠️ HERRAMIENTAS 🛠️━━━╮
-│ 🌤️ .translate - Traducir texto
-│ ✨ .hd - Mejorar calidad imagen
-│ 🧮 .math - Calculadora
+
+utils: `╭━━━🛠️ UTILIDADES 🛠️━━━╮
+│ 🌐 .translate / .trad / .traducir - Traducir texto
+│ ✨ .hd / .enhance / .remini - Mejorar imagen
+│ 🧮 .math / .calc - Calculadora
 │ 🎭 .say - Repetir mensaje
-│ 👁️ .read - Ver imágenes vista única
-│ 📸 .ss - Screenshot de web
+│ 👁️ .read / .readviewonce / .readvo - Ver imagen única
+│ 📸 .ss / .ssweb - Screenshot web
 │ 🪷 .get - Descargar de URL
-│ 🖼️ .getpic - Obtener imagen
+│ 🖼️ .getpic / .pfp - Obtener imagen perfil
 │ 🌐 .tourl - Convertir a URL
 │ 🖼️ .toimg - Sticker a imagen
-│ 🌿 .gitclone - Clonar repositorios
-│ 🤖 .ia - ChatGPT AI
+│ 🎵 .tomp3 / .toaudio / .mp3 - Video a MP3
+│ 🌿 .gitclone - Clonar repos
+│ 🤖 .ia / .chatgpt - ChatGPT AI
 │ 🔍 .inspect - Inspeccionar código
+│ 📋 .get / .fetch - Obtener datos URL
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
-grupo: `╭━━━👥 GRUPOS Solo admins 👥━━━╮
-│ 👻 .hidetag - Mencionar todos oculto
+
+grupo: `╭━━━👥 GRUPOS (Admin) 👥━━━╮
+│ 👻 .hidetag - Mencionar oculto
 │ 🦵 .kick - Eliminar usuario
-│ ➕ .add - Invitar usuario
+│ ➕ .add / .invitar - Invitar usuario
 │ ⬆️ .promote - Dar admin
 │ ⬇️ .demote - Quitar admin
 │ 🔗 .link - Enlace del grupo
-│  .revoke - Restablecer enlace
+│ 🔄 .revoke - Restablecer enlace
 │ 🔓 .open - Abrir grupo
 │ 🔒 .close - Cerrar grupo
 │ ⚠️ .warn - Advertir usuario
 │ ✅ .delwarn - Quitar advertencias
 │ 📋 .warns - Ver advertidos
-│ 👑 .admins - Lista de administradores
-│ ℹ️ .gp - Info del grupo
-│  .fantasmas - Ver inactivos
-│ 📢 .tagall - Invocar todos
+│ 👑 .admins - Lista de admins
+│ ℹ️ .gp / .grupoinfo - Info del grupo
+│ 👻 .fantasmas - Ver inactivos
+│ 📢 .tagall / .invocar - Invocar todos
 │ 🪬 .setwelcome - Bienvenida
 │ 🪬 .setgoodbye - Despedida
 │ 📝 .setgpname - Nombre grupo
@@ -121,8 +144,11 @@ grupo: `╭━━━👥 GRUPOS Solo admins 👥━━━╮
 │ ⚠️ .setwarnlimit - Límite warns
 │ 🔓 .enable - Activar función
 │ 🔒 .disable - Desactivar función
+│ 🚫 .antilink - Anti-enlaces
+│ 🛡️ .ban - Banear usuario
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
-nsfw: `╭━━━🔞 NSFW Solo +18 🔞━━━╮
+
+nsfw: `╭━━━🔞 NSFW +18 🔞━━━╮
 │ 🔞 .waifu - Waifu NSFW
 │ 🔞 .rule34 - Buscar en Rule34
 │ 🔞 .danbooru - Danbooru images
@@ -130,93 +156,66 @@ nsfw: `╭━━━🔞 NSFW Solo +18 🔞━━━╮
 │ 🔞 .xvideos - Videos XVideos
 │ 🔞 .xnxx - Videos XNXX
 │ 🔞 .teta - Imágenes específicas
-│ 🔞 .anal - Contenido anal
-│ 🔞 .blowjob - Hacer mamada
-│ 🔞 .boobjob - Hacer rusa
-│ 🔞 .cum - Venirse
-│ 🔞 .fap - Hacerse paja
-│ 🔞 .pack - Pack imágenes
-│ 🔞 .pack2 - Pack chicas
-│ 🔞 .pack3 - Pack hombres
-│ 🔞 .videoxxx - Videos XXX
-│ 🔞 .videoxxxlesbi - Videos lesbianas
+│ 🔞 .anal / .boobjob / .blowjob - Contenido +18
+│ 🔞 .cum / .fap - Contenido +18
+│ 🔞 .pack / .pack2 / .pack3 - Packs imágenes
+│ 🔞 .videoxxx / .videoxxxlesbi - Videos XXX
 │ 🔞 .ppcouple - Parejas
-│ 🔞 .footjob - Paja con pies
-│ 🔞 .fuck - Follar
-│ 🔞 .violar - Violar
-│ 🔞 .grabboobs - Agarrar pechos
-│ 🔞 .lickpussy - Lamer coño
-│ 🔞 .sixnine - Hacer 69
-│ 🔞 .spank - Dar nalgada
-│ 🔞 .suckboobs - Chupar pechos
-│ 🔞 .undress - Desnudar
-│ 🔞 .yuri - Tijeras lésbicas
-│ 🔞 .yaoi - Yaoi images
-│ 🔞 .trapito - Trap images
-│ 🔞 .panties - Panties images
-│ 🔞 .tetas - Tetas images
-│ 🔞 .booty - Booty images
-│ 🔞 .ecchi - Ecchi images
-│ 🔞 .furro - Furro images
-│ 🔞 .hentai - Hentai images
-│ 🔞 .nsfworgy - Orgy images
-│ 🔞 .randomxxx - Random XXX
-│ 🔞 .pechos - Pechos images
-│ 🔞 .imagenlesbians - Lesbian images
-│ 🔞 .pene - Pene images
-│ 🔞 .porno - Porno images
-│ 🔞 .nsfwloli - Loli NSFW
-│ 🔞 .nsfwfoot - Foot NSFW
-│ 🔞 .nsfwass - Ass NSFW
-│ 🔞 .nsfwbdsm - BDSM NSFW
-│ 🔞 .nsfwcum - Cum NSFW
-│ 🔞 .nsfwero - Ero NSFW
-│ 🔞 .nsfwfemdom - Femdom NSFW
-│ 🔞 .nsfwglass - Glass NSFW
-│ 🔞 .calata - Calata images
-│ 🎮 .hgames - Juegos H APKs
+│ 🔞 .footjob / .fuck / .violar - Interacciones +18
+│ 🔞 .grabboobs / .lickpussy / .sixnine - Interacciones
+│ 🔞 .spank / .suckboobs / .undress - Interacciones
+│ 🔞 .yuri / .yaoi / .trapito / .panties - Categorías
+│ 🔞 .tetas / .booty / .ecchi / .furro - Categorías
+│ 🔞 .hentai / .nsfworgy / .randomxxx - Categorías
+│ 🔞 .pechos / .imagenlesbians / .pene - Categorías
+│ 🔞 .porno / .nsfwloli / .nsfwfoot - Categorías
+│ 🔞 .nsfwass / .nsfwbdsm / .nsfwcum - Categorías
+│ 🔞 .nsfwero / .nsfwfemdom / .nsfwglass - Categorías
+│ 🔞 .calata / .hgames / .gameh - Juegos H
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+
 anime: `╭━━━🎌 ANIME & REACCIONES 🎌━━━╮
-│ 🤗 .hug - Dar abrazos
-│ 😘 .kiss - Dar besos
-│ 🤲 .pat - Acariciar cabeza
-│ 👋 .slap - Abofetear
-│ 😢 .cry - Llorar
-│ 😊 .happy - Estar feliz
-│ 😠 .angry - Estar enojado
-│ ❤️ .love - Enamorarse
-│ 🦷 .bite - Morder
-│ 😝 .bleh - Sacar lengua
-│ 😳 .blush - Sonrojarse
-│ 😑 .bored - Estar aburrido
-│ 🤗 .cuddle - Acurrucarse
-│ 💃 .dance - Bailar
-│ 🍺 .drunk - Estar borracho
-│ 🍽️ .eat - Comer
+│ 🤗 .hug / .abrazar - Dar abrazos
+│ 😘 .kiss / .besar / .muak / .blowkiss / .besito - Dar besos
+│ 🤲 .pat / .acariciar - Acariciar cabeza
+│ 👋 .slap / .bofetada - Abofetear
+│ 😢 .cry / .llorar - Llorar
+│ 😊 .happy / .feliz - Estar feliz
+│ 😠 .angry / .enojado / .enojada - Enojarse
+│ ❤️ .love / .amor - Enamorarse
+│ 🦷 .bite / .morder - Morder
+│ 😝 .bleh / .sacar la lengua - Sacar lengua
+│ 😳 .blush / .sonrojarse - Sonrojarse
+│ 😑 .bored / .aburrido / .aburrida - Aburrimiento
+│ 🤗 .cuddle / .acurrucar - Acurrucarse
+│ 💃 .dance / .bailar - Bailar
+│ 🍺 .drunk / .borracho / .borracha - Estar borracho
+│ 🍽️ .eat / .comer / .nom - Comer
 │ 🤦 .facepalm - Palmada en cara
 │ 🤰 .impregnate - Embarazar
-│ ⚰️ .kill - Matar
-│ 😂 .laugh - Reírse
-│ 👅 .lick - Lamer
-│ 👉 .poke - Picar
-│ 😤 .pout - Hacer pucheros
-│ 👊 .punch - Dar puñetazo
-│ 🏃 .run - Correr
-│ 😔 .sad - Estar triste
-│ 😨 .scared - Estar asustado
-│ 😏 .seduce - Seducir
-│ 😳 .shy - Sentir timidez
+│ ⚰️ .kill / .matar - Matar
+│ 😂 .laugh / .reir - Reírse
+│ 👅 .lick / .lamer - Lamer
+│ 👉 .poke / .tocar - Picar
+│ 😤 .pout / .hacer pucheros - Hacer pucheros
+│ 👊 .punch / .golpear - Dar puñetazo
+│ 🏃 .run / .correr - Correr
+│ 😔 .sad / .triste - Estar triste
+│ 😨 .scared / .asustado - Estar asustado
+│ 😏 .seduce / .seducir - Seducir
+│ 😳 .shy / .timido / .timida - Sentir timidez
 │ 🌅 .dias - Buenos días
 │ 🌃 .noches - Buenas noches
-│ 😴 .sleep - Irse a dormir
-│ 🚬 .smoke - Fumar
-│ 🤔 .think - Pensar
-│ 👫 .neko - Neko girls
-│ 👧 .loli - Loli images
-│ 💑 .ppcouple - Parejas anime
+│ 😴 .sleep / .dormir - Irse a dormir
+│ 🚬 .smoke / .fumar - Fumar
+│ 🤔 .think / .pensar - Pensar
+│ 👫 .neko / .loli - Neko/Loli girls
+│ 💑 .ppcouple / .ppcp - Parejas anime
+│ 🐱 .waifu - Waifu random
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+
 stickers: `╭━━━🎨 STICKERS 🎨━━━╮
-│ 🎨 .s/.sticker - Crear sticker
+│ 🎨 .s / .sticker - Crear sticker
 │ 📦 .newpack - Crear pack
 │ 📋 .packlist - Ver packs
 │ 📦 .getpack - Obtener pack
@@ -233,12 +232,58 @@ stickers: `╭━━━🎨 STICKERS 🎨━━━╮
 │ 🎥 .bratv - Video a sticker
 │ 🧩 .emojimix - Mezclar emojis
 │ 🎨 .stickers - Menú stickers
+│ 🖼️ .take - Robar sticker
+│ ✏️ .rename - Renombrar sticker
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
-owner: `╭━━━👑 OWNER Solo dueño 👑━━━╮
+
+owner: `╭━━━👑 OWNER (Dueño) 👑━━━╮
 │ 🔄 .restart - Reiniciar bot
 │ 🧹 .clear - Limpiar chat
 │ 🎨 .tarjeta - Crear tarjeta
-│ 📢 .canalpost - Publicar en canal
+│ 💰 .addcoins - Agregar monedas
+│ 💰 .removecoins - Quitar monedas
+│ 👑 .addowner - Agregar owner
+│ ❌ .delowner - Quitar owner
+│ 📝 .setglobalprefix - Prefijo global
+│ 🚫 .banuser - Banear usuario
+│ ✅ .unbanuser - Desbanear usuario
+│ 📊 .userlist - Lista de usuarios
+│ 📋 .inspect - Inspeccionar
+│ ⚡ .exec - Ejecutar código
+│ 💻 .eval - Evaluar código
+│ 🔧 .fix - Reparar base de datos
+│ 💾 .backup - Respaldo
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 }
+
 export const bodyMenu = Object.values(menuObject).join('\n\n');
+
+
+export const categoryAliases = {
+  anime: ['anime', 'reacciones'],
+  downloads: ['downloads', 'descargas', 'downloader'],
+  economia: ['economia', 'economy', 'eco', 'rpg'],
+  gacha: ['gacha', 'waifus'],
+  grupo: ['grupo', 'group', 'admins'],
+  nsfw: ['nsfw', '+18', 'adulto'],
+  owner: ['owner', 'dueño', 'creador'],
+  profile: ['profile', 'perfil', 'user'],
+  sockets: ['sockets', 'bots', 'config', 'info'],
+  stickers: ['stickers', 'sticker'],
+  utils: ['utils', 'utilidades', 'herramientas', 'tools']
+};
+
+
+export const categoryNames = {
+  anime: '🎌 ANIME',
+  downloads: '📥 DESCARGAS',
+  economia: '💰 ECONOMÍA & RPG',
+  gacha: '🎯 GACHA',
+  grupo: '👥 GRUPOS',
+  nsfw: '🔞 NSFW',
+  owner: '👑 OWNER',
+  profile: '📝 PERFIL',
+  sockets: '⚙️ CONFIG',
+  stickers: '🎨 STICKERS',
+  utils: '🛠️ UTILIDADES'
+};
