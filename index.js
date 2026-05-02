@@ -146,19 +146,32 @@ let reconexion = 0
 const intentos = 15
 
 
-const _sendQueue   = []
-let   _sendRunning = false
+const _sendQueue = []
+let _processing = false
 
-async function _flushSendQueue() {
-  if (_sendRunning) return
-  _sendRunning = true
-  while (_sendQueue.length > 0) {
+async function processQueue() {
+  if (_processing) return
+  _processing = true
+
+  while (_sendQueue.length) {
     const { fn, resolve, reject } = _sendQueue.shift()
-    try { resolve(await fn()) } catch (e) { reject(e) }
-    
-    if (_sendQueue.length > 0) await new Promise(r => setTimeout(r, 300))
+    try {
+      resolve(await fn())
+    } catch (e) {
+      reject(e)
+    }
+
+    await Promise.resolve()
   }
-  _sendRunning = false
+
+  _processing = false
+}
+
+function enqueueMsg(fn) {
+  return new Promise((resolve, reject) => {
+    _sendQueue.push({ fn, resolve, reject })
+    processQueue()
+  })
 }
 
 function enqueueMsg(fn) {
