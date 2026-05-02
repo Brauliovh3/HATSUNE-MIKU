@@ -17,7 +17,7 @@ export default {
     const target = who ? chatData.users[who] : healer
     if (!target) return m.reply(`💙 El usuario no se encuentra en la base de Datos.`)
     if (target.health >= 100) {
-      const maximo = who ? `💙 La salud de *${db.users[who]?.name || who.split('@')[0]}* ya está al máximo, Salud actual: ${target.health}` : `ꕥ Tu salud ya está al máximo, Salud actual: ${target.health}`
+      const maximo = who ? `💙 La salud de *${db.users[who]?.name || who.split('@')[0]}* ya está al máximo, Salud actual: ${target.health}` : `❤ Tu salud ya está al máximo, Salud actual: ${target.health}`
       return m.reply(maximo)
     }
     const faltante = 100 - target.health
@@ -25,7 +25,7 @@ export default {
     const costo = bloques * 500
     const totalFondos = healer.coins + (healer.bank || 0)
     if (totalFondos < costo) {
-      const fondos = who ? `💙 No tienes suficientes ${currency} para curar a *${db.users[who]?.name || who.split('@')[0]}*.\n> Necesitas *🌱${costo.toLocaleString()} ${currency}* para curar ${faltante} puntos de salud.` : `ꕥ No tienes suficientes ${currency} para curarte.\n> Necesitas *🌱${costo.toLocaleString()} ${currency}* para curar ${faltante} puntos de salud.`
+      const fondos = who ? `💙 No tienes suficientes ${currency} para curar a *${db.users[who]?.name || who.split('@')[0]}*.\n> Necesitas *🌱${costo.toLocaleString()} ${currency}* para curar ${faltante} puntos de salud.` : `💙 No tienes suficientes ${currency} para curarte.\n> Necesitas *🌱${costo.toLocaleString()} ${currency}* para curar ${faltante} puntos de salud.`
       return m.reply(fondos)
     }
     if (healer.coins >= costo) {
