@@ -388,16 +388,21 @@ export default async (client, m) => {
       let pending = beforeEntries.length
       if (pending === 0) { resolve(false); return }
 
+      const safeResolve = (() => { let done = false; return (v) => { if (!done) { done = true; resolve(v) } } })()
+
       for (const [name, plugin] of beforeEntries) {
         ;(async () => {
           try {
-            const result = await plugin.before.call(client, m, { client })
-            if (result) resolve(true)
+            const result = await Promise.race([
+              plugin.before.call(client, m, { client }),
+              new Promise(r => setTimeout(() => r(false), 8000)),  
+            ])
+            if (result) safeResolve(true)
           } catch (err) {
             console.error(`Error en plugin.before -> ${name}`, err)
           } finally {
             pending--
-            if (pending === 0) resolve(false)
+            if (pending === 0) safeResolve(false)
           }
         })()
       }

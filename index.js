@@ -55,6 +55,8 @@ if (!fs.existsSync('./tmp')) fs.mkdirSync('./tmp', { recursive: true })
 
 
 let isCleaning = false
+const yield_ = () => new Promise(r => setImmediate(r))  
+
 async function cleanCache() {
   if (isCleaning) return
   isCleaning = true
@@ -65,7 +67,7 @@ async function cleanCache() {
       if (!fs.existsSync(tmpFolder)) continue
       const files = await fs.promises.readdir(tmpFolder)
       for (let i = 0; i < files.length; i++) {
-        if (i % 50 === 0) await new Promise(r => setTimeout(r, 5))
+        if (i % 10 === 0) await yield_()   
         try {
           const filePath = path.join(tmpFolder, files[i])
           const stat     = await fs.promises.stat(filePath)
@@ -86,8 +88,7 @@ async function cleanCache() {
         const files = await fs.promises.readdir(dir)
         for (const file of files) {
           yieldCounter++
-          if (yieldCounter % 50 === 0) await new Promise(r => setTimeout(r, 5))
-          const filePath = path.join(dir, file)
+          if (yieldCounter % 10 === 0) await yield_()   
           const stat     = await fs.promises.stat(filePath)
           if (stat.isDirectory()) {
             await cleanSessionsRecursive(filePath)
@@ -104,7 +105,6 @@ async function cleanCache() {
       if (cleanedSessions > 0) log.warn(`Optimización: ${cleanedSessions} llaves antiguas eliminadas`)
     }
 
-    
     pruneGroupCache()
 
   } catch (e) {
@@ -267,11 +267,19 @@ async function startBot() {
     }
   })
 
+  
+  let _msgSlots = 0
+  const _MSG_LIMIT = 8
+
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return
     for (const kay of chatUpdate.messages) {
       if (!kay?.message)                                  continue
       if (kay.key?.remoteJid === 'status@broadcast')      continue
+      if (_msgSlots >= _MSG_LIMIT) {
+        await new Promise(r => setImmediate(r))  
+      }
+      _msgSlots++
       ;(async () => {
         try {
           kay.message = Object.keys(kay.message)[0] === 'ephemeralMessage'
@@ -281,6 +289,8 @@ async function startBot() {
           if (m) main(sock, m, chatUpdate)
         } catch (err) {
           console.log(log.error('Error:'), err)
+        } finally {
+          _msgSlots--
         }
       })()
     }
