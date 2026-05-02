@@ -1,25 +1,39 @@
-import ws       from 'ws'
 import moment   from 'moment'
 import chalk    from 'chalk'
-import fs       from 'fs'
-import path     from 'path'
 import gradient from 'gradient-string'
 
 import seeCommands from './nucleo/system/commandLoader.js'
 import initDB      from './nucleo/system/initDB.js'
-import healthCheck from './nucleo/system/healthCheck.js'
 import antilink    from './interruptores/antilink.js'
 import level       from './interruptores/level.js'
-import { getGroupAdmins }   from './nucleo/message.js'
-import { getGroupMetadata } from './nucleo/utils.js'
 
 
-
+const getGroupMetadata = async (client, jid) => {
+  const { getGroupMetadata: fn } = await import('./nucleo/utils.js')
+  return fn(client, jid)
+}
 
 seeCommands()
 
 global.gallerySessions = global.gallerySessions || new Map()
 
+
+function runAllPlugins(tasks) {
+  if (tasks.length === 0) return
+  for (const task of tasks) {
+    task().catch(() => {})
+  }
+}
+
+
+function safeMsg(fn) {
+  return fn().catch(err => {
+    const msg = err?.message || ''
+    if (msg.includes('rate-overlimit') || msg.includes('429') ||
+        msg.includes('Internal Server Error') || msg.includes('timed out')) return
+    throw err
+  })
+}
 
 const normalizeJidDigits    = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 const getBotJid             = (client) => (client.user?.id?.split(':')[0] || client.user?.lid || '') + '@s.whatsapp.net'
@@ -29,31 +43,6 @@ const isPrimaryHandler      = (client, chat) => {
   if (!assignedBot) return true
   return normalizeJidDigits(assignedBot) === normalizeJidDigits(getBotJid(client))
 }
-
-
-async function runWithLimit(tasks, limit = 5) {
-  const pool = []
-  for (const task of tasks) {
-    const p = task().finally(() => pool.splice(pool.indexOf(p), 1))
-    pool.push(p)
-    if (pool.length >= limit) await Promise.race(pool)
-  }
-  if (pool.length) await Promise.all(pool)
-}
-
-
-// en operaciones como delete, react, readMessages que no son críticas.
-function safeMsg(fn) {
-  return fn().catch(err => {
-    const msg = err?.message || ''
-    if (
-      msg.includes('rate-overlimit') || msg.includes('429') ||
-      msg.includes('Internal Server Error') || msg.includes('timed out')
-    ) return
-    throw err
-  })
-}
-
 
 export default async (client, m) => {
   const sender = m.sender
@@ -317,17 +306,24 @@ export default async (client, m) => {
 
   
   let groupMetadata = null
-  let groupAdmins   = []
-  let groupName     = ''
+  let groupAdmins   = null
+  let groupName     = null
+  let _groupContextPromise = null
 
   const ensureGroupContext = async () => {
-    if (!m.isGroup || groupMetadata) return
+    if (!m.isGroup || groupAdmins) return
+    if (_groupContextPromise) return _groupContextPromise
     
-    groupMetadata = await getGroupMetadata(client, m.chat)
-    groupName     = groupMetadata?.subject || groupName
-    groupAdmins   = groupMetadata?.participants.filter(
-      p => p.admin === 'admin' || p.admin === 'superadmin'
-    ) || []
+    _groupContextPromise = getGroupMetadata(client, m.chat).then(meta => {
+      groupMetadata = meta
+      groupName = meta?.subject || ''
+      groupAdmins = meta?.participants?.filter(
+        p => p.admin === 'admin' || p.admin === 'superadmin'
+      ) || []
+    }).catch(() => {
+      groupAdmins = []
+    })
+    return _groupContextPromise
   }
 
   let isBotAdmins = false
@@ -339,24 +335,22 @@ export default async (client, m) => {
   ].includes(sender)
 
   
-  const allTasks = Object.entries(global.plugins)
+  const allPlugins = Object.entries(global.plugins)
     .filter(([, p]) => p && typeof p.all === 'function')
-    .map(([name, plugin]) => async () => {
-      try {
-        await plugin.all.call(client, m, { client })
-      } catch (err) {
-        console.error(`Error en plugin.all -> ${name}`, err)
-      }
+  if (allPlugins.length > 0) {
+    const allTasks = allPlugins.map(([name, plugin]) => async () => {
+      try { await plugin.all.call(client, m, { client }) } catch {}
     })
-  runWithLimit(allTasks, 5).catch(() => {})  
+    runAllPlugins(allTasks)
+  }
 
-  
+
   const today = new Date().toLocaleDateString('es-CO', {
     timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit',
   }).split('/').reverse().join('-')
 
-  if (!users.stats)          users.stats          = {}
-  if (!users.stats[today])   users.stats[today]   = { msgs: 0, cmds: 0 }
+  if (!users.stats)        users.stats        = {}
+  if (!users.stats[today]) users.stats[today] = { msgs: 0, cmds: 0 }
   users.stats[today].msgs++
 
   
@@ -397,35 +391,37 @@ export default async (client, m) => {
   let match = matchs.find(p => p[0])
 
   
-  if (global.plugins && Object.keys(global.plugins).length > 0) {
+  if (global.plugins && m.command) {
     const beforeEntries = Object.entries(global.plugins)
       .filter(([, p]) => p && !p.disabled && typeof p.before === 'function')
-
     
-    const handled = await new Promise((resolve) => {
-      let pending = beforeEntries.length
-      if (pending === 0) { resolve(false); return }
-
-      const safeResolve = (() => { let done = false; return (v) => { if (!done) { done = true; resolve(v) } } })()
-
-      for (const [name, plugin] of beforeEntries) {
-        ;(async () => {
+    
+    if (beforeEntries.length > 10) {
+      const cmdData = global.comandos.get(m.command)
+      if (cmdData?.pluginName) {
+        const plugin = global.plugins[cmdData.pluginName]
+        if (plugin?.before) {
           try {
             const result = await Promise.race([
               plugin.before.call(client, m, { client }),
-              new Promise(r => setTimeout(() => r(false), 8000)),  
+              new Promise(r => setTimeout(() => r(false), 2000)),
             ])
-            if (result) safeResolve(true)
-          } catch (err) {
-            console.error(`Error en plugin.before -> ${name}`, err)
-          } finally {
-            pending--
-            if (pending === 0) safeResolve(false)
-          }
-        })()
+            if (result) return
+          } catch {}
+        }
       }
-    })
-    if (handled) return
+    } else if (beforeEntries.length > 0) {
+      
+      const results = await Promise.allSettled(
+        beforeEntries.map(([, p]) => 
+          Promise.race([
+            p.before.call(client, m, { client }),
+            new Promise(r => setTimeout(() => r(false), 3000))
+          ])
+        )
+      )
+      if (results.some(r => r.value === true)) return
+    }
   }
 
   if (!match) return
@@ -454,25 +450,22 @@ export default async (client, m) => {
     if (normalizeJidDigits(botprimaryId) !== normalizeJidDigits(botJid) && command !== 'setprimary') return
   }
 
-  if (!isOwners && settings.self)   return
-  if (m.chat && !m.chat.endsWith('g.us')) {
-    const allowedInPrivate = ['allmenu','help','menu','infobot','botinfo','invite','invitar','ping','speed','p','status','estado','report','reporte','sug','suggest','token','join','unir','logout','reload','self','setbanner','setbotbanner','setchannel','setbotchannel','setbotcurrency','setcurrency','seticon','setboticon','setlink','setbotlink','setbotname','setname','setbotowner','setowner','setimage','setpfp','setprefix','setbotprefix','setstatus','setusername','code','qr']
-    if (!global.owner.map(n => n + '@s.whatsapp.net').includes(sender) && !allowedInPrivate.includes(command)) return
-  }
-  if (chat?.isBanned && !/^(bot|banchat|unbanchat|enable|disable|options)$/i.test(command)) return
-  if (m.text && user.banned && !global.owner.map(n => n + '@s.whatsapp.net').includes(sender)) {
-    await m.reply(`💙 Estás ${user.genre === 'Mujer' ? 'baneada' : user.genre === 'Hombre' ? 'baneado' : 'baneado/a'}, no puedes usar comandos en este bot!\n\n> 🌱 *Razón ›* ${user.bannedReason || 'Sin especificar'}\n\n> 🌱 Si tienes evidencia que respalde que este mensaje es un error, puedes exponer tu caso con un moderador.`)
-    return
-  }
+if (!isOwners && settings.self)   return
+if (m.chat && !m.chat.endsWith('g.us')) {
+  const allowedInPrivate = ['allmenu','help','menu','infobot','botinfo','invite','invitar','ping','speed','p','status','estado','report','reporte','sug','suggest','token','join','unir','logout','reload','self','setbanner','setbotbanner','setchannel','setbotchannel','setbotcurrency','setcurrency','seticon','setboticon','setlink','setbotlink','setbotname','setname','setbotowner','setowner','setimage','setpfp','setprefix','setbotprefix','setstatus','setusername','code','qr']
+  if (!global.owner.map(n => n + '@s.whatsapp.net').includes(sender) && !allowedInPrivate.includes(command)) return
+}
+if (chat?.isBanned && !/^(bot|banchat|unbanchat|enable|disable|options)$/i.test(command)) return
+if (m.text && user.banned && !global.owner.map(n => n + '@s.whatsapp.net').includes(sender)) {
+  await m.reply(`💙 Estás ${user.genre === 'Mujer' ? 'baneada' : user.genre === 'Hombre' ? 'baneado' : 'baneado/a'}, no puedes usar comandos en este bot!\n\n> 🌱 *Razón ›* ${user.bannedReason || 'Sin especificar'}\n\n> 🌱 Si tienes evidencia que respalde que este mensaje es un error, puedes exponer tu caso con un moderador.`)
+  return
+}
 
-  if (!users.stats)        users.stats        = {}
-  if (!users.stats[today]) users.stats[today] = { msgs: 0, cmds: 0 }
-
-  if (m.isGroup && chat.adminonly) {
-    await ensureGroupContext()
-    isAdmins = groupAdmins.some(p => p.phoneNumber === sender || p.jid === sender || p.id === sender || p.lid === sender)
-  }
-  if (chat.adminonly && !isAdmins) return
+if (m.isGroup && chat.adminonly) {
+  await ensureGroupContext()
+  isAdmins = groupAdmins.some(p => p.phoneNumber === sender || p.jid === sender || p.id === sender || p.lid === sender)
+}
+if (chat.adminonly && !isAdmins) return
 
   
   const cmdData = global.comandos.get(command)
