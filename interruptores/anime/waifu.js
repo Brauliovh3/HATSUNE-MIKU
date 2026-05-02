@@ -1,7 +1,7 @@
 import fetch from 'node-fetch'
 
 export default {
-  command: ['waifu', 'neko'],
+  command: ['waifu'],
   category: 'anime',
   run: async (client, m, args, usedPrefix, command, text) => {
     try {

@@ -150,7 +150,7 @@ grupo: `╭━━━👥 GRUPOS (Admin) 👥━━━╮
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 
 nsfw: `╭━━━🔞 NSFW +18 🔞━━━╮
-│ 🔞 .waifu / .calata - Waifu NSFW (AlyaCore)
+│ 🔞 .waifunsfw / .calata - Waifu NSFW (AlyaCore)
 │ 🔞 .boobs / .tetas - Boobs (AlyaCore)
 │ 🔞 .bigboobs / .bigtetas - Big Boobs (AlyaCore)
 │ 🔞 .pussy / .coño / .vagina - Pussy (AlyaCore)

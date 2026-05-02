@@ -7,27 +7,16 @@ async function getBoobsImage(category) {
     const response = await fetch(`${API_BASE}/${category}`, {
       headers: {
         'User-Agent': 'Mozilla/5.0',
-        'Accept': 'application/json,image/*'
+        'Accept': 'image/*'
       }
     })
     
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     
-    const contentType = response.headers.get('content-type') || ''
+    const buffer = Buffer.from(await response.arrayBuffer())
+    if (buffer.length < 1000) throw new Error('Imagen vacía')
     
-    if (contentType.includes('image')) {
-      const buffer = Buffer.from(await response.arrayBuffer())
-      return { type: 'buffer', data: buffer }
-    }
-    
-    const json = await response.json()
-    const url = json?.url || json?.image || json?.data?.url || json?.data?.image
-    
-    if (url && url.startsWith('http')) {
-      return { type: 'url', data: url }
-    }
-    
-    throw new Error('No se pudo obtener la imagen')
+    return buffer
   } catch (error) {
     console.error(`[AlyaBoobs] Error:`, error.message)
     return null
@@ -60,7 +49,7 @@ export default {
       }
       
       await client.sendMessage(m.chat, {
-        image: image.type === 'buffer' ? image.data : { url: image.data },
+        image: image,
         caption: `🔞 *${displayName}*\n\n💙 Solicitado por: @${m.sender.split('@')[0]}`,
         mentions: [m.sender]
       }, { quoted: m })
