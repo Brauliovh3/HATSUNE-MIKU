@@ -56,22 +56,19 @@ const isPrimaryHandler = (client, chat) => {
 
   if (isOwnerBot(client)) return true
 
-  
   if (!assignedBot) return false
 
   const assignedBotClean = normalizeJidDigits(assignedBot)
   const currentBotClean = normalizeJidDigits(getBotJid(client))
-
- 
   const isPrimaryConnected = global.conns?.some(c => {
     const connId = c.user?.id || c.userId
     return normalizeJidDigits(connId) === assignedBotClean && c.isInit
   })
 
- 
+  console.log(`[DEBUG] assignedBot=${assignedBot} assignedBotClean=${assignedBotClean} current=${getBotJid(client)} currentClean=${currentBotClean} isPrimaryConnected=${isPrimaryConnected} match=${assignedBotClean === currentBotClean}`)
+
   if (!isPrimaryConnected) return true
 
-  
   return assignedBotClean === currentBotClean
 }
 
