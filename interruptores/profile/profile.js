@@ -1,5 +1,18 @@
 import moment from 'moment-timezone';
 import { resolveLidToRealJid } from "../../nucleo/utils.js"
+import fetch from 'node-fetch'
+
+const API_PARTS = ['DEPOOL', 'key', '252580']
+const API_BASE = ['aHR0cHM6Ly9yZXN0', 'LmFwaWNhdXNhcy', '54eHl6']
+
+function getApiKey() {
+  return `${API_PARTS[0]}-${API_PARTS[1]}${API_PARTS[2]}`
+}
+
+function getApiBase() {
+  const base = atob(API_BASE.join('').slice(0, -1) + '=')
+  return base.replace(/\0/g, '')
+}
 
 const growth = Math.pow(Math.PI / Math.E, 1.618) * Math.E * 0.75
 function xpRange(level, multiplier = global.multiplier || 2) {
@@ -76,7 +89,26 @@ export default {
 🌱 Valor total › *${haremValue.toLocaleString()}*${favLine}
 💙 Coins totales › *🌱${totalCoins.toLocaleString()} ${currency}*
 🌱 Comandos ejecutados › *${comandos.toLocaleString()}*`
-      await client.sendFile(m.chat, 'https://files.catbox.moe/fwzhps.jpg', 'profile.jpg', profileText, m)
+      const perfil = await client.profilePictureUrl(userId, 'image').catch(() => '')
+
+      const canvasUrl = `${getApiBase()}/api/v1/canvas/custom?apikey=${getApiKey()}&text=${encodeURIComponent(name)}&avatar=${encodeURIComponent(perfil || 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg')}&theme=miku`
+
+      let imageBuffer
+      try {
+        const response = await fetch(canvasUrl)
+        if (response.ok) {
+          imageBuffer = await response.buffer()
+        } else {
+          throw new Error('Canvas API error')
+        }
+      } catch {
+        imageBuffer = { url: 'https://files.catbox.moe/fwzhps.jpg' }
+      }
+
+      await client.sendMessage(m.chat, {
+        image: imageBuffer,
+        caption: profileText
+      }, { quoted: m })
     } catch (e) {
      return m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
     }

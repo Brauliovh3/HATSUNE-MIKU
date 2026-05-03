@@ -2,6 +2,22 @@ import fetch from 'node-fetch'
 let WAMessageStubType = (await import('@whiskeysockets/baileys')).default
 import chalk from 'chalk'
 
+const K_PARTS = ['DEPOOL', 'key', '252580']
+const B_PARTS = ['aHR0cHM6Ly9yZXN0', 'LmFwaWNhdXNhcy54eXo=']
+const gK = () => `${K_PARTS[0]}-${K_PARTS[1]}${K_PARTS[2]}`
+const gB = () => atob(B_PARTS.join('').replace(/=/g,'') + '=')
+
+async function getWelcomeCanvas(name, avatarUrl) {
+  try {
+    const canvasUrl = `${gB()}/api/v1/canvas/welcome?apikey=${gK()}&text=${encodeURIComponent(name)}&avatar=${encodeURIComponent(avatarUrl)}&theme=miku&circle=true`
+    const response = await fetch(canvasUrl)
+    if (response.ok) {
+      return await response.buffer()
+    }
+  } catch {}
+  return null
+}
+
 const _welcomeQueue = []
 let _welcomeRunning = false
 
@@ -102,6 +118,12 @@ export default async (client, m) => {
             new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 2000))
           ])
         } catch {}
+
+        const userName = db.users?.[validJid]?.name || phone
+        let welcomeImage = await getWelcomeCanvas(userName, pp)
+        if (!welcomeImage) {
+          welcomeImage = { url: 'https://i.pinimg.com/736x/2d/f3/3d/2df33d05677675f88fcd6bc16444ad2b.jpg' }
+        }
         
         const contextInfo = {
           isForwarded: true,
@@ -126,7 +148,6 @@ export default async (client, m) => {
         
         if (anu.action === 'add' && (!primaryBotId || primaryBotId === botId)) {
           const customMessage = chat?.sWelcome ? chat.sWelcome.replace(/{usuario}/g, `@${phone}`).replace(/{grupo}/g, metadata.subject).replace(/{desc}/g, metadata?.desc || 'Sin descripción') : '';
-          const welcomeImage = 'https://i.pinimg.com/736x/2d/f3/3d/2df33d05677675f88fcd6bc16444ad2b.jpg';
 
           queueWelcome(async () => {
             try {
@@ -142,7 +163,8 @@ export default async (client, m) => {
 │ 🌱 Usa */menu* para ver comandos.
 │ 💙 ¡Que disfrutes tu estancia! ✨
 ╰━━━🌸━━━💙━━━🌸━━━╯`;
-              await safeSend(client, anu.id, { image: { url: welcomeImage }, caption, contextInfo })
+              const imageToSend = Buffer.isBuffer(welcomeImage) ? welcomeImage : { url: welcomeImage }
+              await safeSend(client, anu.id, { image: imageToSend, caption, contextInfo })
             } catch {}
           })
         }
