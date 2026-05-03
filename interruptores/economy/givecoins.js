@@ -9,15 +9,17 @@ export default {
     const chatId = m.chat
     const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
     const botSettings = db.settings[botId]
-    const monedas = botSettings.currency || 'coins'
+    const monedas = botSettings?.currency || 'monedas'
     const chatData = db.chats[chatId]
+    if (!chatData) return m.reply(`💙 Usa primero cualquier comando para registrarte.`)
     if (chatData.adminonly || !chatData.economy) return m.reply(`💙 Los comandos de *Economía* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}economy on*`)
     const mentioned = m.mentionedJid || []
     const who2 = m.quoted ? m.quoted.sender : mentioned[0] || (args[1] ? (args[1].replace(/[@ .+-]/g, '') + '@s.whatsapp.net') : '')
     if (!who2) return m.reply(`💙 Debes mencionar a quien quieras transferir *${monedas}*.\n> Ejemplo » *${usedPrefix + command} 25000 @mencion*`)
     const who = await resolveLidToRealJid(who2, client, m.chat)
-    const senderData = chatData.users[m.sender]
-    const targetData = chatData.users[who]
+    const senderData = chatData.users?.[m.sender]
+    if (!senderData) return m.reply(`💙 Usa primero *.menu* o *.pescaderia* para activar tu cuenta.`)
+    const targetData = chatData.users?.[who]
     if (!targetData) return m.reply(`💙 El usuario mencionado no está registrado en el bot.`)
     const cantidadInput = args[0]?.toLowerCase()
     let cantidad = cantidadInput === 'all' ? senderData.bank : parseInt(cantidadInput)

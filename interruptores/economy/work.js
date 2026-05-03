@@ -4,9 +4,11 @@ export default {
   run: async (client, m, args, usedPrefix, command) => {
     const db = global.db.data
     const chat = db.chats[m.chat]
-    const user = chat.users[m.sender]
+    if (!chat) return m.reply(`💙 Usa primero cualquier comando para registrarte.`)
+    const user = chat.users?.[m.sender]
+    if (!user) return m.reply(`💙 Usa primero *.menu* o *.pescaderia* para activar tu cuenta.`)
     const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
-    const monedas = db.settings[botId].currency
+    const monedas = db.settings[botId]?.currency || 'monedas'
     if (chat.adminonly || !chat.economy) return m.reply(`💙 Los comandos de *Economía* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}economy on*`)
     const cooldown = 3 * 60 * 1000
     user.lastwork = user.lastwork || 0

@@ -6,11 +6,13 @@ export default {
   run: async (client, m, args, usedPrefix, command) => {
     const db = global.db.data
     const chatData = db.chats[m.chat]
+    if (!chatData) return m.reply(`💙 Usa primero cualquier comando para registrarte.`)
     if (chatData.adminonly || !chatData.economy) return m.reply(`💙 Los comandos de *Economía* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}economy on*`)   
     const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
     const bot = db.settings[botId]
-    const currency = bot.currency
-    const user = db.chats[m.chat].users[m.sender]
+    const currency = bot?.currency || 'monedas'
+    const user = chatData.users?.[m.sender]
+    if (!user) return m.reply(`💙 Usa primero *.menu* o *.pescaderia* para activar tu cuenta.`)
     user.coins ||= 0
     user.laststeal ||= 0
     if (Date.now() < user.laststeal) {
@@ -21,12 +23,12 @@ export default {
     const who2 = mentioned[0] || (m.quoted ? m.quoted.sender : null)
     const who = await resolveLidToRealJid(who2, client, m.chat)
     if (!who) return client.reply(m.chat, `🌱 Debes mencionar a alguien para intentar robarle.`, m, global.miku)
-    if (!(who in db.chats[m.chat].users)) {
+    const target = chatData.users?.[who]
+    if (!target) {
       return client.reply(m.chat, `💙 El usuario no se encuentra en mi base de datos.`, m, global.miku)
     }
     const name = db.users[who]?.name || who.split('@')[0]
-    const target = db.chats[m.chat].users[who]
-    const lastCmd = db.chats[m.chat].users[who]?.lastCmd || 0
+    const lastCmd = chatData.users?.[who]?.lastCmd || 0
     const tiempoInactivo = Date.now() - lastCmd
     if (tiempoInactivo < 3600000) {
       return client.reply(m.chat, `💙 Solo puedes robarle *${currency}* a un usuario si estuvo más de 1 hora inactivo.`, m, global.miku)

@@ -8,15 +8,17 @@ export default {
     const chatId = m.chat
     const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
     const botSettings = db.settings[botId] || {}
-    const monedas = botSettings.currency || 'Coins'
+    const monedas = botSettings?.currency || 'monedas'
     const imgCofre = 'https://file.garden/ae-9DPf0ekWVe7ex/cofre.png'
     const canalId = botSettings.id || "120363315369913363@newsletter"
     const canalName = botSettings.nameid || "Hatsune Miku Channel"
     const chatData = db.chats[chatId]
-    
+
+    if (!chatData) return m.reply(`💙 Usa primero cualquier comando para registrarte.`)
     if (chatData.adminonly || !chatData.economy) return m.reply(`💙 Los comandos de *Economía* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}economy on*`)
-    
-    const user = chatData.users[m.sender]
+
+    const user = chatData.users?.[m.sender]
+    if (!user) return m.reply(`💙 Usa primero *.menu* o *.pescaderia* para activar tu cuenta.`)
     const now = Date.now()
     const cooldown = 8 * 60 * 60 * 1000 
     

@@ -8,8 +8,10 @@ export default {
     const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
     const botSettings = db.settings[botId]
     const chatData = db.chats[chatId]
+    if (!chatData) return m.reply(`💙 Usa primero cualquier comando para registrarte.`)
     if (chatData.adminonly || !chatData.economy) return m.reply(`💙 Los comandos de *Economía* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}economy on*`)
-    const user = chatData.users[m.sender]
+    const user = chatData.users?.[m.sender]
+    if (!user) return m.reply(`💙 Usa primero *.menu* o *.pescaderia* para activar tu cuenta.`)
     const cooldown = 5 * 60 * 1000
     const now = Date.now()
     const remaining = (user.lastslut || 0) - now

@@ -3,11 +3,13 @@ export default {
   category: 'rpg',
   run: async (client, m, args, usedPrefix) => {
     const chat = global.db.data.chats[m.chat]
+    if (!chat) return m.reply(`💙 Usa primero cualquier comando para registrarte.`)
     if (chat.adminonly || !chat.economy) return m.reply(`💙 Los comandos de *Economía* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}economy on*`)
     const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
     const bot = global.db.data.settings[botId]
-    const monedas = bot.currency
-    let user = global.db.data.chats[m.chat].users[m.sender]
+    const monedas = bot?.currency || 'monedas'
+    let user = chat.users?.[m.sender]
+    if (!user) return m.reply(`💙 Usa primero *.menu* o *.pescaderia* para activar tu cuenta.`)
     let users = global.db.data.users[m.sender]
     const now = Date.now()
     const oneDay = 24 * 60 * 60 * 1000
