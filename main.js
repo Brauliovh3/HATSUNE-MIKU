@@ -7,6 +7,7 @@ import initDB      from './nucleo/system/initDB.js'
 import antilink    from './interruptores/antilink.js'
 import level       from './interruptores/level.js'
 import { markDatabaseDirty } from './nucleo/system/database.js'
+import subBotManager from './nucleo/subbotManager.js'
 
 const COMMAND_TIMEOUT = 15000
 const commandTimeouts = new Map()
@@ -56,7 +57,8 @@ const isPrimaryHandler = (client, chat) => {
 
   if (isOwnerBot(client)) return true
 
-  if (!assignedBot) return false
+
+  if (!assignedBot) return true
 
   const assignedBotClean = normalizeJidDigits(assignedBot)
   const currentBotClean = normalizeJidDigits(getBotJid(client))
@@ -339,7 +341,15 @@ export default async (client, m) => {
   const botJid   = getBotJid(client)
 
   const chat = global.db.data.chats[m.chat] || {}
-  const settings = global.db.data.settings[botJid] || {}
+  
+  
+  const isSubBot = subBotManager.subbots?.has(sessionId) || 
+                   global.db.data?.settings?.[botJid]?.type === 'Sub'
+  
+
+  const settings = isSubBot 
+    ? (global.db.data.subbots?.[botJid] || {})
+    : (global.db.data.settings?.[botJid] || {})
 
   const user   = global.db.data.users[sender] ||= {}
   const users  = chat.users[sender] || {}

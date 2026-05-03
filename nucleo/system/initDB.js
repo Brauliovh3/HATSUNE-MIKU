@@ -1,23 +1,48 @@
+import subBotManager from '../subbotManager.js'
+
 let isNumber = (x) => typeof x === 'number' && !isNaN(x)
 
 function initDB(m, client) {
   const jid = client.user?.id?.split(':')[0] + '@s.whatsapp.net'
+  
+  const sessionId = jid.split('@')[0]
+ 
+  const isSubBot = subBotManager.subbots?.has(sessionId) || 
+                   global.db.data?.settings?.[jid]?.type === 'Sub'
 
-  const settings = global.db.data.settings[jid] ||= {}
-  settings.self ??= false
-  settings.prefix ??= ['/', '!', '.', '#']
-  settings.commandsejecut ??= isNumber(settings.commandsejecut) ? settings.commandsejecut : 0
-  settings.id ??= '120363315369913363@newsletter'
-  settings.nameid ??= '💙HATSUNE MIKU CHANNEL💙'
-  settings.type ??= 'Owner'
-  settings.link ??= 'https://www.whatsapp.com/channel/0029VajYamSIHphMAl3ABi1o'
-  settings.banner ??= 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
-  settings.icon ??= 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
-  settings.currency ??= '🌱 Cebollines'
-  settings.audios ??= false
-  settings.namebot ??= '💙HATSUNE MIKU💙'
-  settings.botname ??= '💙HATSUNE MIKU💙'  
-  settings.owner ??= '(ㅎㅊDEPOOLㅊㅎ)'
+  if (isSubBot) {
+    
+    const subbot = global.db.data.subbots ||= {}
+    subbot[jid] ||= {}
+    subbot[jid].self ??= false
+    subbot[jid].prefix ??= ['/', '!', '.', '#']
+    subbot[jid].id ??= '120363315369913363@newsletter'
+    subbot[jid].nameid ??= '💙HATSUNE MIKU CHANNEL💙'
+    subbot[jid].link ??= 'https://www.whatsapp.com/channel/0029VajYamSIHphMAl3ABi1o'
+    subbot[jid].banner ??= 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
+    subbot[jid].icon ??= 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
+    subbot[jid].currency ??= '🌱 Cebollines'
+    subbot[jid].namebot ??= '💙HATSUNE MIKU💙'
+    subbot[jid].botname ??= '💙HATSUNE MIKU💙'
+    subbot[jid].type = 'Sub'
+  } else {
+    
+    const settings = global.db.data.settings[jid] ||= {}
+    settings.self ??= false
+    settings.prefix ??= ['/', '!', '.', '#']
+    settings.commandsejecut ??= isNumber(settings.commandsejecut) ? settings.commandsejecut : 0
+    settings.id ??= '120363315369913363@newsletter'
+    settings.nameid ??= '💙HATSUNE MIKU CHANNEL💙'
+    settings.type ??= 'Owner'
+    settings.link ??= 'https://www.whatsapp.com/channel/0029VajYamSIHphMAl3ABi1o'
+    settings.banner ??= 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
+    settings.icon ??= 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
+    settings.currency ??= '🌱 Cebollines'
+    settings.audios ??= false
+    settings.namebot ??= '💙HATSUNE MIKU💙'
+    settings.botname ??= '💙HATSUNE MIKU💙'  
+    settings.owner ??= '(ㅎㅊDEPOOLㅊㅎ)'
+  }
 
   const user = global.db.data.users[m.sender] ||= {}
   user.name ??= m.pushName

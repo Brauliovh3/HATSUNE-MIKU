@@ -38,7 +38,7 @@ export default {
       healer.bank = Math.max(0, (healer.bank || 0) - restante)
     }
     target.health = 100
-    const info = who ? `💙 Has curado a *${db.users[who]?.name || who.split('@')[0]}* hasta el máximo nivel de salud.` : `ꕥ Te has curado hasta el máximo nivel de salud.`
+    const info = who ? `💙 Has curado a *${db.users[who]?.name || who.split('@')[0]}* hasta el máximo nivel de salud.` : `💙 Te has curado hasta el máximo nivel de salud.`
     m.reply(info)
   },
 }

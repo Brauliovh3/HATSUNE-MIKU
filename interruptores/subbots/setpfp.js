@@ -1,4 +1,5 @@
 import * as Jimp from 'jimp';
+import subBotManager from '../../nucleo/subbotManager.js'
 
 async function resizeImage(media) {
   const jimp = await Jimp.read(media)
@@ -13,9 +14,26 @@ export default {
   category: 'socket',
   run: async (client, m, args) => {
     const idBot = client.user.id.split(':')[0] + '@s.whatsapp.net'
-    const config = global.db.data.settings[idBot]
-    const isOwner2 = [idBot, ...(config.owner ? [config.owner] : []), ...global.owner.map(num => num + '@s.whatsapp.net')].includes(m.sender)
-    if (!isOwner2) return m.reply(mess.socket)
+    
+    
+    const sessionId = idBot.split('@')[0]
+    const isSubBot = subBotManager.subbots?.has(sessionId) || 
+                     global.db.data?.settings?.[idBot]?.type === 'Sub'
+    
+    
+    let config
+    if (isSubBot) {
+      global.db.data.subbots ||= {}
+      global.db.data.subbots[idBot] ||= {}
+      config = global.db.data.subbots[idBot]
+    } else {
+      config = global.db.data.settings[idBot]
+    }
+    
+   
+    const owners = [idBot, ...(config?.owner ? [config.owner] : []), ...global.owner.map(num => num + '@s.whatsapp.net')]
+    if (!owners.includes(m.sender)) return m.reply(mess.socket)
+    
     const q = m.quoted || m
     const mime = (q.msg || q).mimetype || q.mediaType || ''
     if (!/image/g.test(mime)) return m.reply('💙 Debes enviar o citar una imagen para cambiar la foto de perfil del bot.', m, global.miku)
@@ -28,6 +46,8 @@ export default {
     } else {
       await client.updateProfilePicture(jid, media)
     }
-    return m.reply(`💙 Se ha actualizado la foto de perfil de *${config.namebot}*!`, m, global.miku)
+    
+    const botName = config?.namebot || (isSubBot ? 'Subbot' : 'Bot')
+    return m.reply(`💙 Se ha actualizado la foto de perfil de *${botName}*!`, m, global.miku)
   },
 };
