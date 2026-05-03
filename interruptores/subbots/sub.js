@@ -33,7 +33,8 @@ function msToTime(duration) {
   return `${seconds} segundo${seconds > 1 ? 's' : ''}`;
 }
 
-const PERMANENT_ERRORS = new Set([401, 403, 405, 440]);
+const PERMANENT_ERRORS = new Set([401, 403, 405, 440, 500]);
+const TEMPORARY_ERRORS = new Set([408, 428, 515, 503, 502]);
 const cleanFolder = (folder) => {
   try { if (fs.existsSync(folder)) fs.rmSync(folder, { recursive: true, force: true }); } catch {}
 };
@@ -204,18 +205,23 @@ export default {
         version,
         logger,
         printQRInTerminal: false,   
-        browser: Browsers.macOS('Chrome'),
+        browser: Browsers.ubuntu('Chrome'),
         auth: {
           creds: state.creds,
           keys: makeCacheableSignalKeyStore(state.keys, logger),
         },
-        markOnlineOnConnect:        false,
+        markOnlineOnConnect:        true,
         generateHighQualityLinkPreview: false,
-        syncFullHistory:            false,
+        syncFullHistory:            true,
+        shouldSyncHistoryMessage:   true,
         getMessage:                 async () => '',
-        keepAliveIntervalMs:        30_000,
-        connectTimeoutMs:           60_000,
-        defaultQueryTimeoutMs:      60_000,
+        keepAliveIntervalMs:        15_000,
+        connectTimeoutMs:           120_000,
+        defaultQueryTimeoutMs:      90_000,
+        retryRequestDelayMs:          2_000,
+        maxMsgRetryCount:           5,
+        emitOwnEvents:              false,
+        fireInitQueries:            true,
       });
       sock.ev.on('creds.update', saveCreds);
       return sock;
@@ -283,6 +289,42 @@ export default {
               return;
             }
 
+            
+            if (TEMPORARY_ERRORS.has(reason)) {
+              reconnectCount++;
+              if (reconnectCount > MAX_RECONNECT) {
+                finish(false);
+                silentClose(currentSock);
+                await client.sendMessage(m.chat, {
+                  text: MSG.errorConnection(`max reintentos (${MAX_RECONNECT})`, usedPrefix),
+                  ...global.miku
+                }).catch(() => {});
+                return;
+              }
+
+              const delay = Math.min(3000 * reconnectCount, 15_000);
+              silentClose(currentSock);
+
+              setTimeout(async () => {
+                if (done) return;
+                if (!fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
+                  finish(false);
+                  return;
+                }
+                try {
+                  sock = await buildSocket();
+                  pendingSessions.set(sessionId, { sock, startTime: Date.now() });
+                  attachEvents(sock);
+                  console.log(chalk.cyan(`💙 Reconexión ${sessionId} (${reconnectCount}/${MAX_RECONNECT}) - Razón: ${reason}`));
+                } catch (err) {
+                  console.error(chalk.red(`💙 Error reconectando ${sessionId}:`), err.message);
+                  finish(false);
+                }
+              }, delay);
+              return;
+            }
+
+            
             reconnectCount++;
             if (reconnectCount > MAX_RECONNECT) {
               finish(false);
@@ -294,7 +336,7 @@ export default {
               return;
             }
 
-            const delay = Math.min(2000 * reconnectCount, 10_000);
+            const delay = Math.min(5000 * reconnectCount, 20_000);
             silentClose(currentSock);
 
             setTimeout(async () => {
@@ -335,7 +377,7 @@ export default {
             if (!state.creds.registered && !done) {
               const codePromise = sock.requestPairingCode(phoneNumber);
               const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Timeout generando código')), 15000)
+                setTimeout(() => reject(new Error('Timeout generando código')), 30000)
               );
 
               const code = await Promise.race([codePromise, timeoutPromise]);
@@ -370,7 +412,7 @@ export default {
           text: MSG.timeout(usedPrefix),
           ...global.miku
         }).catch(() => {});
-      }, 120_000);
+      }, 180_000);
 
     } catch (err) {
       finish(false);

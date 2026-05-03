@@ -185,21 +185,26 @@ class SubBotManager {
         logger,
         version,
         printQRInTerminal: false,
-        browser: Browsers.macOS('Chrome'),
+        browser: Browsers.ubuntu('Chrome'),
         auth: {
           creds: state.creds,
           keys:  makeCacheableSignalKeyStore(state.keys, logger),
         },
-        markOnlineOnConnect:      false,
+        markOnlineOnConnect:      true,
         generateHighQualityLinkPreview: false,
-        syncFullHistory:          false,
+        syncFullHistory:          true,
+        shouldSyncHistoryMessage: true,
         getMessage:               async () => '',
         msgRetryCounterCache,
         userDevicesCache,
-        keepAliveIntervalMs:      30_000,
-        maxIdleTimeMs:            60_000,
-        connectTimeoutMs:         60_000,
-        defaultQueryTimeoutMs:    60_000,
+        keepAliveIntervalMs:      15_000,
+        maxIdleTimeMs:            120_000,
+        connectTimeoutMs:         120_000,
+        defaultQueryTimeoutMs:    90_000,
+        retryRequestDelayMs:      2_000,
+        maxMsgRetryCount:         5,
+        emitOwnEvents:            false,
+        fireInitQueries:          true,
       }
 
       let sock         = makeWASocket(connectionOptions)
@@ -314,8 +319,8 @@ class SubBotManager {
             optimizer.unregisterSession(sessionId)
 
             
-            if ([428, 408, 500, 503, 515, DisconnectReason.restartRequired].includes(reason)) {
-              const label = { 428: 'cierre inesperado', 408: 'pérdida de conexión', 500: 'conexión perdida', 503: 'servicio no disponible', 515: 'reinicio requerido' }[reason] || 'reinicio requerido'
+            if ([428, 408, 500, 503, 515, 502, DisconnectReason.restartRequired, DisconnectReason.connectionLost].includes(reason)) {
+              const label = { 428: 'cierre inesperado', 408: 'pérdida de conexión', 500: 'conexión perdida', 503: 'servicio no disponible', 515: 'reinicio requerido', 502: 'error de gateway' }[reason] || 'reinicio requerido'
 
               if (this.startingSubbots.has(sessionId)) return
               this.startingSubbots.add(sessionId)
