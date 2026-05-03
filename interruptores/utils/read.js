@@ -1,7 +1,7 @@
 import { downloadContentFromMessage, extractMessageContent } from '@whiskeysockets/baileys'
 
 export default {
-  command: ['readviewonce', 'read', 'readvo','view'],
+  command: ['readviewonce', 'read', 'readvo','view','ver'],
   category: 'tools',
   run: async (client, m, args, usedPrefix, command, text) => {
     const quoted = m.quoted
