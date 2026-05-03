@@ -21,6 +21,11 @@ const msgRetryCounterCache = new NodeCache({ stdTTL: 3600, checkperiod: 300, use
 const userDevicesCache     = new NodeCache({ stdTTL: 3600, checkperiod: 300, useClones: false })
 const groupCache           = new NodeCache({ stdTTL: 3600, checkperiod: 300 })
 
+const subbotRateLimiter = new Map()
+const MAX_MSG_PER_MINUTE = 20
+const CONCURRENT_LIMIT = 5
+const activeSubbotMessages = new Map()
+
 const reintentos = new Map()
 
 
@@ -337,18 +342,63 @@ class SubBotManager {
         
         sock.ev.on('messages.upsert', async ({ messages, type }) => {
           if (type !== 'notify') return
+
+          const activeCount = activeSubbotMessages.get(sessionId) || 0
+          if (activeCount >= CONCURRENT_LIMIT) {
+            return
+          }
+
           for (const raw of messages) {
             if (!raw.message) continue
             if (!shouldProcessRaw(sock, raw)) continue
+
+            const sender = raw.key?.remoteJid || raw.key?.participant || 'unknown'
+            const now = Date.now()
+            const userKey = `${sessionId}_${sender}`
+            const userRate = subbotRateLimiter.get(userKey) || { count: 0, resetTime: now + 60000 }
+
+            if (now > userRate.resetTime) {
+              userRate.count = 0
+              userRate.resetTime = now + 60000
+            }
+
+            userRate.count++
+            subbotRateLimiter.set(userKey, userRate)
+
+            if (userRate.count > MAX_MSG_PER_MINUTE) {
+              continue
+            }
+
             _maybeYield()
+            activeSubbotMessages.set(sessionId, activeCount + 1)
+
             ;(async () => {
               try {
                 const m = await smsg(sock, raw)
-                if (m) await main(sock, m, messages)
+                if (m) {
+                  await Promise.race([
+                    main(sock, m, messages),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Command timeout')), 30000))
+                  ])
+                }
               } catch (err) {
-                console.error(`Error en subbot ${sessionId}:`, err.message)
+                if (!err.message?.includes('timeout')) {
+                  console.error(`Error en subbot ${sessionId}:`, err.message)
+                }
+              } finally {
+                const current = activeSubbotMessages.get(sessionId) || 0
+                activeSubbotMessages.set(sessionId, Math.max(0, current - 1))
               }
             })()
+          }
+
+          if (subbotRateLimiter.size > 2000) {
+            const now = Date.now()
+            for (const [key, data] of subbotRateLimiter) {
+              if (now > data.resetTime) {
+                subbotRateLimiter.delete(key)
+              }
+            }
           }
         })
       }

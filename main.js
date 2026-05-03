@@ -6,6 +6,10 @@ import seeCommands from './nucleo/system/commandLoader.js'
 import initDB      from './nucleo/system/initDB.js'
 import antilink    from './interruptores/antilink.js'
 import level       from './interruptores/level.js'
+import { markDatabaseDirty } from './nucleo/system/database.js'
+
+const COMMAND_TIMEOUT = 15000
+const commandTimeouts = new Map()
 
 
 const getGroupMetadata = async (client, jid) => {
@@ -503,15 +507,32 @@ if (chat.adminonly && !isAdmins) return
     user.exp                    = (user.exp || 0) + Math.floor(Math.random() * 100)
     user.name                   = m.pushName
     users.stats[today].cmds++
-    await cmdData.run(client, m, args, usedPrefix, command, text)
+
+    markDatabaseDirty()
+
+    const cmdPromise = cmdData.run(client, m, args, usedPrefix, command, text)
+    const timeoutPromise = new Promise((_, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Command ${command} timeout`))
+      }, COMMAND_TIMEOUT)
+      commandTimeouts.set(m.sender + command, timeout)
+    })
+
+    await Promise.race([cmdPromise, timeoutPromise])
   } catch (error) {
-    
+    clearTimeout(commandTimeouts.get(m.sender + command))
+    commandTimeouts.delete(m.sender + command)
+
     const errMsg = error?.message || String(error)
     if (
       errMsg.includes('rate-overlimit') || errMsg.includes('429') ||
-      errMsg.includes('Internal Server Error')
+      errMsg.includes('Internal Server Error') ||
+      errMsg.includes('timeout')
     ) return
     await client.sendMessage(m.chat, { text: `💙 *ERROR*\n\n💙 Ocurrió un error al ejecutar el comando.\n🌱 *Error:* ${errMsg}` }, { quoted: m })
+  } finally {
+    clearTimeout(commandTimeouts.get(m.sender + command))
+    commandTimeouts.delete(m.sender + command)
   }
 
   level(m)

@@ -17,7 +17,9 @@ global.db = {
   },
   chain: null,
   READ: false,
-  _snapshot: '{}'
+  _snapshot: '{}',
+  _pendingChanges: false,
+  _saveQueued: false
 }
 global.DATABASE = global.db
 global.loadDatabase = function loadDatabase() {
@@ -37,23 +39,33 @@ global.loadDatabase = function loadDatabase() {
 }
 
 function hasPendingChanges() {
+  if (!global.db._pendingChanges) return false
   return global.db._snapshot !== JSON.stringify(global.db.data)
 }
 
-global.saveDatabase = function saveDatabase() {
-  if (!hasPendingChanges()) return
-  fs.writeFileSync(dbFile, JSON.stringify(global.db.data, null, 2))
-  global.db._snapshot = JSON.stringify(global.db.data)
+export function markDatabaseDirty() {
+  global.db._pendingChanges = true
+}
+
+global.saveDatabase = function saveDatabase(force = false) {
+  if (!force && !hasPendingChanges()) return
+  try {
+    fs.writeFileSync(dbFile, JSON.stringify(global.db.data, null, 2))
+    global.db._snapshot = JSON.stringify(global.db.data)
+    global.db._pendingChanges = false
+  } catch (err) {
+    console.error('Error saving database:', err.message)
+  }
 }
 
 let lastSave = Date.now()
 setInterval(() => {
   const now = Date.now()
   const elapsed = now - lastSave
-  if (elapsed >= 1000 && hasPendingChanges()) {
+  if (elapsed >= 2000 && global.db._pendingChanges) {
     global.saveDatabase()
     lastSave = now
   }
-}, 500)
+}, 1000)
 
 export default global.db
