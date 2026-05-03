@@ -2,6 +2,21 @@ import fetch from 'node-fetch'
 let WAMessageStubType = (await import('@whiskeysockets/baileys')).default
 import chalk from 'chalk'
 
+const normalizeJidDigits = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '');
+const getBotJid = (client) => (client.user?.id?.split(':')[0] || client.user?.lid || '') + '@s.whatsapp.net';
+
+const isPrimaryHandler = (client, chat) => {
+  const assignedBot = chat?.primaryBot;
+  if (!assignedBot) return true;
+  const assignedBotClean = normalizeJidDigits(assignedBot);
+  const currentBotClean = normalizeJidDigits(getBotJid(client));
+  const isPrimaryConnected = global.conns?.some(c => {
+    const connId = c.user?.id || c.userId;
+    return normalizeJidDigits(connId) === assignedBotClean && c.isInit;
+  });
+  if (!isPrimaryConnected) return true;
+  return assignedBotClean === currentBotClean;
+};
 
 const _welcomeQueue = []
 let _welcomeRunning = false
@@ -126,7 +141,7 @@ export default async (client, m) => {
           mentionedJid: [validJid]
         };
         
-        if (anu.action === 'add') {
+        if (anu.action === 'add' && isPrimaryHandler(client, chat)) {
           const customMessage = chat?.sWelcome ? chat.sWelcome.replace(/{usuario}/g, `@${phone}`).replace(/{grupo}/g, metadata.subject).replace(/{desc}/g, metadata?.desc || 'Sin descripción') : '';
 
           queueWelcome(async () => {
@@ -148,7 +163,7 @@ export default async (client, m) => {
           })
         }
         
-        if (anu.action === 'remove' || anu.action === 'leave') {
+        if ((anu.action === 'remove' || anu.action === 'leave') && isPrimaryHandler(client, chat)) {
           const kicker = anu.author;
           const isKick = kicker && kicker !== validJid;
 
@@ -218,11 +233,11 @@ export default async (client, m) => {
             } catch {}
           })
         }
-        if (anu.action === 'promote' && chat?.alerts && (!primaryBotId || primaryBotId === botId)) {
+        if (anu.action === 'promote' && chat?.alerts && isPrimaryHandler(client, chat)) {
           const usuario = anu.author
           await safeSend(client, anu.id, { text: `💙 *@${phone}* ha sido promovido a Administrador por *@${usuario.split('@')[0]}.*`, mentions: [validJid, usuario, ...groupAdmins.map(v => v.id)], ...global.miku })
         }
-        if (anu.action === 'demote' && chat?.alerts && (!primaryBotId || primaryBotId === botId)) {
+        if (anu.action === 'demote' && chat?.alerts && isPrimaryHandler(client, chat)) {
           const usuario = anu.author
           await safeSend(client, anu.id, { text: `💙 *@${phone}* ha sido degradado de Administrador por *@${usuario.split('@')[0]}.*`, mentions: [validJid, usuario, ...groupAdmins.map(v => v.id)], ...global.miku })
         }
@@ -234,9 +249,8 @@ export default async (client, m) => {
   if (!m.messageStubType) return
   const id = m.key.remoteJid
   const chat = global.db.data.chats[id]
+  if (!chat?.alerts || !isPrimaryHandler(client, chat)) return
   const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
-  const primaryBotId = chat?.primaryBot
-  if (!chat?.alerts || (primaryBotId && primaryBotId !== botId)) return
   const isSelf = global.db.data.settings[botId]?.self ?? false
   if (isSelf) return
   const actor = m.key?.participant || m.participant || m.key?.remoteJid
