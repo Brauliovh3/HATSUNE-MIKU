@@ -87,8 +87,6 @@ const shouldProcessRaw = (sock, raw) => {
 
  
   if (!isPrimaryConnected) {
-    console.log(`[SubBot] Primary bot ${primaryBotClean} offline, ${normalizeJid(currentBotId)} taking over ${chatJid}`)
-    chat.primaryBot = currentBotId
     return true
   }
 

@@ -69,7 +69,6 @@ const isPrimaryHandler = (client, chat) => {
 
   
   if (!isPrimaryConnected && assignedBotClean !== currentBotClean) {
-    console.log(`[Main] Primary bot ${assignedBotClean} offline, ${currentBotClean} taking over`)
     return true
   }
 
