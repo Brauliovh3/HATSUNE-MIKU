@@ -15,6 +15,8 @@ const execAsync = promisify(exec);
 
 const ptvCache = new Map();
 const ptvProcessing = new Map();
+const menuCache = new Map();
+const MENU_CACHE_TTL = 2 * 60 * 1000;
 
 async function toVideoNote(url) {
   if (ptvCache.has(url)) return ptvCache.get(url);
@@ -45,6 +47,27 @@ async function toVideoNote(url) {
 
 
 toVideoNote(mainMenuImage).catch(() => {});
+
+function getCachedMenu(key, generator) {
+  const cached = menuCache.get(key);
+  if (cached && (Date.now() - cached.time) < MENU_CACHE_TTL) {
+    return cached.data;
+  }
+  const data = generator();
+  menuCache.set(key, { data, time: Date.now() });
+  return data;
+}
+
+function cleanOldMenuCache() {
+  const now = Date.now();
+  for (const [key, value] of menuCache) {
+    if ((now - value.time) > MENU_CACHE_TTL) {
+      menuCache.delete(key);
+    }
+  }
+}
+
+setInterval(cleanOldMenuCache, MENU_CACHE_TTL);
 
 function normalize(text = '') {
   text = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
@@ -86,7 +109,12 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
         return m.reply(`💙 La categoria *${args[0]}* no existe, las categorias disponibles son: *${Object.keys(categoryAliases).join(', ')}*.\n> Para ver la lista completa escribe *${usedPrefix}menu*\n> Para ver los comandos de una categoría escribe *${usedPrefix}menu [categoría]*\n> Ejemplo: *${usedPrefix}menu anime*`);
       }
       const sections = menuObject;
-      const content = cat ? String(sections[cat] || '') : Object.values(sections).map(s => String(s || '')).join('\n\n');
+      const cacheKey = cat || 'main';
+
+      const content = getCachedMenu(`content_${cacheKey}`, () => {
+        return cat ? String(sections[cat] || '') : Object.values(sections).map(s => String(s || '')).join('\n\n');
+      });
+
       let menu = cat ? content : (bodyMenu ? String(bodyMenu || '') + '\n\n' + content : content);
       
       const categoryButtons = Object.keys(sections).map(key => ({
@@ -122,27 +150,45 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
       const categoryBanner = cat ? (categoryImages[cat] || banner) : mainMenuImage;
       
       if (cat) {
-        
         if (categoryBanner.includes('.mp4') || categoryBanner.includes('.webm')) {
-          const ptvBuffer = await toVideoNote(categoryBanner);
-          const ptvMsg = await client.sendMessage(m.chat, {
-            video: ptvBuffer,
-            ptv: true,
-            mimetype: 'video/mp4'
-          }, { quoted: m });
+          let ptvBuffer = ptvCache.get(categoryBanner);
+          if (!ptvBuffer) {
+            ptvBuffer = await toVideoNote(categoryBanner);
+          }
 
-          await client.sendMessage(m.chat, {
-            text: messageContent,
-            contextInfo: {
-              mentionedJid: [m.sender],
-              isForwarded: true,
-              forwardedNewsletterMessageInfo: {
-                newsletterJid: canalId,
-                serverMessageId: '',
-                newsletterName: canalName
+          if (ptvBuffer) {
+            const ptvMsg = await client.sendMessage(m.chat, {
+              video: ptvBuffer,
+              ptv: true,
+              mimetype: 'video/mp4'
+            }, { quoted: m });
+
+            await client.sendMessage(m.chat, {
+              text: messageContent,
+              contextInfo: {
+                mentionedJid: [m.sender],
+                isForwarded: true,
+                forwardedNewsletterMessageInfo: {
+                  newsletterJid: canalId,
+                  serverMessageId: '',
+                  newsletterName: canalName
+                }
               }
-            }
-          }, { quoted: ptvMsg });
+            }, { quoted: ptvMsg });
+          } else {
+            await client.sendMessage(m.chat, {
+              text: messageContent,
+              contextInfo: {
+                mentionedJid: [m.sender],
+                isForwarded: true,
+                forwardedNewsletterMessageInfo: {
+                  newsletterJid: canalId,
+                  serverMessageId: '',
+                  newsletterName: canalName
+                }
+              }
+            }, { quoted: m });
+          }
         } else {
           await client.sendMessage(m.chat, {
             text: messageContent,
@@ -169,30 +215,42 @@ const menuRun = async (client, m, args, usedPrefix, command) => {
       } else {
 
        
-        const ptvBuffer = await toVideoNote(mainMenuImage);
-        const ptvMsg = await client.sendMessage(m.chat, {
-          video: ptvBuffer,
-          ptv: true,
-          mimetype: 'video/mp4'
-        }, { quoted: m });
+        let ptvBuffer = ptvCache.get(mainMenuImage);
+        if (!ptvBuffer) {
+          ptvBuffer = await toVideoNote(mainMenuImage);
+        }
 
-       
-        await client.sendMessage(m.chat, {
-          image: { url: 'https://file.garden/ae-9DPf0ekWVe7ex/menu.png' },
-          caption: messageContent,
-          footer: '💙 Hatsune Miku Bot',
-          buttons: buttons,
-          headerType: 4,
-          contextInfo: {
-            mentionedJid: [m.sender],
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: canalId,
-              serverMessageId: '',
-              newsletterName: canalName
+        const sendPromises = [];
+
+        if (ptvBuffer) {
+          sendPromises.push(
+            client.sendMessage(m.chat, {
+              video: ptvBuffer,
+              ptv: true,
+              mimetype: 'video/mp4'
+            }, { quoted: m })
+          );
+        }
+
+        sendPromises.push(
+          client.sendMessage(m.chat, {
+            text: messageContent,
+            footer: '💙 Hatsune Miku Bot',
+            buttons: buttons,
+            headerType: 1,
+            contextInfo: {
+              mentionedJid: [m.sender],
+              isForwarded: true,
+              forwardedNewsletterMessageInfo: {
+                newsletterJid: canalId,
+                serverMessageId: '',
+                newsletterName: canalName
+              }
             }
-          }
-        }, { quoted: ptvMsg });
+          }, { quoted: m })
+        );
+
+        await Promise.all(sendPromises);
       }
     } catch (e) {
       await m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
