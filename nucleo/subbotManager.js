@@ -380,7 +380,7 @@ class SubBotManager {
               }
             }, delayMs)
           }
-        })
+        }))
 
         
         sock.ev.on('messages.upsert', async ({ messages, type }) => {
