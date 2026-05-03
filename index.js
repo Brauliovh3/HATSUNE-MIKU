@@ -260,6 +260,7 @@ async function startBot() {
     }
 
     if (connection === "close") {
+      sock.isInit = false
       const reason = lastDisconnect?.error?.output?.statusCode || 0
       if (reason === DisconnectReason.loggedOut) {
         log.warning("Escanee nuevamente y ejecute...")
@@ -295,6 +296,12 @@ async function startBot() {
 
     if (connection === "open") {
       reconexion = 0
+      sock.isInit = true
+      sock.userId = String(sock.user?.id).split(':')[0].replace(/\D/g, '')
+      if (!global.conns) global.conns = []
+      const existingIdx = global.conns.findIndex(c => c.userId === sock.userId)
+      if (existingIdx >= 0) global.conns.splice(existingIdx, 1)
+      global.conns.push(sock)
       const userName = sock.user.name || "Desconocido"
       console.log(chalk.green.bold(`💙 Conectado a: ${userName}`))
 
