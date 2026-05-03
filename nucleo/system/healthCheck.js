@@ -320,15 +320,16 @@ class HealthCheck {
       const isInit = conn?.isInit;
       const hasWs = !!conn?.ws;
       const readyState = conn?.ws?.readyState;
-      const shouldRemove = !conn || !isInit || !hasWs || readyState !== 1;
-      console.log(`[HealthCheck] conn ${i}: isInit=${isInit} hasWs=${hasWs} readyState=${readyState} remove=${shouldRemove}`);
+      // Solo eliminar si isInit es false o si ws existe pero está cerrado (readyState === 3)
+      // No eliminar si ws no existe (bot principal) o si readyState es undefined
+      const shouldRemove = !conn || isInit === false || (hasWs && readyState === 3);
       if (shouldRemove) {
         global.conns.splice(i, 1);
         cleaned++;
       }
     }
 
-    if (cleaned > 0 || beforeCount > 0) {
+    if (cleaned > 0) {
       console.log(chalk.yellow(`[HealthCheck] ${cleaned}/${beforeCount} subbots limpiados. Quedan: ${global.conns.length}`));
     }
   }

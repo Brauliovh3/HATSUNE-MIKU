@@ -105,7 +105,6 @@ const upsertConn = (sock, sessionId) => {
     }
   }
   global.conns.push(sock)
-  console.log(`[upsertConn] Registered ${userId} in global.conns, total: ${global.conns.length}`)
 }
 
 

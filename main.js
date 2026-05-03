@@ -53,27 +53,17 @@ const isOwnerBot = (client) => {
 
 const isPrimaryHandler = (client, chat) => {
   const assignedBot = getAssignedPrimaryBot(chat)
-  const currentBot = getBotJid(client)
 
-  if (isOwnerBot(client)) {
-    console.log(`[isPrimaryHandler] OWNER BOT - allowed`)
-    return true
-  }
+  if (isOwnerBot(client)) return true
 
-  if (!assignedBot) {
-    console.log(`[isPrimaryHandler] NO primary assigned - blocking ${currentBot}`)
-    return false
-  }
+  if (!assignedBot) return false
 
   const assignedBotClean = normalizeJidDigits(assignedBot)
-  const currentBotClean = normalizeJidDigits(currentBot)
-  const connsList = global.conns?.map(c => ({ id: c.user?.id || c.userId, isInit: c.isInit })) || []
+  const currentBotClean = normalizeJidDigits(getBotJid(client))
   const isPrimaryConnected = global.conns?.some(c => {
     const connId = c.user?.id || c.userId
     return normalizeJidDigits(connId) === assignedBotClean && c.isInit
   })
-
-  console.log(`[isPrimaryHandler] conns=${JSON.stringify(connsList)} assigned=${assignedBotClean} current=${currentBotClean} connected=${isPrimaryConnected}`)
 
   if (!isPrimaryConnected) return true
 
