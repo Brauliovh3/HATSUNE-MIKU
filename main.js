@@ -306,6 +306,24 @@ export default async (client, m) => {
   
   if (m.isBot && !m.message?.interactiveResponseMessage) return
   initDB(m, client)
+
+  if (m.isGroup) {
+    const chat = global.db.data.chats[m.chat]
+    if (chat?.mutedUsers?.[m.sender]) {
+      const muteData = chat.mutedUsers[m.sender]
+      const now = Date.now()
+
+      if (muteData.unmuteAt && now >= muteData.unmuteAt) {
+        delete chat.mutedUsers[m.sender]
+      } else {
+        try {
+          await client.sendMessage(m.chat, { delete: m.key })
+        } catch {}
+        return
+      }
+    }
+  }
+
   antilink(client, m)
 
   const from     = m.key.remoteJid
