@@ -67,12 +67,13 @@ const isPrimaryHandler = (client, chat) => {
 
   const assignedBotClean = normalizeJidDigits(assignedBot)
   const currentBotClean = normalizeJidDigits(currentBot)
+  const connsList = global.conns?.map(c => ({ id: c.user?.id || c.userId, isInit: c.isInit })) || []
   const isPrimaryConnected = global.conns?.some(c => {
     const connId = c.user?.id || c.userId
     return normalizeJidDigits(connId) === assignedBotClean && c.isInit
   })
 
-  console.log(`[isPrimaryHandler] assigned=${assignedBotClean} current=${currentBotClean} connected=${isPrimaryConnected} result=${isPrimaryConnected && assignedBotClean === currentBotClean}`)
+  console.log(`[isPrimaryHandler] conns=${JSON.stringify(connsList)} assigned=${assignedBotClean} current=${currentBotClean} connected=${isPrimaryConnected}`)
 
   if (!isPrimaryConnected) return true
 
