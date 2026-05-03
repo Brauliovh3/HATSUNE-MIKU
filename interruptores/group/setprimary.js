@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url'
 
+const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
+
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 const getBotsFromFolder = (folderName) => {
@@ -39,7 +41,7 @@ export default {
       if (!groupParticipants.includes(who)) {
         return client.reply(m.chat, ` El bot mencionado no está presente en este grupo.`, m, global.miku)
       }
-      if (chat.primaryBot === who) {
+      if (normalizeJid(chat.primaryBot) === normalizeJid(who)) {
         return client.reply(m.chat, ` @${who.split('@')[0]} ya es el Bot principal del Grupo.`, m, global.miku, { mentions: [who] })
       }
       chat.primaryBot = who

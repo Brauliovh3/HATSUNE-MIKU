@@ -213,10 +213,14 @@ class SubBotManager {
       sock.ev.on('creds.update', saveCreds)
 
       sock.decodeJid = (jid) => {
-        if (!jid) return jid
+        if (!jid || typeof jid !== 'string') return jid
         if (/:\d+@/gi.test(jid)) {
-          const decode = jidDecode(jid) || {}
-          return (decode.user && decode.server && `${decode.user}@${decode.server}`) || jid
+          try {
+            const decode = jidDecode(jid) || {}
+            return (decode.user && decode.server && `${decode.user}@${decode.server}`) || jid
+          } catch {
+            return jid
+          }
         }
         return jid
       }
@@ -238,10 +242,14 @@ class SubBotManager {
           optimizer.registerSession(sessionId, 'Sub', { userId: sock.userId })
 
           sock.decodeJid = (jid) => {
-            if (!jid) return jid
+            if (!jid || typeof jid !== 'string') return jid
             if (/:\d+@/gi.test(jid)) {
-              const decode = jidDecode(jid) || {}
-              return (decode.user && decode.server && `${decode.user}@${decode.server}`) || jid
+              try {
+                const decode = jidDecode(jid) || {}
+                return (decode.user && decode.server && `${decode.user}@${decode.server}`) || jid
+              } catch {
+                return jid
+              }
             }
             return jid
           }
@@ -312,17 +320,18 @@ class SubBotManager {
             
             if ([428, 408, 500, 503, 515, DisconnectReason.restartRequired].includes(reason)) {
               const label = { 428: 'cierre inesperado', 408: 'pérdida de conexión', 500: 'conexión perdida', 503: 'servicio no disponible', 515: 'reinicio requerido' }[reason] || 'reinicio requerido'
-              console.log(chalk.magentaBright(`💙 Sub-Bot (${sessionId}) ${label} (${reason}). Reconectando...`))
 
               if (this.startingSubbots.has(sessionId)) return
               this.startingSubbots.add(sessionId)
-              try {
-                await reconectar()
-              } catch (err) {
-                console.error(chalk.red(`💙 Error reconectando ${sessionId}:`), err.message)
-                this.startingSubbots.delete(sessionId)
-              }
-              setTimeout(() => this.startingSubbots.delete(sessionId), 5000)
+
+              const delayMs = 1000 + Math.floor(Math.random() * 4000)
+              setTimeout(async () => {
+                try {
+                  await reconectar()
+                } catch (err) {
+                  this.startingSubbots.delete(sessionId)
+                }
+              }, delayMs)
               return
             }
 

@@ -407,10 +407,14 @@ async function startBot() {
   }
 
   sock.decodeJid = (jid) => {
-    if (!jid) return jid
+    if (!jid || typeof jid !== 'string') return jid
     if (/:\d+@/gi.test(jid)) {
-      const decode = jidDecode(jid) || {}
-      return (decode.user && decode.server && `${decode.user}@${decode.server}`) || jid
+      try {
+        const decode = jidDecode(jid) || {}
+        return (decode.user && decode.server && `${decode.user}@${decode.server}`) || jid
+      } catch {
+        return jid
+      }
     }
     return jid
   }
