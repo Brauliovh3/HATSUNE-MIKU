@@ -8,6 +8,30 @@ const FISH_SHOP_ITEMS = {
   'anillo': { name: 'Anillo de Suerte', price: 100000, type: 'accessory', bonus: 20, emoji: '💍' }
 }
 
+const pescaderiaCache = new Map()
+const CACHE_TTL = 5 * 60 * 1000
+
+function getCachedData(key, generator) {
+  const cached = pescaderiaCache.get(key)
+  if (cached && (Date.now() - cached.time) < CACHE_TTL) {
+    return cached.data
+  }
+  const data = generator()
+  pescaderiaCache.set(key, { data, time: Date.now() })
+  return data
+}
+
+function clearOldCache() {
+  const now = Date.now()
+  for (const [key, value] of pescaderiaCache) {
+    if ((now - value.time) > CACHE_TTL) {
+      pescaderiaCache.delete(key)
+    }
+  }
+}
+
+setInterval(clearOldCache, CACHE_TTL)
+
 export default {
   command: ['pescaderia', 'tienda pesca', 'fishshop'],
   category: 'rpg',
@@ -57,7 +81,7 @@ export default {
 export async function processFishingShopButton(conn, m) {
   const botId = conn.user.id.split(':')[0] + '@s.whatsapp.net'
   const currency = global.db.data.settings[botId]?.currency || 'MONEDA'
-  
+
   let buttonId = m.body || m.text || null
   if (m.message?.buttonsResponseMessage?.selectedButtonId) {
     buttonId = m.message.buttonsResponseMessage.selectedButtonId
@@ -74,17 +98,14 @@ export async function processFishingShopButton(conn, m) {
       }
     } catch (e) {}
   }
-  
-  console.log('[PESCADERIA] buttonId:', buttonId)
-  
+
   if (!buttonId || (!buttonId.startsWith('shop_') && !buttonId.startsWith('buy_'))) {
-    console.log('[PESCADERIA] No procesar, buttonId:', buttonId)
     return false
   }
-  
+
   const chat = global.db.data.chats[m.chat]
   if (!chat || !chat.users || !chat.users[m.sender]) {
-    return conn.sendMessage(m.chat, { text: 'Error: usuario no encontrado. Usa .pescaderia primero.' }, { quoted: m })
+    return conn.sendMessage(m.chat, { text: '💙 Usa *.pescaderia* primero para activar tu cuenta.' }, { quoted: m })
   }
   const user = chat.users[m.sender]
   user.coins ||= 0
@@ -160,8 +181,11 @@ export async function processFishingShopButton(conn, m) {
   }
   
   if (buttonId === 'shop_main') {
-    const { default: shopCmd } = await import('./pescaderia.js')
-    return await shopCmd.run(conn, m, [], global.prefix || '.', 'pescaderia')
+    const shopCmd = await import('./pescaderia.js').then(m => m.default).catch(() => null)
+    if (shopCmd) {
+      return await shopCmd.run(conn, m, [], global.prefix || '.', 'pescaderia')
+    }
+    return false
   }
   
   if (buttonId.startsWith('buy_')) {

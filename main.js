@@ -42,9 +42,22 @@ function safeMsg(fn) {
 const normalizeJidDigits    = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 const getBotJid             = (client) => (client.user?.id?.split(':')[0] || client.user?.lid || '') + '@s.whatsapp.net'
 const getAssignedPrimaryBot = (chat)   => chat?.primaryBot || null
+
+const isOwnerBot = (client) => {
+  const botJid = getBotJid(client)
+  return global.owner?.some(num => {
+    const ownerJid = num + '@s.whatsapp.net'
+    return normalizeJidDigits(ownerJid) === normalizeJidDigits(botJid)
+  }) || false
+}
+
 const isPrimaryHandler      = (client, chat) => {
   const assignedBot = getAssignedPrimaryBot(chat)
+
+  if (isOwnerBot(client)) return true
+
   if (!assignedBot) return true
+
   return normalizeJidDigits(assignedBot) === normalizeJidDigits(getBotJid(client))
 }
 
