@@ -55,7 +55,6 @@ const shouldProcessRaw = (sock, raw) => {
   const isGroup = chatJid?.endsWith('@g.us')
   const db = global.db?.data
 
- 
   if (!isGroup) return true
   if (!db) return true
 
@@ -73,25 +72,22 @@ const shouldProcessRaw = (sock, raw) => {
   const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 
   
-  if (!primaryBotId) {
-    chat.primaryBot = currentBotId
-    return true
-  }
+  if (!primaryBotId) return false
+
+  const primaryBotClean = normalizeJid(primaryBotId)
+  const currentBotClean = normalizeJid(currentBotId)
 
   
-  const primaryBotClean = normalizeJid(primaryBotId)
   const isPrimaryConnected = global.conns?.some(c => {
     const connId = c.user?.id || c.userId
     return normalizeJid(connId) === primaryBotClean && c.isInit
   })
 
- 
-  if (!isPrimaryConnected) {
-    return true
-  }
+  
+  if (!isPrimaryConnected) return true
 
- 
-  return normalizeJid(primaryBotId) === normalizeJid(currentBotId)
+  
+  return primaryBotClean === currentBotClean
 }
 
 const removeFromConns = (sessionId) => {
