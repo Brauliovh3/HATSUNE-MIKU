@@ -19,12 +19,14 @@ class SystemOptimizer {
     };
     
     this.limits = {
-      memoryThreshold: 85,
+      memoryThreshold: 75,
       diskThreshold: 90,
       sessionMaxAge: 24 * 60 * 60 * 1000,
       prekeyBatchSize: 20,
-      tmpMaxAge: 10 * 60 * 1000,
-      tmpMaxSize: 5 * 1024 * 1024
+      tmpMaxAge: 5 * 60 * 1000,
+      tmpMaxSize: 3 * 1024 * 1024,
+      rssThresholdMB: 512,
+      heapThresholdMB: 256
     };
     
     this.timers = new Map();
@@ -90,27 +92,37 @@ class SystemOptimizer {
       const systemMem = os.totalmem();
       const freeMem = os.freemem();
       const usedPercent = ((systemMem - freeMem) / systemMem) * 100;
-      
+      const rssMB = memUsage.rss / 1024 / 1024;
+      const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
+
       global.memoryStats = {
-        rss: (memUsage.rss / 1024 / 1024).toFixed(2),
-        heapUsed: (memUsage.heapUsed / 1024 / 1024).toFixed(2),
+        rss: rssMB.toFixed(2),
+        heapUsed: heapUsedMB.toFixed(2),
         heapTotal: (memUsage.heapTotal / 1024 / 1024).toFixed(2),
         external: (memUsage.external / 1024 / 1024).toFixed(2),
         systemUsed: usedPercent.toFixed(1)
       };
-      
-      if (usedPercent > this.limits.memoryThreshold) {
-        
+
+      if (usedPercent > this.limits.memoryThreshold || rssMB > this.limits.rssThresholdMB) {
         await this.aggressiveCleanup();
-        
+
         if (global.gc) {
           global.gc();
-          
         }
       }
-      
-      if (memUsage.rss > 512 * 1024 * 1024) {
+
+      if (rssMB > 400 || heapUsedMB > 200) {
         this.optimizeCache();
+        this.trimMessageQueue();
+      }
+    } catch {}
+  }
+
+  trimMessageQueue() {
+    try {
+      if (global._sendQueue && global._sendQueue.length > 50) {
+        const excess = global._sendQueue.length - 50;
+        global._sendQueue.splice(0, excess);
       }
     } catch {}
   }
@@ -300,24 +312,29 @@ class SystemOptimizer {
   }
 
   async aggressiveCleanup() {
-  
-    
     await this.cleanTempFiles();
-    
+
     try {
       if (global.client?.ev?.flush) {
         global.client.ev.flush();
       }
     } catch {}
-    
+
     this.cache.flushAll();
-    
+
+    if (global.gallerySessions && global.gallerySessions.size > 5) {
+      global.gallerySessions.clear();
+    }
+
+    this.trimMessageQueue();
+
     try {
-      const { stdout } = await execAsync('npm cache verify 2>nul || true');
+      if (global.activeYouTubeDownloads && global.activeYouTubeDownloads.size > 0) {
+        global.activeYouTubeDownloads.clear();
+      }
     } catch {}
-    
+
     this.stats.lastCleanup = Date.now();
-   
   }
 
   optimizeCache() {

@@ -56,7 +56,12 @@ if (!fs.existsSync('./tmp')) fs.mkdirSync('./tmp', { recursive: true })
 
 
 let isCleaning = false
-const yield_ = () => new Promise(r => setImmediate(r))  
+const yield_ = () => new Promise(r => setImmediate(r))
+
+const messageRateLimiter = new Map()
+const MAX_MESSAGES_PER_MINUTE = 30
+const CONCURRENT_MESSAGE_LIMIT = 10
+let activeMessageCount = 0  
 
 async function cleanCache() {
   if (isCleaning) return
@@ -325,13 +330,38 @@ async function startBot() {
 
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return
+    if (activeMessageCount >= CONCURRENT_MESSAGE_LIMIT) {
+      console.log(chalk.yellow('[Rate Limit] Mensajes concurrentes limitados'))
+      return
+    }
+
     for (const kay of chatUpdate.messages) {
       if (!kay?.message)                                  continue
       if (kay.key?.remoteJid === 'status@broadcast')      continue
 
+      const sender = kay.key?.remoteJid || kay.key?.participant || 'unknown'
+      const now = Date.now()
+      const userMessages = messageRateLimiter.get(sender) || { count: 0, resetTime: now + 60000 }
+
+      if (now > userMessages.resetTime) {
+        userMessages.count = 0
+        userMessages.resetTime = now + 60000
+      }
+
+      userMessages.count++
+      messageRateLimiter.set(sender, userMessages)
+
+      if (userMessages.count > MAX_MESSAGES_PER_MINUTE) {
+        if (userMessages.count === MAX_MESSAGES_PER_MINUTE + 1) {
+          console.log(chalk.yellow(`[Rate Limit] Usuario ${sender} excedió límite de mensajes`))
+        }
+        continue
+      }
+
       healthCheck.recordMessage()
       _maybeYield()
-      
+
+      activeMessageCount++
       ;(async () => {
         try {
           kay.message = Object.keys(kay.message)[0] === 'ephemeralMessage'
@@ -345,8 +375,8 @@ async function startBot() {
         } catch (err) {
           healthCheck.recordError(err)
           const errorMsg = err?.message || 'Unknown error'
-          if (!errorMsg.includes('rate-overlimit') && 
-              !errorMsg.includes('timed out') && 
+          if (!errorMsg.includes('rate-overlimit') &&
+              !errorMsg.includes('timed out') &&
               !errorMsg.includes('Connection Closed') &&
               !errorMsg.includes('connection lost') &&
               !errorMsg.includes('rate_overlimit') &&
@@ -354,8 +384,19 @@ async function startBot() {
               !errorMsg.includes('Internal Server Error')) {
             console.log(chalk.red('[ERROR msg]'), errorMsg.slice(0, 100))
           }
+        } finally {
+          activeMessageCount--
         }
       })()
+    }
+
+    if (messageRateLimiter.size > 1000) {
+      const now = Date.now()
+      for (const [sender, data] of messageRateLimiter) {
+        if (now > data.resetTime) {
+          messageRateLimiter.delete(sender)
+        }
+      }
     }
   })
 
@@ -376,9 +417,9 @@ async function startBot() {
 }
 
 
-setInterval(cleanCache, 10 * 60 * 1000)
+setInterval(cleanCache, 5 * 60 * 1000)
 cleanCache()
-setTimeout(cleanCache, 2 * 60 * 1000)
+setTimeout(cleanCache, 1 * 60 * 1000)
 
 
 ;(async () => {

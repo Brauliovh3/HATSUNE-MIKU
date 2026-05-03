@@ -1,12 +1,14 @@
 {
-  "name": "HatsuneMiku",
+  "name": "hatsune-miku",
   "version": "3.0",
   "description": "WhatsApp Bot Multi Device",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "format": "prettier --write .",
-    "start": "node index.js"
+    "start": "node index.js",
+    "start:gc": "node --expose-gc --optimize-for-size --max-old-space-size=1536 index.js",
+    "start:optimized": "node --expose-gc --optimize-for-size --max-old-space-size=2048 --gc-interval=100 index.js"
   },
   "keywords": [
     "whatsapp-bot",

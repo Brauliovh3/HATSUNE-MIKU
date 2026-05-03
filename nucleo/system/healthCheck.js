@@ -24,24 +24,23 @@ class HealthCheck {
 
   start() {
     
-    this.schedule('gallery-cleanup', () => this.cleanGallerySessions(), 5 * 60 * 1000);
+    this.schedule('gallery-cleanup', () => this.cleanGallerySessions(), 3 * 60 * 1000);
     
-   
-    this.schedule('stats-cleanup', () => this.cleanOldStats(), 30 * 60 * 1000);
+    this.schedule('stats-cleanup', () => this.cleanOldStats(), 15 * 60 * 1000);
     
-   
     this.schedule('connection-check', () => this.checkConnection(), 2 * 60 * 1000);
     
-   
-    this.schedule('download-cleanup', () => this.cleanStuckDownloads(), 5 * 60 * 1000);
+    this.schedule('download-cleanup', () => this.cleanStuckDownloads(), 3 * 60 * 1000);
     
+    this.schedule('baileys-cleanup', () => this.cleanBaileysStores(), 5 * 60 * 1000);
     
-    this.schedule('gc-cleanup', () => this.forceGC(), 10 * 60 * 1000);
+    this.schedule('db-cleanup', () => this.cleanDatabaseCache(), 10 * 60 * 1000);
     
+    this.schedule('gc-cleanup', () => this.forceGC(), 5 * 60 * 1000);
     
-    this.schedule('memory-check', () => this.checkMemory(), 60 * 1000);
+    this.schedule('memory-check', () => this.checkMemory(), 30 * 1000);
     
-    console.log(chalk.green('✅ Health Check iniciado'));
+    console.log(chalk.green('✅ Health Check iniciado (versión optimizada)'));
   }
 
   schedule(name, fn, interval) {
@@ -162,42 +161,194 @@ class HealthCheck {
   checkMemory() {
     const memUsage = process.memoryUsage();
     const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
+    const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
     const rssMB = memUsage.rss / 1024 / 1024;
     const externalMB = memUsage.external / 1024 / 1024;
 
-    if (rssMB > 2048 || heapUsedMB > 1024) {
+    global.memoryStats = {
+      rss: rssMB.toFixed(2),
+      heapUsed: heapUsedMB.toFixed(2),
+      heapTotal: heapTotalMB.toFixed(2),
+      external: externalMB.toFixed(2)
+    };
+
+    if (rssMB > 1800 || heapUsedMB > 900) {
       console.log(chalk.red(`[HealthCheck] Memoria CRÍTICA: RSS ${rssMB.toFixed(2)}MB, Heap ${heapUsedMB.toFixed(2)}MB, External ${externalMB.toFixed(2)}MB`));
 
-      if (global.gallerySessions) global.gallerySessions.clear();
-      this.cleanStuckDownloads();
+      this.emergencyCleanup();
 
-      if (global.client?.chats && global.client.chats.size > 50) {
-        const chats = global.client.chats;
+      if (rssMB > 2500) {
+        console.log(chalk.red('[HealthCheck] Memoria insostenible, reinicio necesario'));
+      }
+    } else if (rssMB > 1200 || heapUsedMB > 600) {
+      console.log(chalk.yellow(`[HealthCheck] Alta memoria: RSS ${rssMB.toFixed(2)}MB, Heap ${heapUsedMB.toFixed(2)}MB`));
+
+      this.aggressiveCleanup();
+    } else if (rssMB > 800 || heapUsedMB > 400) {
+      this.standardCleanup();
+    }
+  }
+
+  emergencyCleanup() {
+    console.log(chalk.red('[HealthCheck] Ejecutando limpieza de EMERGENCIA...'));
+
+    if (global.gallerySessions) {
+      const count = global.gallerySessions.size;
+      global.gallerySessions.clear();
+      console.log(chalk.yellow(`[HealthCheck] ${count} sesiones de galería eliminadas`));
+    }
+
+    this.cleanStuckDownloads();
+    this.cleanBaileysStores();
+    this.cleanDatabaseCache();
+
+    if (global.client?.chats && global.client.chats.size > 30) {
+      const chats = global.client.chats;
+      const now = Date.now();
+      let deleted = 0;
+      const entries = Array.from(chats.entries());
+      for (let i = 0; i < entries.length && deleted < 100; i++) {
+        const [jid, chat] = entries[i];
+        const lastMsgTime = chat?.lastMessage?.messageTimestamp
+          ? chat.lastMessage.messageTimestamp * 1000
+          : 0;
+        if (now - lastMsgTime > 24 * 60 * 60 * 1000) {
+          chats.delete(jid);
+          deleted++;
+        }
+      }
+      if (deleted > 0) console.log(chalk.gray(`[HealthCheck] ${deleted} chats antiguos eliminados`));
+    }
+
+    if (global.activeYouTubeDownloads) {
+      global.activeYouTubeDownloads.clear();
+    }
+
+    this.forceGC();
+  }
+
+  aggressiveCleanup() {
+    if (global.gallerySessions && global.gallerySessions.size > 10) {
+      this.cleanGallerySessions();
+    }
+    this.cleanStuckDownloads();
+    this.cleanBaileysStores();
+    this.forceGC();
+  }
+
+  standardCleanup() {
+    if (global.gallerySessions && global.gallerySessions.size > 20) {
+      this.cleanGallerySessions();
+    }
+    this.forceGC();
+  }
+
+  cleanBaileysStores() {
+    const client = global.client;
+    if (!client) return;
+
+    let cleaned = 0;
+
+    try {
+      if (client.chats && client.chats.size > 100) {
         const now = Date.now();
         let deleted = 0;
-        for (const [jid, chat] of chats) {
+        for (const [jid, chat] of client.chats) {
+          if (!chat || deleted >= 50) continue;
           const lastMsgTime = chat?.lastMessage?.messageTimestamp
             ? chat.lastMessage.messageTimestamp * 1000
             : 0;
-          if (now - lastMsgTime > 48 * 60 * 60 * 1000) {
-            chats.delete(jid);
+          if (now - lastMsgTime > 12 * 60 * 60 * 1000) {
+            client.chats.delete(jid);
             deleted++;
           }
         }
-        if (deleted > 0) console.log(chalk.gray(`[HealthCheck] ${deleted} chats antiguos eliminados`));
+        cleaned += deleted;
       }
+    } catch {}
 
-      this.forceGC();
-
-      if (rssMB > 3072) {
-        console.log(chalk.red('[HealthCheck] Memoria insostenible, reinicio necesario'));
+    try {
+      if (client.contacts && client.contacts.size > 500) {
+        let deleted = 0;
+        const entries = Array.from(client.contacts.entries());
+        for (let i = 0; i < entries.length - 400 && deleted < 200; i++) {
+          client.contacts.delete(entries[i][0]);
+          deleted++;
+        }
+        cleaned += deleted;
       }
-    } else if (rssMB > 1024 || heapUsedMB > 512) {
-      console.log(chalk.yellow(`[HealthCheck] Alta memoria: RSS ${rssMB.toFixed(2)}MB, Heap ${heapUsedMB.toFixed(2)}MB`));
+    } catch {}
 
-      if (global.gallerySessions) this.cleanGallerySessions();
-      this.cleanStuckDownloads();
-      this.forceGC();
+    try {
+      if (client.ev && typeof client.ev.flush === 'function') {
+        client.ev.flush();
+      }
+    } catch {}
+
+    if (cleaned > 0) {
+      console.log(chalk.yellow(`[HealthCheck] ${cleaned} entradas de Baileys limpiadas`));
+    }
+  }
+
+  cleanDatabaseCache() {
+    if (!global.db?.data) return;
+
+    let cleaned = 0;
+    const now = Date.now();
+
+    try {
+      if (global.db.data.users) {
+        const users = global.db.data.users;
+        let inactiveCount = 0;
+        for (const userId in users) {
+          const user = users[userId];
+          const lastActivity = user?.usedTime || user?.lastCmd || 0;
+          if (now - lastActivity > 7 * 24 * 60 * 60 * 1000) {
+            if (user.stats && Object.keys(user.stats).length > 7) {
+              const sortedDates = Object.keys(user.stats).sort();
+              const toKeep = sortedDates.slice(-7);
+              for (const date of sortedDates) {
+                if (!toKeep.includes(date)) {
+                  delete user.stats[date];
+                  cleaned++;
+                }
+              }
+            }
+            inactiveCount++;
+          }
+        }
+      }
+    } catch {}
+
+    try {
+      if (global.db.data.chats) {
+        const chats = global.db.data.chats;
+        for (const chatId in chats) {
+          const chat = chats[chatId];
+          if (chat?.users) {
+            for (const userId in chat.users) {
+              const user = chat.users[userId];
+              if (user?.stats) {
+                const dates = Object.keys(user.stats);
+                if (dates.length > 14) {
+                  const sortedDates = dates.sort();
+                  const toKeep = sortedDates.slice(-14);
+                  for (const date of sortedDates) {
+                    if (!toKeep.includes(date)) {
+                      delete user.stats[date];
+                      cleaned++;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch {}
+
+    if (cleaned > 0) {
+      console.log(chalk.yellow(`[HealthCheck] ${cleaned} estadísticas antiguas de DB limpiadas`));
     }
   }
 
