@@ -27,7 +27,7 @@ async function drainWelcomeQueue() {
   while (_welcomeQueue.length > 0) {
     const task = _welcomeQueue.shift()
     try { await task() } catch {}
-    await new Promise(r => setTimeout(r, 500))
+    await new Promise(r => setTimeout(r, 100))
   }
   _welcomeRunning = false
 }
@@ -37,7 +37,7 @@ function queueWelcome(task) {
   drainWelcomeQueue()
 }
 
-async function safeSend(client, jid, content, retries = 5) {
+async function safeSend(client, jid, content, retries = 2) {
   for (let i = 0; i <= retries; i++) {
     try {
       return await client.sendMessage(jid, content)
@@ -45,7 +45,7 @@ async function safeSend(client, jid, content, retries = 5) {
       const msg = String(err?.message || '')
       if (msg.includes('rate-overlimit') || msg.includes('rate') || err?.data === 429) {
         if (i < retries) {
-          const delay = Math.min(2000 * (i + 1), 10000)
+          const delay = Math.min(1500 * (i + 1), 5000)
           await new Promise(r => setTimeout(r, delay))
           continue
         }
@@ -115,7 +115,7 @@ export default async (client, m) => {
         try {
           pp = await Promise.race([
             client.profilePictureUrl(validJid, 'image'),
-            new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 2000))
+            new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 800))
           ])
         } catch {}
 

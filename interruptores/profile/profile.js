@@ -1,13 +1,20 @@
 import moment from 'moment-timezone';
 import { resolveLidToRealJid } from "../../nucleo/utils.js"
-import { readFileSync } from 'fs'
 
 let waifuDB = null
-try {
-  const data = readFileSync('./src/database/waifudatabase.json', 'utf-8')
-  waifuDB = JSON.parse(data)
-} catch (e) {
-  console.log('waifudatabase.json not found')
+let waifuDBLoaded = false
+
+async function loadWaifuDB() {
+  if (waifuDBLoaded) return waifuDB
+  try {
+    const { readFileSync } = await import('fs')
+    const data = readFileSync('./src/database/waifudatabase.json', 'utf-8')
+    waifuDB = JSON.parse(data)
+  } catch {
+    waifuDB = {}
+  }
+  waifuDBLoaded = true
+  return waifuDB
 }
 
 const growth = Math.pow(Math.PI / Math.E, 1.618) * Math.E * 0.75
@@ -23,6 +30,7 @@ export default {
   command: ['profile', 'perfil'],
   category: 'rpg',
   run: async (client, m, args, usedPrefix, command) => {
+    const db = await loadWaifuDB()
     const texto = m.mentionedJid
     const who2 = texto.length > 0 ? texto[0] : m.quoted ? m.quoted.sender : m.sender
     const userId = await resolveLidToRealJid(who2, client, m.chat);
@@ -52,7 +60,7 @@ export default {
     const banco = user.bank || 0
     const totalCoins = chocolates + banco
     const favId = user.favorite
-    const userWaifus = waifuDB?.[userId]?.waifu?.characters || []
+    const userWaifus = db?.[userId]?.waifu?.characters || []
     const haremCount = userWaifus.length
     const haremValue = userWaifus.reduce((acc, char) => acc + (char.value || 0), 0)
     const favChar = userWaifus.find(c => c.favorite)
@@ -66,8 +74,9 @@ export default {
       const porcentaje = xp > 0 ? Math.floor((progreso / xp) * 100) : 0
 
       const progressBar = (porcentaje) => {
-        const filled = Math.floor(porcentaje / 10)
-        const empty = 10 - filled
+        const clamped = Math.max(0, Math.min(100, porcentaje || 0))
+        const filled = Math.floor(clamped / 10)
+        const empty = Math.max(0, 10 - filled)
         return '█'.repeat(filled) + '░'.repeat(empty)
       }
 
