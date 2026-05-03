@@ -51,14 +51,29 @@ const isOwnerBot = (client) => {
   }) || false
 }
 
-const isPrimaryHandler      = (client, chat) => {
+const isPrimaryHandler = (client, chat) => {
   const assignedBot = getAssignedPrimaryBot(chat)
 
   if (isOwnerBot(client)) return true
 
   if (!assignedBot) return true
 
-  return normalizeJidDigits(assignedBot) === normalizeJidDigits(getBotJid(client))
+  const assignedBotClean = normalizeJidDigits(assignedBot)
+  const currentBotClean = normalizeJidDigits(getBotJid(client))
+
+  
+  const isPrimaryConnected = global.conns?.some(c => {
+    const connId = c.user?.id || c.userId
+    return normalizeJidDigits(connId) === assignedBotClean && c.isInit
+  })
+
+  
+  if (!isPrimaryConnected && assignedBotClean !== currentBotClean) {
+    console.log(`[Main] Primary bot ${assignedBotClean} offline, ${currentBotClean} taking over`)
+    return true
+  }
+
+  return assignedBotClean === currentBotClean
 }
 
 export default async (client, m) => {
@@ -486,9 +501,9 @@ export default async (client, m) => {
   const hasPrefix    = settings.prefix === true ? true
     : (Array.isArray(settings.prefix) ? settings.prefix : typeof settings.prefix === 'string' ? [settings.prefix] : [])
       .some(p => textToMatch?.startsWith(p))
-  const botprimaryId = getAssignedPrimaryBot(chat)
-  if (botprimaryId && hasPrefix && m.isGroup) {
-    if (normalizeJidDigits(botprimaryId) !== normalizeJidDigits(botJid) && command !== 'setprimary') return
+  
+  if (m.isGroup && hasPrefix && !isPrimaryHandler(client, chat) && command !== 'setprimary') {
+    return
   }
 
 if (!isOwners && settings.self)   return

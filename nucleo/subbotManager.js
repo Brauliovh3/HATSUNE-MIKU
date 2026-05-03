@@ -56,33 +56,44 @@ const shouldProcessRaw = (sock, raw) => {
   const db = global.db?.data
 
  
-  if (isGroup && db) {
-    db.chats ??= {}
-    const chat = db.chats[chatJid] ??= {}
-    chat.users ??= {}
-    chat.mutedUsers ??= {}
-    chat.isBanned ??= false
-    chat.economy ??= true
-    chat.adminonly ??= false
-    chat.antilinks ??= true
+  if (!isGroup) return true
+  if (!db) return true
 
-    
-    const primaryBotId = chat.primaryBot
-    const currentBotId = sock.user?.id
+  db.chats ??= {}
+  const chat = db.chats[chatJid] ??= {}
+  chat.users ??= {}
+  chat.mutedUsers ??= {}
+  chat.isBanned ??= false
+  chat.economy ??= true
+  chat.adminonly ??= false
+  chat.antilinks ??= true
 
-    
-    if (!primaryBotId) {
-      chat.primaryBot = currentBotId
-      return true
-    }
+  const primaryBotId = chat.primaryBot
+  const currentBotId = sock.user?.id
+  const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 
-    
-    const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
-    return normalizeJid(primaryBotId) === normalizeJid(currentBotId)
+  
+  if (!primaryBotId) {
+    chat.primaryBot = currentBotId
+    return true
+  }
+
+  
+  const primaryBotClean = normalizeJid(primaryBotId)
+  const isPrimaryConnected = global.conns?.some(c => {
+    const connId = c.user?.id || c.userId
+    return normalizeJid(connId) === primaryBotClean && c.isInit
+  })
+
+ 
+  if (!isPrimaryConnected) {
+    console.log(`[SubBot] Primary bot ${primaryBotClean} offline, ${normalizeJid(currentBotId)} taking over ${chatJid}`)
+    chat.primaryBot = currentBotId
+    return true
   }
 
  
-  return true
+  return normalizeJid(primaryBotId) === normalizeJid(currentBotId)
 }
 
 const removeFromConns = (sessionId) => {
@@ -220,7 +231,7 @@ class SubBotManager {
         return new Promise((resolve, reject) => {
           const timeout = setTimeout(() => reject(new Error('Timeout reconnecting')), 60_000)
 
-          sock = makeWASocket({ ...connectionOptions }, { chats: oldChats })
+          sock = makeWASocket({ ...connectionOptions, chats: oldChats })
           sock.isInit     = false
           sock._sessionId = sessionId
           sock.ev.on('creds.update', saveCreds)
@@ -249,8 +260,21 @@ class SubBotManager {
       }
 
       const attachEvents = (sock) => {
+        const safeHandler = (eventName, handler) => {
+          return async (...args) => {
+            try {
+              await handler(...args);
+            } catch (err) {
+              if (err?.message?.includes('not-acceptable')) {
+                console.log(chalk.yellow(`[SubBot] Ignorando error not-acceptable en ${eventName}`));
+              } else {
+                console.error(chalk.red(`[SubBot] Error en ${eventName}:`), err.message);
+              }
+            }
+          };
+        };
         
-        sock.ev.on('connection.update', async ({ connection, lastDisconnect, isNewLogin }) => {
+        sock.ev.on('connection.update', safeHandler('connection.update', async ({ connection, lastDisconnect, isNewLogin }) => {
           if (isNewLogin) sock.isInit = false
 
           if (connection === 'open') {
@@ -389,7 +413,8 @@ class SubBotManager {
             }
 
             _maybeYield()
-            activeSubbotMessages.set(sessionId, activeCount + 1)
+            const currentCount = activeSubbotMessages.get(sessionId) || 0
+            activeSubbotMessages.set(sessionId, currentCount + 1)
 
             ;(async () => {
               try {
