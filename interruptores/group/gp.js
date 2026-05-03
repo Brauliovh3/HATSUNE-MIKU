@@ -31,8 +31,21 @@ export default {
         totalCoins += Number(user.coins) || 0;
       }
     });
-    const allCharacters = Object.values(global.db.data.characters || {})
-    const totalCharacters = allCharacters.length
+   
+    let waifuDB = null
+    try {
+      const data = await fs.promises.readFile('./src/database/waifudatabase.json', 'utf-8')
+      waifuDB = JSON.parse(data)
+    } catch (e) {}
+    
+   
+    let totalCharacters = 0
+    if (waifuDB) {
+      for (const userId of Object.keys(waifuDB)) {
+        const userChars = waifuDB[userId]?.waifu?.characters || []
+        totalCharacters += userChars.length
+      }
+    }
     const claimedIDs = Object.entries(global.db.data.chats[m.chat]?.characters || {}).filter(([, c]) => c.user).map(([id]) => id)
     const claimedCount = claimedIDs.length
     const claimRate = totalCharacters > 0 ? ((claimedCount / totalCharacters) * 100).toFixed(2) : '0.00'
@@ -54,29 +67,31 @@ export default {
       const on = '✅'
       const off = '❌'
       
-      let message = `╭─────────❀ MIKU BOT ❀─────────╮\n`;
-      message += `│ ${groupName?.substring(0, 28) || 'Grupo'}\n`;
-      message += `├─────────❀ INFO ❀────────────┤\n`;
-      message += `│ 👤 Creador: ${groupCreator}\n`;
-      message += `│ 🤖 Bot: ${botprimary}\n`;
-      message += `│ 👮 Admins: ${groupAdmins.length}\n`;
-      message += `│ 👥 Miembros: ${totalParticipants}\n`;
-      message += `│ 📝 Registrados: ${registeredUsersInGroup}\n`;
-      message += `├─────────❀ GACHA ❀───────────┤\n`;
-      message += `│ 🎴 Claims: ${claimedCount}/${totalCharacters}\n`;
-      message += `│ 📊 Porcentaje: ${claimRate}%\n`;
-      message += `│ 💰 Economia: ${totalCoins.toLocaleString()} ${monedas}\n`;
-      message += `├─────────❀ SETTINGS ❀────────┤\n`;
-      message += `│ Bot: ${chat.isBanned ? off : on}\n`;
-      message += `│ AntiLink: ${chat.antilinks ? on : off}\n`;
-      message += `│ Welcome: ${chat.welcome ? on : off}\n`;
-      message += `│ Goodbye: ${chat.goodbye ? on : off}\n`;
-      message += `│ Alerts: ${chat.alerts ? on : off}\n`;
-      message += `│ Gacha: ${chat.gacha ? on : off}\n`;
-      message += `│ Economy: ${chat.economy ? on : off}\n`;
-      message += `│ NSFW: ${chat.nsfw ? on : off}\n`;
-      message += `│ AdminMode: ${chat.adminonly ? on : off}\n`;
-      message += `╰─────────❀ ${botname} ❀─────────╯`;
+      let message = `*❀ MIKU BOT ❀*\n\n`;
+      message += `*📍 ${groupName || 'Grupo'}*\n\n`;
+      message += `*-- INFO --*\n`;
+      message += `👤 Creador: ${groupCreator}\n`;
+      message += `🤖 Bot: ${botprimary}\n`;
+      message += `👮 Admins: ${groupAdmins.length}\n`;
+      message += `👥 Miembros: ${totalParticipants}\n`;
+      message += `📝 Registrados: ${registeredUsersInGroup}\n\n`;
+      message += `*-- GACHA --*\n`;
+      message += `🎴 Claims: ${claimedCount}/${totalCharacters}\n`;
+      message += `📊 Porcentaje: ${claimRate}%\n`;
+      message += `💰 Economia: ${totalCoins.toLocaleString()} ${monedas}\n\n`;
+      message += `*-- SETTINGS --*\n`;
+      message += `Bot: ${chat.isBanned ? off : on}\n`;
+      message += `AntiLink: ${chat.antilinks ? on : off}\n`;
+      message += `Welcome: ${chat.welcome ? on : off}\n`;
+      message += `Goodbye: ${chat.goodbye ? on : off}\n`;
+      message += `Alerts: ${chat.alerts ? on : off}\n`;
+      message += `Gacha: ${chat.gacha ? on : off}\n`;
+      message += `Economy: ${chat.economy ? on : off}\n`;
+      message += `NSFW: ${chat.nsfw ? on : off}\n`;
+      message += `AdminMode: ${chat.adminonly ? on : off}\n\n`;
+      message += `-- MIKU BOT --`;
+      
+      message = message.replace(/[├┤│┌┐└┘─╭╮╯╰]/g, '')
       
       const mentionOw = groupMetadata.owner ? groupMetadata.owner : '';
       const mentions = [rawPrimary, mentionOw].filter(Boolean);

@@ -101,7 +101,7 @@ export default async (client, m) => {
   
   if (buttonId && (buttonId.startsWith('menu_') || buttonId.startsWith('shop_') || buttonId.startsWith('buy_'))) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
-    if (m.isGroup && chatDataBtn?.isBanned) return
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
 
     if (buttonId.startsWith('menu_')) {
       const { processMenuButton } = await import('./interruptores/main/menu.js')
@@ -155,7 +155,7 @@ export default async (client, m) => {
   
   if (buttonId && (buttonId.startsWith('waifu_claim_') || buttonId.startsWith('waifu_sell_'))) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
-    if (m.isGroup && chatDataBtn?.isBanned) return
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
 
     let userId
     try {
@@ -253,7 +253,7 @@ export default async (client, m) => {
   
   if (buttonId && (buttonId.startsWith('gallery_prev_') || buttonId.startsWith('gallery_next_'))) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
-    if (m.isGroup && chatDataBtn?.isBanned) return
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
 
     const sessionId = buttonId.split('_').slice(2).join('_')
     const session   = gallerySessions.get(sessionId)

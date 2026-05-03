@@ -1,5 +1,14 @@
 import moment from 'moment-timezone';
 import { resolveLidToRealJid } from "../../nucleo/utils.js"
+import { readFileSync } from 'fs'
+
+let waifuDB = null
+try {
+  const data = readFileSync('./src/database/waifudatabase.json', 'utf-8')
+  waifuDB = JSON.parse(data)
+} catch (e) {
+  console.log('waifudatabase.json not found')
+}
 
 const growth = Math.pow(Math.PI / Math.E, 1.618) * Math.E * 0.75
 function xpRange(level, multiplier = global.multiplier || 2) {
@@ -43,15 +52,11 @@ export default {
     const banco = user.bank || 0
     const totalCoins = chocolates + banco
     const favId = user.favorite
-    const favLine = favId && chat.characters?.[favId] ? `\n❀ Claim favorito: *${chat.characters[favId].name || '???'}*\n` : ''
-    const ownedIDs = Object.entries(chat.characters || {}).filter(([, c]) => c.user === userId).map(([id]) => id)
-    const haremCount = ownedIDs.length
-    const haremValue = ownedIDs.reduce((acc, id) => {
-    const local = chat.characters?.[id] || {}
-    const globalRec = global.db.data.characters?.[id] || {}  
-    const value = (globalRec && typeof globalRec.value === 'number') ? globalRec.value : (local && typeof local.value === 'number') ? local.value : 0
-    return acc + value
-    }, 0)
+    const userWaifus = waifuDB?.[userId]?.waifu?.characters || []
+    const haremCount = userWaifus.length
+    const haremValue = userWaifus.reduce((acc, char) => acc + (char.value || 0), 0)
+    const favChar = userWaifus.find(c => c.favorite)
+    const favLine = favChar ? `\n❀ Favorito: *${favChar.name}*\n` : ''
     const users = Object.entries(globalUsers).map(([key, value]) => ({ ...value, jid: key }))
     const sortedLevel = users.sort((a, b) => (b.level || 0) - (a.level || 0))
     try {
@@ -68,25 +73,27 @@ export default {
 
       const perfil = await client.profilePictureUrl(userId, 'image').catch((_) => '')
 
-      const profileText = `╭─────────❀ MIKU BOT ❀─────────╮
-│ 👤 ${name || 'Usuario'}
-├─────────❀ INFO ❀────────────┤
-│ 🎂 Cumpleaños: ${birth}
-│ 🎯 Pasatiempo: ${pasatiempo}
-│ ⚧️ Género: ${genero}
-│ 💍 ${estadoCivil}: ${pareja}
-├─────────❀ STATS ❀───────────┤
-│ ⭐ Nivel: ${nivel}
-│ 📈 XP: ${exp.toLocaleString()}
-│ 📊 Progreso: ${progressBar(porcentaje)} ${porcentaje}%
-│ 👑 Ranking: #${rank}
-├─────────❀ HAREM ❀───────────┤
-│ 🎴 Personajes: ${haremCount}
-│ 💎 Valor: ${haremValue.toLocaleString()}
-│ 🌱 Coins: ${totalCoins.toLocaleString()} ${currency}
-│ ⌨️ Comandos: ${comandos.toLocaleString()}${favLine}
-╰─────────❀ MIKU BOT ❀─────────╯
-${desc ? `\n📝 ${desc}` : ''}`
+      const profileText = `*❀ MIKU BOT ❀*
+
+*👤 ${name || 'Usuario'}*
+
+*-- INFO --*
+🎂 Cumple: ${birth}
+🎯 Pasatiempo: ${pasatiempo}
+⚧️ Género: ${genero}
+💍 ${estadoCivil}: ${pareja}
+
+*-- STATS --*
+⭐ Nivel: ${nivel}
+📈 XP: ${exp.toLocaleString()}
+📊 Progreso: ${progressBar(porcentaje)} ${porcentaje}%
+👑 Rank: #${rank}
+
+*-- HAREM --*
+🎴 Personajes: ${haremCount}
+💎 Valor: ${haremValue.toLocaleString()}
+💰 Coins: ${totalCoins.toLocaleString()} ${currency}
+⌨️ Comandos: ${comandos.toLocaleString()}${favLine}${desc ? `\n📝 ${desc}` : ''}`
 
       await client.sendMessage(m.chat, {
         image: perfil ? { url: perfil } : { url: 'https://files.catbox.moe/fwzhps.jpg' },

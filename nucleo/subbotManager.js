@@ -52,20 +52,36 @@ const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 
 const shouldProcessRaw = (sock, raw) => {
   const chatJid = raw.key?.remoteJid
-  if (!chatJid?.endsWith('@g.us')) return true
-
+  const isGroup = chatJid?.endsWith('@g.us')
   const db = global.db?.data
-  if (!db) return true
 
-  db.chats ??= {}
-  const chat = db.chats[chatJid] ??= {}
-  chat.users ??= {}
-  chat.mutedUsers ??= {}
-  chat.isBanned ??= false
-  chat.economy ??= true
-  chat.adminonly ??= false
-  chat.antilinks ??= true
+ 
+  if (isGroup && db) {
+    db.chats ??= {}
+    const chat = db.chats[chatJid] ??= {}
+    chat.users ??= {}
+    chat.mutedUsers ??= {}
+    chat.isBanned ??= false
+    chat.economy ??= true
+    chat.adminonly ??= false
+    chat.antilinks ??= true
 
+    
+    const primaryBotId = chat.primaryBot
+    const currentBotId = sock.user?.id
+
+    
+    if (!primaryBotId) {
+      chat.primaryBot = currentBotId
+      return true
+    }
+
+    
+    const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
+    return normalizeJid(primaryBotId) === normalizeJid(currentBotId)
+  }
+
+ 
   return true
 }
 
