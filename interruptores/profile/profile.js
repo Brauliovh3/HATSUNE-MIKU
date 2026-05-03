@@ -1,18 +1,5 @@
 import moment from 'moment-timezone';
 import { resolveLidToRealJid } from "../../nucleo/utils.js"
-import fetch from 'node-fetch'
-
-const API_PARTS = ['DEPOOL', 'key', '252580']
-const API_BASE = ['aHR0cHM6Ly9yZXN0', 'LmFwaWNhdXNhcy', '54eHl6']
-
-function getApiKey() {
-  return `${API_PARTS[0]}-${API_PARTS[1]}${API_PARTS[2]}`
-}
-
-function getApiBase() {
-  const base = atob(API_BASE.join('').slice(0, -1) + '=')
-  return base.replace(/\0/g, '')
-}
 
 const growth = Math.pow(Math.PI / Math.E, 1.618) * Math.E * 0.75
 function xpRange(level, multiplier = global.multiplier || 2) {
@@ -56,7 +43,7 @@ export default {
     const banco = user.bank || 0
     const totalCoins = chocolates + banco
     const favId = user.favorite
-    const favLine = favId && chat.characters?.[favId] ? `\n๑ Claim favorito » *${chat.characters[favId].name || '???'}*\n` : ''
+    const favLine = favId && chat.characters?.[favId] ? `\n❀ Claim favorito: *${chat.characters[favId].name || '???'}*\n` : ''
     const ownedIDs = Object.entries(chat.characters || {}).filter(([, c]) => c.user === userId).map(([id]) => id)
     const haremCount = ownedIDs.length
     const haremValue = ownedIDs.reduce((acc, id) => {
@@ -65,7 +52,6 @@ export default {
     const value = (globalRec && typeof globalRec.value === 'number') ? globalRec.value : (local && typeof local.value === 'number') ? local.value : 0
     return acc + value
     }, 0)
-    const perfil = await client.profilePictureUrl(userId, 'image').catch((_) => '')
     const users = Object.entries(globalUsers).map(([key, value]) => ({ ...value, jid: key }))
     const sortedLevel = users.sort((a, b) => (b.level || 0) - (a.level || 0))
     try {
@@ -73,44 +59,41 @@ export default {
       const { min, xp } = xpRange(nivel, global.multiplier)
       const progreso = exp - min
       const porcentaje = xp > 0 ? Math.floor((progreso / xp) * 100) : 0
-      const profileText = `💙 *Perfil* 🌱 ${name} 🌱${desc}
 
-💙 Cumpleaños › *${birth}*
-🌱 Pasatiempo › *${pasatiempo}*
-💙 Género › *${genero}*
-🌱 ${estadoCivil} › *${pareja}*
-
-💙 Nivel › *${nivel}*
-🌱 Experiencia › *${exp.toLocaleString()}*
-💙 Progreso › *${progreso} => ${xp}* _(${porcentaje}%)_
-🌱 Puesto › *#${rank}*
-
-💙 Harem › *${haremCount}*
-🌱 Valor total › *${haremValue.toLocaleString()}*${favLine}
-💙 Coins totales › *🌱${totalCoins.toLocaleString()} ${currency}*
-🌱 Comandos ejecutados › *${comandos.toLocaleString()}*`
-      const perfil = await client.profilePictureUrl(userId, 'image').catch(() => '')
-
-      const canvasUrl = `${getApiBase()}/api/v1/canvas/custom?apikey=${getApiKey()}&text=${encodeURIComponent(name)}&avatar=${encodeURIComponent(perfil || 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg')}&theme=miku`
-
-      let imageBuffer
-      try {
-        const response = await fetch(canvasUrl)
-        if (response.ok) {
-          imageBuffer = await response.buffer()
-        } else {
-          throw new Error('Canvas API error')
-        }
-      } catch {
-        imageBuffer = { url: 'https://files.catbox.moe/fwzhps.jpg' }
+      const progressBar = (porcentaje) => {
+        const filled = Math.floor(porcentaje / 10)
+        const empty = 10 - filled
+        return '█'.repeat(filled) + '░'.repeat(empty)
       }
 
+      const perfil = await client.profilePictureUrl(userId, 'image').catch((_) => '')
+
+      const profileText = `╭─────────❀ MIKU BOT ❀─────────╮
+│ 👤 ${name || 'Usuario'}
+├─────────❀ INFO ❀────────────┤
+│ 🎂 Cumpleaños: ${birth}
+│ 🎯 Pasatiempo: ${pasatiempo}
+│ ⚧️ Género: ${genero}
+│ 💍 ${estadoCivil}: ${pareja}
+├─────────❀ STATS ❀───────────┤
+│ ⭐ Nivel: ${nivel}
+│ 📈 XP: ${exp.toLocaleString()}
+│ 📊 Progreso: ${progressBar(porcentaje)} ${porcentaje}%
+│ 👑 Ranking: #${rank}
+├─────────❀ HAREM ❀───────────┤
+│ 🎴 Personajes: ${haremCount}
+│ 💎 Valor: ${haremValue.toLocaleString()}
+│ 🌱 Coins: ${totalCoins.toLocaleString()} ${currency}
+│ ⌨️ Comandos: ${comandos.toLocaleString()}${favLine}
+╰─────────❀ MIKU BOT ❀─────────╯
+${desc ? `\n📝 ${desc}` : ''}`
+
       await client.sendMessage(m.chat, {
-        image: imageBuffer,
+        image: perfil ? { url: perfil } : { url: 'https://files.catbox.moe/fwzhps.jpg' },
         caption: profileText
       }, { quoted: m })
     } catch (e) {
-     return m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
+     return m.reply(`> Error: *${e.message}*`)
     }
   }
 }

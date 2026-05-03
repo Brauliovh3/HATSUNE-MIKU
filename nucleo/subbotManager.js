@@ -66,12 +66,6 @@ const shouldProcessRaw = (sock, raw) => {
   chat.adminonly ??= false
   chat.antilinks ??= true
 
-  const primaryBotId = chat.primaryBot
-  const currentBotId = sock.user?.id
-
-  if (primaryBotId) return normalizeJid(primaryBotId) === normalizeJid(currentBotId)
-
-  chat.primaryBot = currentBotId
   return true
 }
 

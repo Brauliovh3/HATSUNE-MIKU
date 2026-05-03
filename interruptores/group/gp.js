@@ -1,6 +1,3 @@
-import ws from 'ws';
-import fs from 'fs';
-
 export default {
   command: ['gp', 'groupinfo'],
   category: 'grupo',
@@ -34,10 +31,7 @@ export default {
         totalCoins += Number(user.coins) || 0;
       }
     });
-    const charactersFilePath = './nucleo/characters.json'
-    const data = await fs.promises.readFile(charactersFilePath, 'utf-8')
-    const structure = JSON.parse(data)
-    const allCharacters = Object.values(structure).flatMap(s => Array.isArray(s.characters) ? s.characters : [])
+    const allCharacters = Object.values(global.db.data.characters || {})
     const totalCharacters = allCharacters.length
     const claimedIDs = Object.entries(global.db.data.chats[m.chat]?.characters || {}).filter(([, c]) => c.user).map(([id]) => id)
     const claimedCount = claimedIDs.length
@@ -57,28 +51,36 @@ export default {
       botprimary: botprimary
     };
     try {
-      let message = `*「✿」Grupo ◢ ${groupName} ◤*\n\n`;
-      message += `➪ *Creador ›* ${groupCreator}\n`;
-      message += `❖ Bot Principal › *${settings.botprimary}*\n`;
-      message += `♤ Admins › *${groupAdmins.length}*\n`;
-      message += `❒ Usuarios › *${totalParticipants}*\n`;
-      message += `ꕥ Registrados › *${registeredUsersInGroup}*\n`;
-      message += `✿ Claims › *${claimedCount} (${claimRate}%)*\n`;
-      message += `♡ Personajes › *${totalCharacters}*\n`;
-      message += `⛁ Dinero › *${totalCoins.toLocaleString()} ${monedas}*\n\n`;
-      message += `➪ *Configuraciones:*\n`;
-      message += `✐ ${botname} › *${settings.bot}*\n`;
-      message += `✐ AntiLinks › *${settings.antilinks}*\n`;
-      message += `✐ Bienvenida › *${settings.welcome}*\n`;
-      message += `✐ Despedida › *${settings.goodbye}*\n`;
-      message += `✐ Alertas › *${settings.alerts}*\n`;
-      message += `✐ Gacha › *${settings.gacha}*\n`;
-      message += `✐ Economía › *${settings.economy}*\n`;
-      message += `✐ Nsfw › *${settings.nsfw}*\n`;
-      message += `✐ ModoAdmin › *${settings.adminmode}*`;
+      const on = '✅'
+      const off = '❌'
+      
+      let message = `╭─────────❀ MIKU BOT ❀─────────╮\n`;
+      message += `│ ${groupName?.substring(0, 28) || 'Grupo'}\n`;
+      message += `├─────────❀ INFO ❀────────────┤\n`;
+      message += `│ 👤 Creador: ${groupCreator}\n`;
+      message += `│ 🤖 Bot: ${botprimary}\n`;
+      message += `│ 👮 Admins: ${groupAdmins.length}\n`;
+      message += `│ 👥 Miembros: ${totalParticipants}\n`;
+      message += `│ 📝 Registrados: ${registeredUsersInGroup}\n`;
+      message += `├─────────❀ GACHA ❀───────────┤\n`;
+      message += `│ 🎴 Claims: ${claimedCount}/${totalCharacters}\n`;
+      message += `│ 📊 Porcentaje: ${claimRate}%\n`;
+      message += `│ 💰 Economia: ${totalCoins.toLocaleString()} ${monedas}\n`;
+      message += `├─────────❀ SETTINGS ❀────────┤\n`;
+      message += `│ Bot: ${chat.isBanned ? off : on}\n`;
+      message += `│ AntiLink: ${chat.antilinks ? on : off}\n`;
+      message += `│ Welcome: ${chat.welcome ? on : off}\n`;
+      message += `│ Goodbye: ${chat.goodbye ? on : off}\n`;
+      message += `│ Alerts: ${chat.alerts ? on : off}\n`;
+      message += `│ Gacha: ${chat.gacha ? on : off}\n`;
+      message += `│ Economy: ${chat.economy ? on : off}\n`;
+      message += `│ NSFW: ${chat.nsfw ? on : off}\n`;
+      message += `│ AdminMode: ${chat.adminonly ? on : off}\n`;
+      message += `╰─────────❀ ${botname} ❀─────────╯`;
+      
       const mentionOw = groupMetadata.owner ? groupMetadata.owner : '';
       const mentions = [rawPrimary, mentionOw].filter(Boolean);
-      await client.sendContextInfoIndex(m.chat, message.trim(), {}, null, false, mentions, { banner: groupBanner, title: groupName, body: dev, redes: global.db.data.settings[client.user.id.split(':')[0] + "@s.whatsapp.net"].link })
+      await client.sendContextInfoIndex(m.chat, message, {}, null, false, mentions, { banner: groupBanner, title: groupName, body: dev, redes: global.db.data.settings[client.user.id.split(':')[0] + "@s.whatsapp.net"].link })
     } catch (e) {
       await m.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
     }
