@@ -15,14 +15,33 @@ export default {
     const chatData = db.chats[chatId]
     if (chatData.adminonly || !chatData.economy) return m.reply(`💙 Los comandos de *Economía* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}economy on*`)
     try {
-      const users = Object.entries(chatData.users || {}).filter(([_, data]) => {
-          const total = (data.coins || 0) + (data.bank || 0)
-          return total >= 1000
-        }).map(([key, data]) => {
-          const name = db.users[key]?.name || data.name || 'Usuario'
-          return { ...data, jid: key, name }
-        })
-      if (users.length === 0) return m.reply(`💙 No hay usuarios en el grupo con más de 1,000 ${monedas}.`)
+      
+      const globalUsers = new Map()
+      
+      for (const [chatKey, chat] of Object.entries(db.chats || {})) {
+        for (const [userKey, userData] of Object.entries(chat.users || {})) {
+          const total = (userData.coins || 0) + (userData.bank || 0)
+          if (total < 1000) continue
+          
+          const existing = globalUsers.get(userKey)
+          if (existing) {
+            
+            existing.coins = (existing.coins || 0) + (userData.coins || 0)
+            existing.bank = (existing.bank || 0) + (userData.bank || 0)
+          } else {
+            const name = db.users[userKey]?.name || userData.name || 'Usuario'
+            globalUsers.set(userKey, {
+              jid: userKey,
+              name,
+              coins: userData.coins || 0,
+              bank: userData.bank || 0
+            })
+          }
+        }
+      }
+      
+      const users = Array.from(globalUsers.values()).filter(u => (u.coins + u.bank) >= 1000)
+      if (users.length === 0) return m.reply(`💙 No hay usuarios globales con más de 1,000 ${monedas}.`)
       const sorted = users.sort((a, b) => (b.coins || 0) + (b.bank || 0) - ((a.coins || 0) + (a.bank || 0)))
       const page = parseInt(args[0]) || 1
       const pageSize = 10
@@ -30,7 +49,7 @@ export default {
       if (isNaN(page) || page < 1 || page > totalPages) return m.reply(`💙 La página *${page}* no existe. Hay *${totalPages}* páginas.`)
       const start = (page - 1) * pageSize
       const end = start + pageSize
-      let text = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮\n│ 🏆 *ECONOMY BOARD* 🏆\n│\n`
+      let text = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮\n│ 🏆 *GLOBAL ECONOMY BOARD* 🏆\n│ 🌍 Ranking Mundial\n│\n`
       text += sorted.slice(start, end).map(({ name, coins, bank }, i) => {
           const total = (coins || 0) + (bank || 0)
           return `│ 👑 ${start + i + 1} › *${name}*\n│      🌱 ${total.toLocaleString()} ${monedas}`

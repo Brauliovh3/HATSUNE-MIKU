@@ -22,7 +22,7 @@ export default {
   run: async (client, m, args, usedPrefix, command) => {
     const chatId = m.chat
     const db = global.db.data.chats[chatId]
-    const user = global.db.data.users[m.sender]
+    const user = db.users[m.sender] ||= {}
     const juego = global.math[chatId]
     if (db.adminonly || !db.economy) return m.reply(`💙 Los comandos de *Economía* están desactivados en este grupo.\n\nUn *administrador* puede activarlos con el comando:\n» *${usedPrefix}economy on*`)
     if (command === 'resp') {

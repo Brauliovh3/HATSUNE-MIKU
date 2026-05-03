@@ -415,9 +415,10 @@ export async function processDownload(conn, m, videoInfo, option) {
     }
 
     await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
-    const user = global.db?.data?.users?.[m.sender]
+    const chat = global.db?.data?.chats?.[m.chat]
+    const user = chat?.users?.[m.sender]
     if (user && !user.monedaDeducted) {
-      user.moneda = (user.moneda || 0) - 500
+      user.coins = (user.coins || 0) - 500
       user.monedaDeducted = true
       conn.reply(m.chat, '💙 Has utilizado 🌱 500 *Cebollines*', m)
     }
@@ -455,7 +456,8 @@ export async function processYouTubeButton(conn, m) {
   else if (buttonId === '3' || buttonId.includes('youtube_video_doc_'))                        option = 3
   else if (buttonId === '4' || buttonId.includes('youtube_audio_doc_'))                        option = 4
   if (!option) return false
-  const user = global.db?.data?.users?.[m.sender]
+  const chat = global.db?.data?.chats?.[m.chat]
+  const user = chat?.users?.[m.sender]
   if (!user?.lastYTSearch) {
     await conn.reply(m.chat, `${DIVIDER_START}\n│ ⏳ *TIEMPO AGOTADO*\n│\n│ 🎵 No hay búsqueda activa.\n│ 🌱 Realiza una nueva búsqueda con .play\n${DIVIDER_END}`, m)
     return false
@@ -524,7 +526,8 @@ export default {
         videoViews     = video.views
         videoAuthor    = video.author?.name
       }
-      const user = global.db?.data?.users?.[m.sender]
+      const chat = global.db?.data?.chats?.[m.chat]
+      const user = chat?.users?.[m.sender]
       const videoInfo = { url: videoUrl, title: videoTitle, thumbnail: videoThumbnail }
       if (user) user.lastYTSearch = { videoInfo, timestamp: Date.now() }
       const videoId  = extractYouTubeId(videoUrl) || ''
