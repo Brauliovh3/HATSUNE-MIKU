@@ -342,7 +342,7 @@ export default async (client, m) => {
 
   const chat = global.db.data.chats[m.chat] || {}
   
-  
+  const sessionId = botJid.split('@')[0]
   const isSubBot = subBotManager.subbots?.has(sessionId) || 
                    global.db.data?.settings?.[botJid]?.type === 'Sub'
   
