@@ -22,23 +22,31 @@ export default {
         return m.reply('💙 No se encontraron resultados.', global.miku)
       }
 
-      const { name, package: id, size, downloadUrl, lastup, source } = apkInfo
-      const caption = `💙 *APTOIDE DOWNLOAD* 💙
-
-💙 *Nombre:* ${name}
-🌱 *Paquete:* ${id}
-💙 *Última actualización:* ${lastup}
-🌱 *Tamaño:* ${size}
-💙 *Fuente:* ${source}
-
-💙 *HATSUNE MIKU BOT* 💙`
-
+      const { name, package: id, size, downloadUrl, lastup, source, icon } = apkInfo
+      
       const sizeBytes = parseSize(size)
       if (sizeBytes > 524288000) {
         await m.react('❌')
         return m.reply(`💙 El archivo es demasiado grande (${size}).\n\n🌱 Descárgalo directamente desde aquí:\n${downloadUrl}`, global.miku)
       }
-      await client.sendMessage(m.chat, { document: { url: downloadUrl }, mimetype: 'application/vnd.android.package-archive', fileName: `${name}.apk`, caption }, { quoted: m })
+
+      await client.sendMessage(m.chat, {
+        document: { url: downloadUrl },
+        mimetype: 'application/vnd.android.package-archive',
+        fileName: `${name}.apk`,
+        caption: `📱 *${name}*
+📦 ${id}
+📊 ${size}`,
+        contextInfo: {
+          externalAdReply: {
+            title: name,
+            body: `📦 ${id} | 📊 ${size}`,
+            mediaType: 1,
+            thumbnailUrl: icon || 'https://i.pinimg.com/736x/30/42/b8/3042b89ced13fefda4e75e3bc6dc2a57.jpg',
+            sourceUrl: downloadUrl
+          }
+        }
+      }, { quoted: m })
       await m.react('✅')
      } catch (e) {
       await m.react('❌')
@@ -67,6 +75,7 @@ async function resolveApkInfo(query) {
         downloadUrl: top.downloadUrl,
         lastup: top.lastup || 'Desconocida',
         source: 'AlyaCore',
+        icon: top.icon || top.image || top.img || '',
       }
     }
 
@@ -95,6 +104,7 @@ function normalizeAptoideData(apkInfo = {}) {
     downloadUrl: apkInfo.dllink || apkInfo.download || apkInfo.url || '',
     lastup: apkInfo.lastup || apkInfo.updated || 'Desconocida',
     source: 'Aptoide',
+    icon: apkInfo.icon || apkInfo.image || apkInfo.img || apkInfo.thumbnail || '',
   }
 }
 
@@ -134,6 +144,7 @@ async function searchAlyaApk(query = '') {
           size: item?.size || item?.file_size || item?.filesize || '',
           downloadUrl: item?.download || item?.dllink || item?.dl || item?.url || item?.link || '',
           lastup: item?.lastup || item?.updated || item?.last_update || item?.update || '',
+          icon: item?.icon || item?.image || item?.img || item?.thumbnail || item?.icon_url || '',
         }
       })
       .filter((x) => x.name || x.package || x.downloadUrl)
