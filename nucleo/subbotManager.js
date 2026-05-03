@@ -54,15 +54,24 @@ const shouldProcessRaw = (sock, raw) => {
   const chatJid = raw.key?.remoteJid
   if (!chatJid?.endsWith('@g.us')) return true
 
-  const chat          = global.db?.data?.chats?.[chatJid] || {}
-  const primaryBotId  = chat?.primaryBot
-  const currentBotId  = sock.user?.id
+  const db = global.db?.data
+  if (!db) return true
+
+  db.chats ??= {}
+  const chat = db.chats[chatJid] ??= {}
+  chat.users ??= {}
+  chat.mutedUsers ??= {}
+  chat.isBanned ??= false
+  chat.economy ??= true
+  chat.adminonly ??= false
+  chat.antilinks ??= true
+
+  const primaryBotId = chat.primaryBot
+  const currentBotId = sock.user?.id
 
   if (primaryBotId) return normalizeJid(primaryBotId) === normalizeJid(currentBotId)
 
-  if (global.db?.data?.chats?.[chatJid]) {
-    global.db.data.chats[chatJid].primaryBot = currentBotId
-  }
+  chat.primaryBot = currentBotId
   return true
 }
 

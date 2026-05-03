@@ -328,10 +328,17 @@ export default async (client, m) => {
 
   const from     = m.key.remoteJid
   const botJid   = getBotJid(client)
+
+  if (m.isGroup) {
+    const dbChat = global.db.data.chats[m.chat]
+    if (dbChat && !dbChat.primaryBot) {
+      dbChat.primaryBot = botJid
+      markDatabaseDirty()
+    }
+  }
+
   const chat     = global.db.data.chats[m.chat] || {}
   const settings = global.db.data.settings[botJid] || {}
-
-  if (m.isGroup && chat && !chat.primaryBot) chat.primaryBot = botJid
 
   if (!isPrimaryHandler(client, chat)) return
 
@@ -470,11 +477,12 @@ export default async (client, m) => {
   const chatData      = global.db.data.chats[from] || {}
   const consolePrimary = getAssignedPrimaryBot(chatData)
   if (m.message || !consolePrimary || consolePrimary === botJid) {
+    if (m.isGroup && !groupName) await ensureGroupContext()
     const bodyPreview = typeof body === 'string' && body.length > 50 ? `${body.slice(0, 50)}…` : body
     const h = chalk.bold.blue('╔⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍···')
     const t = chalk.bold.blue('╚⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍···')
     const v = chalk.bold.blue('┇')
-    console.log(`\n${h}\n${chalk.bold.yellow(`${v} Fecha: ${chalk.whiteBright(moment().format('DD/MM/YY HH:mm:ss'))} p. m.`)}\n${chalk.bold.blueBright(`${v} Usuario: ${chalk.whiteBright(`(${pushname})`)}`)}\n${chalk.bold.magentaBright(`${v} Remitente: ${gradient('deepskyblue', 'darkorchid')(sender)}`)}\n${m.isGroup ? chalk.bold.cyanBright(`${v} Grupo: ${chalk.greenBright(groupName)}\n${v} Mensaje: ${bodyPreview}`) : chalk.bold.greenBright(`${v} Mensaje: ${bodyPreview}`)}\n${t}`)
+    console.log(`\n${h}\n${chalk.bold.yellow(`${v} Fecha: ${chalk.whiteBright(moment().format('DD/MM/YY HH:mm:ss'))} p. m.`)}\n${chalk.bold.blueBright(`${v} Usuario: ${chalk.whiteBright(`(${pushname})`)}`)}\n${chalk.bold.magentaBright(`${v} Remitente: ${gradient('deepskyblue', 'darkorchid')(sender)}`)}\n${m.isGroup ? chalk.bold.cyanBright(`${v} Grupo: ${chalk.greenBright(groupName || m.chat.split('@')[0])}\n${v} Mensaje: ${bodyPreview}`) : chalk.bold.greenBright(`${v} Mensaje: ${bodyPreview}`)}\n${t}`)
   }
 
   const hasPrefix    = settings.prefix === true ? true
