@@ -302,7 +302,6 @@ async function startBot() {
       const existingIdx = global.conns.findIndex(c => c.userId === sock.userId)
       if (existingIdx >= 0) global.conns.splice(existingIdx, 1)
       global.conns.push(sock)
-      console.log(`[index.js] Bot principal registrado: ${sock.userId}, ws.readyState=${sock.ws?.readyState}, total conns: ${global.conns.length}`)
       const userName = sock.user.name || "Desconocido"
       console.log(chalk.green.bold(`💙 Conectado a: ${userName}`))
 

@@ -126,7 +126,7 @@ export default async (client, m) => {
           mentionedJid: [validJid]
         };
         
-        if (anu.action === 'add' && (!primaryBotId || primaryBotId === botId)) {
+        if (anu.action === 'add') {
           const customMessage = chat?.sWelcome ? chat.sWelcome.replace(/{usuario}/g, `@${phone}`).replace(/{grupo}/g, metadata.subject).replace(/{desc}/g, metadata?.desc || 'Sin descripción') : '';
 
           queueWelcome(async () => {
@@ -148,7 +148,7 @@ export default async (client, m) => {
           })
         }
         
-        if ((anu.action === 'remove' || anu.action === 'leave') && (!primaryBotId || primaryBotId === botId)) {
+        if (anu.action === 'remove' || anu.action === 'leave') {
           const kicker = anu.author;
           const isKick = kicker && kicker !== validJid;
 
