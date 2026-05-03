@@ -310,20 +310,26 @@ class HealthCheck {
   }
 
   cleanDisconnectedSubbots() {
-   
+
     if (!global.conns) return;
-    
+
     let cleaned = 0;
+    const beforeCount = global.conns.length;
     for (let i = global.conns.length - 1; i >= 0; i--) {
       const conn = global.conns[i];
-      if (!conn || !conn.isInit || !conn.ws || conn.ws.readyState !== 1) {
+      const isInit = conn?.isInit;
+      const hasWs = !!conn?.ws;
+      const readyState = conn?.ws?.readyState;
+      const shouldRemove = !conn || !isInit || !hasWs || readyState !== 1;
+      console.log(`[HealthCheck] conn ${i}: isInit=${isInit} hasWs=${hasWs} readyState=${readyState} remove=${shouldRemove}`);
+      if (shouldRemove) {
         global.conns.splice(i, 1);
         cleaned++;
       }
     }
-    
-    if (cleaned > 0) {
-      console.log(chalk.yellow(`[HealthCheck] ${cleaned} subbots desconectados limpiados`));
+
+    if (cleaned > 0 || beforeCount > 0) {
+      console.log(chalk.yellow(`[HealthCheck] ${cleaned}/${beforeCount} subbots limpiados. Quedan: ${global.conns.length}`));
     }
   }
 
