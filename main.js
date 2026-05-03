@@ -60,14 +60,10 @@ const isPrimaryHandler = (client, chat) => {
 
   const assignedBotClean = normalizeJidDigits(assignedBot)
   const currentBotClean = normalizeJidDigits(getBotJid(client))
-  const connsList = global.conns?.map(c => ({ id: c.user?.id || c.userId, isInit: c.isInit })) || []
   const isPrimaryConnected = global.conns?.some(c => {
     const connId = c.user?.id || c.userId
     return normalizeJidDigits(connId) === assignedBotClean && c.isInit
   })
-  console.log(`[DEBUG] conns=${JSON.stringify(connsList)} assignedBotClean=${assignedBotClean} currentClean=${currentBotClean} isPrimaryConnected=${isPrimaryConnected}`)
-
- 
 
   if (!isPrimaryConnected) return true
 
@@ -342,15 +338,7 @@ export default async (client, m) => {
   const from     = m.key.remoteJid
   const botJid   = getBotJid(client)
 
-  if (m.isGroup) {
-    const dbChat = global.db.data.chats[m.chat]
-    if (dbChat && !dbChat.primaryBot) {
-      dbChat.primaryBot = botJid
-      markDatabaseDirty()
-    }
-  }
-
-  const chat     = global.db.data.chats[m.chat] || {}
+  const chat = global.db.data.chats[m.chat] || {}
   const settings = global.db.data.settings[botJid] || {}
 
   const user   = global.db.data.users[sender] ||= {}
