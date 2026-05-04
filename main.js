@@ -157,7 +157,8 @@ export default async (client, m) => {
     else if (/^[1-4]$/.test(buttonId))                                           option = parseInt(buttonId)
 
     if (option) {
-      const user = global.db?.data?.users?.[m.sender]
+      const chat = global.db?.data?.chats?.[m.chat]
+      const user = chat?.users?.[m.sender]
       if (!user?.lastYTSearch) {
         safeMsg(() => client.sendMessage(m.chat, { react: { text: '❌', key: m.key } }))
         return
