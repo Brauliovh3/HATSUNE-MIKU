@@ -174,15 +174,17 @@ class HealthCheck {
       external: externalMB.toFixed(2)
     };
 
-    if (rssMB > 1400 || heapUsedMB > 700) {
+    if (rssMB > 1200 || heapUsedMB > 600) {
       console.log(chalk.red(`[HealthCheck] Memoria CRÍTICA: RSS ${rssMB.toFixed(2)}MB, Heap ${heapUsedMB.toFixed(2)}MB, External ${externalMB.toFixed(2)}MB`));
 
       this.emergencyCleanup();
 
-      if (rssMB > 1800) {
+      if (rssMB > 1500) {
         console.log(chalk.red('[HealthCheck] Memoria insostenible, reinicio necesario'));
+        // Forzar reinicio si es crítico
+        process.exit(1);
       }
-    } else if (rssMB > 1000 || heapUsedMB > 500) {
+    } else if (rssMB > 800 || heapUsedMB > 400) {
       console.log(chalk.yellow(`[HealthCheck] Alta memoria: RSS ${rssMB.toFixed(2)}MB, Heap ${heapUsedMB.toFixed(2)}MB`));
 
       this.aggressiveCleanup();
@@ -203,6 +205,7 @@ class HealthCheck {
     this.cleanStuckDownloads();
     this.cleanBaileysStores();
     this.cleanDatabaseCache();
+    this.cleanSubBotManager(); 
 
     if (global.client?.chats && global.client.chats.size > 30) {
       const chats = global.client.chats;
@@ -235,6 +238,8 @@ class HealthCheck {
     }
     this.cleanStuckDownloads();
     this.cleanBaileysStores();
+    this.cleanSubBotManager(); // También limpiar subbots del manager
+    this.cleanDisconnectedSubbots(); // Limpiar de global.conns
     this.forceGC();
   }
 
@@ -251,18 +256,26 @@ class HealthCheck {
 
     let cleaned = 0;
 
-    // Clean old chats - more aggressive
+    
     try {
-      if (client.chats && client.chats.size > 50) {
+      if (client.chats && client.chats.size > 20) {
         const now = Date.now();
         let deleted = 0;
-        for (const [jid, chat] of client.chats) {
-          if (!chat || deleted >= 100) continue;
+        const entries = Array.from(client.chats.entries());
+        
+        entries.sort((a, b) => {
+          const timeA = a[1]?.lastMessage?.messageTimestamp || 0;
+          const timeB = b[1]?.lastMessage?.messageTimestamp || 0;
+          return timeB - timeA; 
+        });
+        
+        for (let i = 20; i < entries.length; i++) {
+          const [jid, chat] = entries[i];
           const lastMsgTime = chat?.lastMessage?.messageTimestamp
             ? chat.lastMessage.messageTimestamp * 1000
             : 0;
-        
-          if (now - lastMsgTime > 6 * 60 * 60 * 1000) {
+         
+          if (now - lastMsgTime > 60 * 60 * 1000 || i >= 20) {
             client.chats.delete(jid);
             deleted++;
           }
@@ -272,12 +285,13 @@ class HealthCheck {
     } catch {}
 
    
+    
     try {
-      if (client.contacts && client.contacts.size > 300) {
+      if (client.contacts && client.contacts.size > 100) {
         let deleted = 0;
         const entries = Array.from(client.contacts.entries());
        
-        for (let i = 0; i < entries.length - 300 && deleted < 300; i++) {
+        for (let i = 0; i < entries.length - 100 && deleted < 200; i++) {
           client.contacts.delete(entries[i][0]);
           deleted++;
         }
@@ -285,16 +299,23 @@ class HealthCheck {
       }
     } catch {}
     
-    // Clean message cache if exists
+    
     try {
-      if (client.msgs && client.msgs.size > 100) {
-        let deleted = 0;
-        const entries = Array.from(client.msgs.entries());
-        for (let i = 0; i < entries.length - 50 && deleted < 100; i++) {
-          client.msgs.delete(entries[i][0]);
-          deleted++;
+      if (client.msgs && client.msgs.size > 0) {
+        const count = client.msgs.size;
+        client.msgs.clear();
+        cleaned += count;
+      }
+    } catch {}
+
+    
+    try {
+      if (client.appStateSyncKey && client.appStateSyncKey.size > 50) {
+        const count = client.appStateSyncKey.size - 50;
+        const entries = Array.from(client.appStateSyncKey.entries());
+        for (let i = 0; i < entries.length - 50; i++) {
+          client.appStateSyncKey.delete(entries[i][0]);
         }
-        cleaned += deleted;
       }
     } catch {}
 
@@ -309,8 +330,34 @@ class HealthCheck {
     }
   }
 
-  cleanDisconnectedSubbots() {
+  cleanSubBotManager() {
+   
+    try {
+      if (global.subBotManager?.subbots) {
+        let cleaned = 0;
+        for (const [sessionId, sock] of global.subBotManager.subbots) {
+          const ws = sock?.ws;
+          const isInit = sock?.isInit;
+          
+          if (!ws || ws.readyState === 3 || isInit === false) {
+            global.subBotManager.subbots.delete(sessionId);
+            
+            if (sock?.ev) sock.ev.removeAllListeners();
+            if (sock?.chats) sock.chats?.clear?.();
+            if (sock?.contacts) sock.contacts?.clear?.();
+            cleaned++;
+          }
+        }
+        if (cleaned > 0) {
+          console.log(chalk.yellow(`[HealthCheck] ${cleaned} subbots del manager limpiados`));
+        }
+      }
+    } catch (e) {
+      console.error(chalk.red('[HealthCheck] Error limpiando subBotManager:'), e.message);
+    }
+  }
 
+  cleanDisconnectedSubbots() {
     if (!global.conns) return;
 
     let cleaned = 0;
@@ -320,8 +367,7 @@ class HealthCheck {
       const isInit = conn?.isInit;
       const hasWs = !!conn?.ws;
       const readyState = conn?.ws?.readyState;
-      // Solo eliminar si isInit es false o si ws existe pero está cerrado (readyState === 3)
-      // No eliminar si ws no existe (bot principal) o si readyState es undefined
+      
       const shouldRemove = !conn || isInit === false || (hasWs && readyState === 3);
       if (shouldRemove) {
         global.conns.splice(i, 1);

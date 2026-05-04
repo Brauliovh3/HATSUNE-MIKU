@@ -71,22 +71,29 @@ const shouldProcessRaw = (sock, raw) => {
   const currentBotId = sock.user?.id
   const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 
-  
-  if (!primaryBotId) return false
+  // Si no hay bot primario asignado, cualquier subbot puede responder
+  if (!primaryBotId) return true
 
   const primaryBotClean = normalizeJid(primaryBotId)
   const currentBotClean = normalizeJid(currentBotId)
 
-  
-  const isPrimaryConnected = global.conns?.some(c => {
+  // Verificar si el bot primario está conectado (en global.conns o en subBotManager)
+  const isPrimaryInConns = global.conns?.some(c => {
     const connId = c.user?.id || c.userId
     return normalizeJid(connId) === primaryBotClean && c.isInit
   })
-
   
+  // Verificar si el bot primario es un subbot activo
+  const primarySessionId = primaryBotId.split('@')[0]
+  const isPrimarySubBot = subBotManager?.subbots?.has(primarySessionId) && 
+                          subBotManager?.subbots?.get(primarySessionId)?.isInit
+  
+  const isPrimaryConnected = isPrimaryInConns || isPrimarySubBot
+
+  // Si el bot primario no está conectado, cualquier subbot puede responder
   if (!isPrimaryConnected) return true
 
-  
+  // Solo el bot primario asignado debe responder
   return primaryBotClean === currentBotClean
 }
 
@@ -185,7 +192,7 @@ class SubBotManager {
         logger,
         version,
         printQRInTerminal: false,
-        browser: Browsers.ubuntu('Chrome'),
+        browser: Browsers.macOS('Safari'),
         auth: {
           creds: state.creds,
           keys:  makeCacheableSignalKeyStore(state.keys, logger),
