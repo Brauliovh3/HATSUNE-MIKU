@@ -57,18 +57,30 @@ const isPrimaryHandler = (client, chat) => {
 
   if (isOwnerBot(client)) return true
 
-
+  
   if (!assignedBot) return true
 
   const assignedBotClean = normalizeJidDigits(assignedBot)
   const currentBotClean = normalizeJidDigits(getBotJid(client))
-  const isPrimaryConnected = global.conns?.some(c => {
+  
+ 
+  const isPrimaryInConns = global.conns?.some(c => {
     const connId = c.user?.id || c.userId
     return normalizeJidDigits(connId) === assignedBotClean && c.isInit
   })
+  
+  
+  const assignedSessionId = assignedBot.split('@')[0]
+  const isPrimarySubBot = subBotManager.subbots?.has(assignedSessionId) && 
+                          subBotManager.subbots?.get(assignedSessionId)?.isInit
+  
 
+  const isPrimaryConnected = isPrimaryInConns || isPrimarySubBot
+  
+  
   if (!isPrimaryConnected) return true
 
+  
   return assignedBotClean === currentBotClean
 }
 

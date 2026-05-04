@@ -240,7 +240,7 @@ class SubBotManager {
           sock.ev.on('creds.update', saveCreds)
 
           if (!optimizer.active) optimizer.start()
-          optimizer.registerSession(sessionId, 'Sub', { userId: sock.userId })
+         
 
           sock.decodeJid = (jid) => {
             if (!jid || typeof jid !== 'string') return jid
@@ -255,10 +255,39 @@ class SubBotManager {
             return jid
           }
 
-          const onOpen = ({ connection }) => {
+          const onOpen = async ({ connection }) => {
             if (connection !== 'open') return
             clearTimeout(timeout)
             sock.ev.off('connection.update', onOpen)
+            
+            
+            sock._reconnectHandled = true
+            
+           
+            sock.uptime = Date.now()
+            sock.isInit = true
+            sock.userId = cleanJid(sock.user?.id || '')
+            const botDir = sock.userId + '@s.whatsapp.net'
+            
+            if (!global.db.data)                          global.db.data             = {}
+            if (!global.db.data.settings)                 global.db.data.settings    = {}
+            if (!global.db.data.settings[botDir])         global.db.data.settings[botDir] = {}
+            global.db.data.settings[botDir].type = 'Sub'
+            
+            upsertConn(sock, sessionId)
+            reintentos.delete(sessionId)
+            this.startingSubbots.delete(sessionId)
+            this.subbots.set(sessionId, sock)
+            
+            optimizer.registerSession(sessionId, 'Sub', { userId: sock.userId })
+            
+            
+            try { 
+              const { default: events } = await import('../events.js')
+              await events(sock, null) 
+            } catch (e) {}
+            
+            console.log(chalk.green(`💙 Subbot reconectado: ${sock.userId} (sesión: ${sessionId})`))
             resolve()
           }
           sock.ev.on('connection.update', onOpen)
@@ -285,6 +314,12 @@ class SubBotManager {
           if (isNewLogin) sock.isInit = false
 
           if (connection === 'open') {
+           
+            if (sock._reconnectHandled) {
+              sock._reconnectHandled = false
+              return
+            }
+            
             sock.uptime = Date.now()
             sock.isInit = true
             sock.userId = cleanJid(sock.user?.id || '')
