@@ -25,7 +25,8 @@ economia: `╭━━━💰 ECONOMÍA & RPG 💰━━━╮
 │ 🗡️ .crime - Cometer crímenes
 │ 💖 .slut - Comando slut
 │ 💊 .heal - Curar heridas
-│ 📊 .economyboard / .einfo - Info economía
+│ 📊 .economyboard / .baltop - Ranking económico
+│ 📋 .einfo / .infoeconomy / .cooldowns - Info economía
 │ 🎁 .cofre - Abrir cofres
 │ 💝 .givecoins - Dar monedas
 │ ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
@@ -37,6 +38,7 @@ gacha: `╭━━━🎯 GACHA & WAIFUS 🎯━━━╮
 │ 👥 .coleccion / .collection / .col / .personajes / .harem / .waifus / .miwaifu - Colección
 │ 🎨 .gallery - Galería con imágenes
 │ 🏆 .waifupvp - Batalla PVP
+│ ❌ .ttt / .tictactoe - Tic Tac Toe
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 
 downloads: `╭━━━📥 DESCARGAS 📥━━━╮
@@ -45,6 +47,9 @@ downloads: `╭━━━📥 DESCARGAS 📥━━━╮
 │ 🔍 .tiktoksearch / .ttsearch / .tts - Buscar TikTok
 │ 🖼️ .tiktokimg / .ttimg - Imágenes TikTok
 │ 🎵 .tiktokmp3 / .ttmp3 - Audio TikTok
+│ 🎲 .tiktokrandom / .ttrandom / .shitpost - TikTok random
+│ 🎮 .l4d2 / .l4drandom - Videos L4D2
+│ 👻 .terror / .horror / .scary - Videos terror
 │ 📷 .instagram / .ig - Posts Instagram
 │ 💙 .facebook / .fb - Videos Facebook
 │ 📁 .mediafire / .mf - Archivos MediaFire
@@ -55,6 +60,7 @@ downloads: `╭━━━📥 DESCARGAS 📥━━━╮
 │ 📲 .apk - APKs de Aptoide
 │ 🎥 .imagen - Imagen de URL
 │ 📁 .grive - Google Drive
+│ 👥 .wpgrupos / .wagrupos - Grupos WhatsApp
 │ 🔍 .ytsearch / .search - Buscar YouTube
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 
@@ -69,6 +75,7 @@ profile: `╭━━━📝 PERFIL & USUARIO 📝━━━╮
 │ 📄 .setdesc - Establecer descripción
 │ ❌ .deldesc - Eliminar descripción
 │ 🎮 .sethobby - Establecer hobby
+│ ❌ .delpasatiempo / .removehobby - Eliminar hobby
 │ 🏆 .lb / .levelboard - Top por XP
 │ 📊 .level - Ver nivel
 │ 📈 .lboard - Ranking niveles
@@ -117,6 +124,7 @@ utils: `╭━━━🛠️ UTILIDADES 🛠️━━━╮
 │ 🔍 .inspect - Inspeccionar código
 │ 📋 .get / .fetch - Obtener datos URL
 │ 📊 .status / .estado / .diag - Estado del bot
+│ 🖼️ .wallpaper / .wp / .fondo - Descargar wallpapers
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 
 grupo: `╭━━━👥 GRUPOS (Admin) 👥━━━╮
@@ -134,7 +142,7 @@ grupo: `╭━━━👥 GRUPOS (Admin) 👥━━━╮
 │ 📋 .warns - Ver advertidos
 │ 👑 .admins - Lista de admins
 │ ℹ️ .gp / .grupoinfo - Info del grupo
-│ 👻 .fantasmas - Ver inactivos
+│ 👻 .fantasmas / .ghosts - Ver inactivos
 │ 📢 .tagall / .invocar - Invocar todos
 │ 🪬 .setwelcome - Bienvenida
 │ 🪬 .setgoodbye - Despedida
@@ -147,6 +155,9 @@ grupo: `╭━━━👥 GRUPOS (Admin) 👥━━━╮
 │ 🔒 .disable - Desactivar función
 │ 🚫 .antilink - Anti-enlaces
 │ 🛡️ .ban - Banear usuario
+│ 📊 .count / .mensajes - Contar mensajes
+│ 🏆 .topcount / .topmensajes - Top mensajes
+│ 🏆 .topinactive / .topinactivos - Top inactivos
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 
 nsfw: `╭━━━🔞 NSFW +18 🔞━━━╮
@@ -226,7 +237,7 @@ anime: `╭━━━🎌 ANIME & REACCIONES 🎌━━━╮
 
 stickers: `╭━━━🎨 STICKERS 🎨━━━╮
 │ 🎨 .s / .sticker - Crear sticker
-│ 📦 .newpack - Crear pack
+│ 📦 .newpack / .newstickerpack - Crear pack
 │ 📋 .packlist - Ver packs
 │ 📦 .getpack - Obtener pack
 │ ✏️ .setpackname - Nombre pack
@@ -244,25 +255,29 @@ stickers: `╭━━━🎨 STICKERS 🎨━━━╮
 │ 🎨 .stickers - Menú stickers
 │ 🖼️ .take - Robar sticker
 │ ✏️ .rename - Renombrar sticker
+│ 💬 .qc - Sticker con cita
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 
 owner: `╭━━━👑 OWNER (Dueño) 👑━━━╮
 │ 🔄 .restart - Reiniciar bot
 │ 🧹 .clear - Limpiar chat
 │ 🎨 .tarjeta - Crear tarjeta
-│ 💰 .addcoins - Agregar monedas
+│ 💰 .add / .addcoins - Agregar monedas/exp
 │ 💰 .removecoins - Quitar monedas
 │ 👑 .addowner - Agregar owner
 │ ❌ .delowner - Quitar owner
 │ 📝 .setglobalprefix - Prefijo global
-│ 🚫 .banuser - Banear usuario
-│ ✅ .unbanuser - Desbanear usuario
+│ 🚫 .banuser / .ban - Banear usuario
+│ ✅ .unbanuser / .unban - Desbanear usuario
+│ 📊 .banlist / .baneados - Lista de baneados
 │ 📊 .userlist - Lista de usuarios
-│ 📋 .inspect - Inspeccionar
-│ ⚡ .exec - Ejecutar código
+│ 📋 .inspect - Inspeccionar código
+│ ⚡ .exec - Ejecutar código JS
 │ 💻 .eval - Evaluar código
-│ 🔧 .fix - Reparar base de datos
+│ 🖥️ .r - Ejecutar shell
+│ 🔧 .fix / .update - Reparar/Actualizar
 │ 💾 .backup - Respaldo
+│ 🧹 .optstats / .optclean - Optimizador
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
 }
 
