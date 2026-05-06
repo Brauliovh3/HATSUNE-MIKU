@@ -12,6 +12,8 @@ function trimCaption(text = '', max = 1000) {
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const channelAudioDir = CHANNEL_AUDIO_DIR
 const sentPostIds = new Map()
+const VOICE_SEGMENT_SECONDS = 300
+const MAX_VOICE_CHUNK_BYTES = 15 * 1024 * 1024
 
 function ensureChannelAudioDir() {
   ensureDir(channelAudioDir)
@@ -90,6 +92,14 @@ async function sendAudioToChannel(client, channelId, voicePath) {
     ptt: true,
     fileName: 'voice.ogg',
   })
+}
+
+async function sendVoiceFilesToChannel(client, channelId, voiceFiles = []) {
+  if (!voiceFiles.length) throw new Error('No se generaron notas de voz validas')
+  for (let i = 0; i < voiceFiles.length; i++) {
+    await sendAudioToChannel(client, channelId, voiceFiles[i])
+    if (i < voiceFiles.length - 1) await delay(1200)
+  }
 }
 
 
@@ -199,7 +209,7 @@ async function convertToVoiceOpus(inputBuffer, inputMime = 'audio/mpeg') {
   }
   const id = randomUUID()
   const inFile = path.join(channelAudioDir, `miku-canal-in-${id}${extFromMime(inputMime)}`)
-  const outFile = path.join(channelAudioDir, `miku-canal-out-${id}.ogg`)
+  const outPattern = path.join(channelAudioDir, `miku-canal-out-${id}-%03d.ogg`)
 
   await fs.promises.writeFile(inFile, inputBuffer)
 
@@ -212,14 +222,17 @@ async function convertToVoiceOpus(inputBuffer, inputMime = 'audio/mpeg') {
         '-c:a', 'libopus',
         '-ar', '48000',
         '-ac', '1',
-        '-b:a', '64k',
+        '-b:a', '48k',
         '-vbr', 'on',
         '-application', 'voip',
         '-compression_level', '10',
         '-avoid_negative_ts', 'make_zero',
         '-fflags', '+genpts',
-        '-f', 'ogg',
-        outFile,
+        '-f', 'segment',
+        '-segment_time', String(VOICE_SEGMENT_SECONDS),
+        '-reset_timestamps', '1',
+        '-segment_format', 'ogg',
+        outPattern,
       ]
       const p = spawn('ffmpeg', args, { stdio: ['ignore', 'ignore', 'pipe'] })
       let err = ''
@@ -234,16 +247,34 @@ async function convertToVoiceOpus(inputBuffer, inputMime = 'audio/mpeg') {
       })
     })
 
-    const out = await fs.promises.readFile(outFile)
-    if (!out || out.length < 512) throw new Error('audio convertido invalido')
-    if (out.subarray(0, 4).toString() !== 'OggS') throw new Error('audio convertido sin cabecera OGG')
-    if (!out.subarray(0, Math.min(512, out.length)).toString('latin1').includes('OpusHead')) throw new Error('audio convertido sin cabecera Opus')
+    const outFiles = (await fs.promises.readdir(channelAudioDir))
+      .filter(file => file.startsWith(`miku-canal-out-${id}-`) && file.endsWith('.ogg'))
+      .sort()
+      .map(file => path.join(channelAudioDir, file))
+
+    if (!outFiles.length) throw new Error('ffmpeg no genero audio de voz')
+
+    for (const outFile of outFiles) {
+      const out = await fs.promises.readFile(outFile)
+      if (!out || out.length < 512) throw new Error('audio convertido invalido')
+      if (out.length > MAX_VOICE_CHUNK_BYTES) throw new Error(`Segmento de audio demasiado grande (${readableBytes(out.length)})`)
+      if (out.subarray(0, 4).toString() !== 'OggS') throw new Error('audio convertido sin cabecera OGG')
+      if (!out.subarray(0, Math.min(512, out.length)).toString('latin1').includes('OpusHead')) throw new Error('audio convertido sin cabecera Opus')
+      scheduleDelete(outFile, 10 * 60 * 1000)
+    }
+
     scheduleDelete(inFile, 120000)
-    scheduleDelete(outFile, 10 * 60 * 1000)
-    return { inFile, outFile }
+    return { inFile, outFiles }
   } catch (e) {
     try { fs.unlinkSync(inFile) } catch {}
-    try { fs.unlinkSync(outFile) } catch {}
+    try {
+      const leftovers = await fs.promises.readdir(channelAudioDir)
+      for (const file of leftovers) {
+        if (file.startsWith(`miku-canal-out-${id}-`) && file.endsWith('.ogg')) {
+          try { fs.unlinkSync(path.join(channelAudioDir, file)) } catch {}
+        }
+      }
+    } catch {}
     throw e
   }
 }
@@ -301,7 +332,7 @@ export default {
 
         } else if (detected.kind === 'audio') {
           const files = await convertToVoiceOpus(buffer, mime || detected.mime || 'audio/mpeg')
-          await sendAudioToChannel(client, channelId, files.outFile)
+          await sendVoiceFilesToChannel(client, channelId, files.outFiles)
 
         } else {
           const fileName = source?.msg?.fileName || `archivo${extFromMime(detected.mime || mime)}`
