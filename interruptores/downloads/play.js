@@ -1,9 +1,7 @@
 import axios from 'axios'
 
-
 const _k = Buffer.from('REVQT09MLWtleTYwMDE1MDkx', 'base64').toString()
 const _b = Buffer.from('aHR0cHM6Ly9hcGkuYWx5YWNvcmUueHl6L2RsL2FuaW1lL2VwaXNvZGU=', 'base64').toString()
-
 
 const MIKU = {
   heart:   '💙',
@@ -30,17 +28,23 @@ export default {
   run: async (client, m, args, usedPrefix, command) => {
     const text = args.join(' ').trim()
 
-    
     if (!text) {
       return client.reply(
         m.chat,
-        `${D_START}\n│ 💙 *ANIME DOWNLOADER*\n│\n│ 🎵 Descarga episodios de anime fácilmente.\n│\n│ 📌 *Uso:*\n│ \`${usedPrefix + command} <nombre> <episodio>\`\n│\n│ 🎬 *Ejemplo:*\n│ \`${usedPrefix + command} Tonikaku Kawaii 01\`\n│\n│ ✨ El episodio es opcional (por defecto: 01)\n${D_END}`,
+        `${D_START}
+│ 💙 *ANIME DOWNLOADER*
+│
+│ 🎵 Uso:
+│ \`${usedPrefix + command} <nombre> <episodio>\`
+│
+│ 📌 Ejemplo:
+│ \`${usedPrefix + command} Tonikaku Kawaii 01\`
+${D_END}`,
         m,
         global.miku,
       )
     }
 
-    
     const parts   = text.split(/\s+/)
     const lastArg = parts[parts.length - 1]
     let ep, query
@@ -56,7 +60,9 @@ export default {
     if (!query) {
       return client.reply(
         m.chat,
-        `${D_START}\n│ 💔 *NOMBRE INVÁLIDO*\n│\n│ 🎵 Debes escribir el nombre del anime.\n│\n│ 📌 *Ejemplo:*\n│ \`${usedPrefix + command} Tonikaku Kawaii 01\`\n${D_END}`,
+        `${D_START}
+│ 💔 Nombre inválido
+${D_END}`,
         m,
         global.miku,
       )
@@ -65,9 +71,8 @@ export default {
     await m.react(MIKU.wait)
 
     try {
-      
       const { data } = await axios.get(_b, {
-        params:  { query, ep, key: _k },
+        params: { query, ep, key: _k },
         timeout: 15000,
       })
 
@@ -75,7 +80,9 @@ export default {
         await m.react(MIKU.cross)
         return client.reply(
           m.chat,
-          `${D_START}\n│ 💔 *NO ENCONTRADO*\n│\n│ 🎵 No se encontró:\n│ 📺 *"${query}"* — Ep. ${ep}\n│\n│ ✨ Revisa el nombre e inténtalo de nuevo.\n${D_END}`,
+          `${D_START}
+│ 💔 No encontrado: ${query} Ep ${ep}
+${D_END}`,
           m,
           global.miku,
         )
@@ -83,28 +90,71 @@ export default {
 
       const { title, episode, language, pixeldrain, dl } = data
 
-      
-      const info = `${D_START}\n│ 💙 *ANIME ENCONTRADO*\n│\n│ 📺 *Título:*   ${title}\n│ 🎬 *Episodio:* ${episode}\n│ 🌐 *Idioma:*   ${language}\n│\n${D_END}`
+      const info = `${D_START}
+│ 📺 ${title}
+│ 🎬 Ep: ${episode}
+│ 🌐 ${language}
+${D_END}`
 
-      await client.sendContextInfoIndex(m.chat, info, {}, m, true, null, {
-        banner: MIKU.banner,
-        title:  '💙 Anime Downloader',
-        body:   '✨ Descarga tu anime favorito',
-        redes:  global.db.data.settings[client.user.id.split(':')[0] + '@s.whatsapp.net'].link,
-      })
+      await client.sendMessage(m.chat, { text: info }, { quoted: m })
+
+     
+
+      let sent = false
+
+    
+      try {
+        await client.sendMessage(
+          m.chat,
+          {
+            video: { url: dl },
+            mimetype: 'video/mp4',
+            caption: `💙 ${title} - Ep ${episode}`
+          },
+          { quoted: m }
+        )
+        sent = true
+      } catch (e) {
+        console.log('❌ Direct video failed:', e.message)
+      }
+
+      if (!sent) {
+        try {
+          const res = await axios.get(dl, {
+            responseType: 'arraybuffer',
+            timeout: 30000
+          })
+
+          await client.sendMessage(
+            m.chat,
+            {
+              video: Buffer.from(res.data),
+              mimetype: 'video/mp4',
+              caption: `💙 ${title} - Ep ${episode}`
+            },
+            { quoted: m }
+          )
+          sent = true
+        } catch (e) {
+          console.log('❌ Buffer failed:', e.message)
+        }
+      }
 
       
-      await client.sendMessage(
-        m.chat,
-        {
-          document: { url: dl },
-          mimetype: 'video/mp4',
-          fileName: `${title} - Ep${String(episode).padStart(2, '0')}.mp4`,
-          caption:
-            `${D_START}\n│ 💙 *ANIME DOWNLOADER*\n│\n│ 📺 *${title}*\n│ 🎬 Episodio: *${episode}*\n│ 🌐 Idioma: ${language}\n│\n│ 🔗 *Ver online:*\n│ ${pixeldrain}\n│\n│ ✨ _Powered by Miku Bot_ 💙\n${D_END}`,
-        },
-        { quoted: m },
-      )
+      if (!sent) {
+        await client.sendMessage(
+          m.chat,
+          {
+            text: `${D_START}
+│ 💔 No se pudo enviar el video
+│
+│ 🔗 Ver / descargar:
+│ ${pixeldrain}
+${D_END}`
+          },
+          { quoted: m }
+        )
+      }
 
       await m.react(MIKU.check)
 
@@ -112,7 +162,10 @@ export default {
       await m.react(MIKU.cross)
       return client.reply(
         m.chat,
-        `${D_START}\n│ 💔 *ERROR*\n│\n│ 🎵 Ocurrió un error al ejecutar *${usedPrefix + command}*\n│\n│ 🌱 *Detalle:* ${e.message}\n│\n│ ✨ Inténtalo de nuevo o contacta soporte.\n${D_END}`,
+        `${D_START}
+│ 💔 Error:
+│ ${e.message}
+${D_END}`,
         m,
         global.miku,
       )
