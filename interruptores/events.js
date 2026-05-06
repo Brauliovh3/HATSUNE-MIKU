@@ -57,6 +57,9 @@ async function safeSend(client, jid, content, retries = 2) {
 }
 
 export default async (client, m) => {
+  if (client._mikuEventsAttached) return
+  client._mikuEventsAttached = true
+
   client.ev.on('group-participants.update', async (anu) => {
     try {
       if (!anu || !anu.id || !anu.participants || !Array.isArray(anu.participants)) {
@@ -66,6 +69,22 @@ export default async (client, m) => {
       if (client.ws?.socket?.readyState !== 1) {
         return;
       }
+
+      const chat = global?.db?.data?.chats?.[anu.id] || {}
+      const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
+      const isSelf = global.db.data.settings[botId]?.self ?? false
+      if (isSelf) return
+
+      const action = anu.action
+      const isRemove = action === 'remove' || action === 'leave'
+      const hasKickAuthor = Boolean(anu.author)
+      const shouldWelcome = action === 'add' && chat?.welcome
+      const shouldGoodbye = isRemove && chat?.goodbye
+      const shouldKickAlert = isRemove && hasKickAuthor && chat?.alerts
+      const shouldAdminAlert = (action === 'promote' || action === 'demote') && chat?.alerts
+
+      if (!shouldWelcome && !shouldGoodbye && !shouldKickAlert && !shouldAdminAlert) return
+      if (!isPrimaryHandler(client, chat)) return
 
       let metadata = {};
       try {
@@ -80,12 +99,7 @@ export default async (client, m) => {
         metadata = { subject: 'Grupo', participants: [] };
       }
 
-      const chat = global?.db?.data?.chats?.[anu.id]
-      const botId = client.user.id.split(':')[0] + '@s.whatsapp.net'
-      const primaryBotId = chat?.primaryBot
       const memberCount = metadata.participants?.length || 0;
-      const isSelf = global.db.data.settings[botId]?.self ?? false
-      if (isSelf) return
 
       const botSettings = global.db.data.settings[botId] || {};
       const groupAdmins = metadata?.participants.filter(p => (p.admin === 'admin' || p.admin === 'superadmin')) || []
@@ -110,14 +124,6 @@ export default async (client, m) => {
         }
         
         const phone = validJid.split('@')[0];
-        
-        let pp = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg';
-        try {
-          pp = await Promise.race([
-            client.profilePictureUrl(validJid, 'image'),
-            new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 800))
-          ])
-        } catch {}
 
         
         const contextInfo = {
@@ -141,7 +147,7 @@ export default async (client, m) => {
           mentionedJid: [validJid]
         };
         
-        if (anu.action === 'add' && chat?.welcome && isPrimaryHandler(client, chat)) {
+        if (shouldWelcome) {
           const customMessage = chat?.sWelcome ? chat.sWelcome.replace(/{usuario}/g, `@${phone}`).replace(/{grupo}/g, metadata.subject).replace(/{desc}/g, metadata?.desc || 'Sin descripción') : '';
 
           queueWelcome(async () => {
@@ -163,7 +169,7 @@ export default async (client, m) => {
           })
         }
         
-        if ((anu.action === 'remove' || anu.action === 'leave') && isPrimaryHandler(client, chat)) {
+        if (isRemove && (shouldGoodbye || shouldKickAlert)) {
           const kicker = anu.author;
           const isKick = kicker && kicker !== validJid;
 
@@ -179,7 +185,7 @@ export default async (client, m) => {
 
           queueWelcome(async () => {
             try {
-              if (isKick && chat?.alerts) {
+              if (isKick && shouldKickAlert) {
                 const kickImage = 'https://i.pinimg.com/736x/4a/f2/fa/4af2fad2fa327fca8a1c20c9ab4baadc.jpg';
                 const kickCaption = `╭━━━🌸━━━💙━━━🌸━━━╮
 ┃  ⚠️ *¡ Usuario Expulsado !* ⚠️
@@ -215,7 +221,7 @@ export default async (client, m) => {
                   mentionedJid: [validJid, kicker, ...groupAdmins.map(v => v.id)]
                 };
                 await safeSend(client, anu.id, { image: { url: kickImage }, caption: kickCaption, contextInfo: kickContextInfo })
-              } else if (!isKick && chat?.goodbye) {
+              } else if (!isKick && shouldGoodbye) {
                 const caption = customMessage || `╭━━━🌸━━━💙━━━🌸━━━╮
 ┃  🎵 *¡ Hasta pronto !* 🎵
 ╰━━━🌸━━━💙━━━🌸━━━╯
@@ -233,11 +239,11 @@ export default async (client, m) => {
             } catch {}
           })
         }
-        if (anu.action === 'promote' && chat?.alerts && isPrimaryHandler(client, chat)) {
+        if (action === 'promote' && shouldAdminAlert) {
           const usuario = anu.author
           await safeSend(client, anu.id, { text: `💙 *@${phone}* ha sido promovido a Administrador por *@${usuario.split('@')[0]}.*`, mentions: [validJid, usuario, ...groupAdmins.map(v => v.id)], ...global.miku })
         }
-        if (anu.action === 'demote' && chat?.alerts && isPrimaryHandler(client, chat)) {
+        if (action === 'demote' && shouldAdminAlert) {
           const usuario = anu.author
           await safeSend(client, anu.id, { text: `💙 *@${phone}* ha sido degradado de Administrador por *@${usuario.split('@')[0]}.*`, mentions: [validJid, usuario, ...groupAdmins.map(v => v.id)], ...global.miku })
         }
