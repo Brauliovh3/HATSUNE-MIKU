@@ -5,7 +5,6 @@ import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
 import {
   DOWNLOAD_TMP_DIR,
-  STORAGE_LIMITS,
   ensureDir,
   hasEnoughDiskSpace,
   isNoSpaceError,
@@ -16,7 +15,9 @@ import {
 const _k = Buffer.from('REVQT09MLWtleTYwMDE1MDkx', 'base64').toString()
 const _b = Buffer.from('aHR0cHM6Ly9hcGkuYWx5YWNvcmUueHl6L2RsL2FuaW1lL2VwaXNvZGU=', 'base64').toString()
 
-const BANNER = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
+const BANNER    = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
+const MAX_BYTES = 300 * 1024 * 1024 
+const MIN_FREE  = 300 * 1024 * 1024  
 
 const D_S = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
 const D_E = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
@@ -29,7 +30,6 @@ function extractPixeldrainId(url) {
 function deleteSafe(filePath) {
   try { if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath) } catch {}
 }
-
 
 async function getRemoteSize(url, headers = {}) {
   try {
@@ -60,7 +60,7 @@ async function downloadAnimeFile(url, destPath) {
     url:              dlUrl,
     method:           'GET',
     responseType:     'stream',
-    timeout:          180000,
+    timeout:          300000,         
     maxContentLength: Infinity,
     maxBodyLength:    Infinity,
     headers,
@@ -81,7 +81,7 @@ async function downloadAnimeFile(url, destPath) {
     throw new Error(`Archivo demasiado pequeño (${readableBytes(stat.size)}). Respuesta: ${preview.substring(0, 100)}`)
   }
 
-
+ 
   const fd    = fs.openSync(destPath, 'r')
   const magic = Buffer.alloc(8)
   fs.readSync(fd, magic, 0, 8, 0)
@@ -106,7 +106,7 @@ export default {
     if (!text) {
       return client.reply(
         m.chat,
-        `${D_S}\n│ 💙 *ANIME DOWNLOADER*\n│\n│ 🎵 Descarga episodios de anime.\n│\n│ 📌 *Uso:*\n│ \`${usedPrefix + command} <anime> <ep>\`\n│\n│ 🎬 *Ejemplo:*\n│ \`${usedPrefix + command} Tonikaku Kawaii 01\`\n│\n│ ✨ Episodio opcional (defecto: 01)\n${D_E}`,
+        `${D_S}\n│ 💙 *ANIME DOWNLOADER*\n│\n│ 🎵 Descarga episodios de anime.\n│\n│ 📌 *Uso:*\n│ \`${usedPrefix + command} <anime> <ep>\`\n│\n│ 🎬 *Ejemplo:*\n│ \`${usedPrefix + command} Tonikaku Kawaii 01\`\n│\n│ ✨ Episodio opcional (defecto: 01)\n│ 📦 Límite: ${readableBytes(MAX_BYTES)}\n${D_E}`,
         m,
         global.miku,
       )
@@ -138,7 +138,7 @@ export default {
     let tmpPath = null
 
     try {
-  
+     
       const { data } = await axios.get(_b, {
         params:  { query, ep, key: _k },
         timeout: 15000,
@@ -158,33 +158,28 @@ export default {
 
       
       const fileId = extractPixeldrainId(dl)
-      const remoteHeaders = fileId ? {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Referer':    `https://pixeldrain.com/u/${fileId}`,
-      } : {}
+      const dlUrl  = fileId ? `https://pixeldrain.com/api/file/${fileId}?download` : dl
+      const remoteHeaders = fileId
+        ? { 'User-Agent': 'Mozilla/5.0', 'Referer': `https://pixeldrain.com/u/${fileId}` }
+        : {}
 
-      const remoteSize = await getRemoteSize(
-        fileId ? `https://pixeldrain.com/api/file/${fileId}?download` : dl,
-        remoteHeaders,
-      )
+      const remoteSize = await getRemoteSize(dlUrl, remoteHeaders)
 
-      
-      if (remoteSize && remoteSize > STORAGE_LIMITS.maxDownloadBytes) {
+      if (remoteSize && remoteSize > MAX_BYTES) {
         await m.react('❌')
         return client.reply(
           m.chat,
-          `${D_S}\n│ ⚠️ *ARCHIVO MUY GRANDE*\n│\n│ 📦 Tamaño: ${readableBytes(remoteSize)}\n│ 🔒 Límite: ${readableBytes(STORAGE_LIMITS.maxDownloadBytes)}\n│\n│ 🔗 Descárgalo directamente:\n│ ${pixeldrain}\n${D_E}`,
+          `${D_S}\n│ ⚠️ *ARCHIVO MUY GRANDE*\n│\n│ 📦 Tamaño: ${readableBytes(remoteSize)}\n│ 🔒 Límite: ${readableBytes(MAX_BYTES)}\n│\n│ 🔗 Descárgalo directamente:\n│ ${pixeldrain}\n${D_E}`,
           m,
           global.miku,
         )
       }
 
       
-      const needed = remoteSize ?? 200 * 1024 * 1024 
-      const hasSpace = await hasEnoughDiskSpace(needed)
+      const needed   = remoteSize ?? MAX_BYTES
+      const hasSpace = await hasEnoughDiskSpace(needed + MIN_FREE)
 
       if (!hasSpace) {
-        
         await client.reply(
           m.chat,
           `${D_S}\n│ 🧹 *Limpiando espacio...*\n│ Por favor espera.\n${D_E}`,
@@ -192,8 +187,8 @@ export default {
           global.miku,
         )
 
-        const cleaned = await cleanProjectStorage()
-        const hasSpaceNow = await hasEnoughDiskSpace(needed)
+        const cleaned     = await cleanProjectStorage()
+        const hasSpaceNow = await hasEnoughDiskSpace(needed + MIN_FREE)
 
         if (!hasSpaceNow) {
           await m.react('❌')
@@ -206,10 +201,10 @@ export default {
         }
       }
 
-     
+      
       await client.sendContextInfoIndex(
         m.chat,
-        `${D_S}\n│ 💙 *ANIME ENCONTRADO*\n│\n│ 📺 *Título:*   ${title}\n│ 🎬 *Episodio:* ${episode}\n│ 🌐 *Idioma:*   ${language}\n│\n│ 🔗 *Ver online:*\n│ ${pixeldrain}\n│\n│ ⬇️  _Enviando archivo..._\n${D_E}`,
+        `${D_S}\n│ 💙 *ANIME ENCONTRADO*\n│\n│ 📺 *Título:*   ${title}\n│ 🎬 *Episodio:* ${episode}\n│ 🌐 *Idioma:*   ${language}\n│ 📦 *Tamaño:*   ${remoteSize ? readableBytes(remoteSize) : 'desconocido'}\n│\n│ 🔗 *Ver online:*\n│ ${pixeldrain}\n│\n│ ⬇️  _Enviando archivo..._\n${D_E}`,
         {},
         m,
         true,
@@ -222,7 +217,7 @@ export default {
         },
       )
 
-   
+      
       const safeName = String(title || 'anime')
         .replace(/[^\w\s]/gi, '')
         .trim()
@@ -235,7 +230,7 @@ export default {
 
       const caption = `${D_S}\n│ 🎵 *${title}*\n│ 🎬 Ep. ${episode}  🌐 ${language}\n│ 📦 ${readableBytes(finalSize)}\n│\n│ 💙 _Hatsune Miku Bot_ ✨\n${D_E}`
 
-      
+   
       await client.sendMessage(
         m.chat,
         {
@@ -252,9 +247,8 @@ export default {
     } catch (e) {
       await m.react('❌')
 
-      
       const msg = isNoSpaceError(e)
-        ? 'Sin espacio en disco. Usa /limpiar o libera espacio en el servidor.'
+        ? `Sin espacio en disco. Libera espacio en el servidor e intenta de nuevo.`
         : e.message
 
       return client.reply(
