@@ -1,23 +1,21 @@
 import axios from 'axios'
-
+ 
 const _k = Buffer.from('REVQT09MLWtleTYwMDE1MDkx', 'base64').toString()
 const _b = Buffer.from('aHR0cHM6Ly9hcGkuYWx5YWNvcmUueHl6L2RsL2FuaW1lL2VwaXNvZGU=', 'base64').toString()
-
+ 
 const BANNER = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
-
+ 
 const D_S = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
 const D_E = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
-
-
+ 
 function extractPixeldrainId(url) {
   const match = url.match(/pixeldrain\.com\/(?:api\/file|u)\/([a-zA-Z0-9]+)/)
   return match ? match[1] : null
 }
-
+ 
 async function downloadPixeldrain(url) {
   const fileId = extractPixeldrainId(url)
-
-  
+ 
   if (!fileId) {
     const response = await axios({
       url,
@@ -30,23 +28,20 @@ async function downloadPixeldrain(url) {
     })
     return Buffer.from(response.data)
   }
-
  
+  
   const infoRes = await axios.get(`https://pixeldrain.com/api/file/${fileId}/info`, {
     timeout: 10000,
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    },
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
   })
-
+ 
   const info = infoRes.data
   if (!info || info.abuse_type) {
     throw new Error(`Pixeldrain: archivo no disponible (${info?.abuse_type || 'desconocido'})`)
   }
-
-  
+ 
   const dlUrl = `https://pixeldrain.com/api/file/${fileId}?download`
-
+ 
   const response = await axios({
     url: dlUrl,
     method: 'GET',
@@ -63,33 +58,31 @@ async function downloadPixeldrain(url) {
       'Connection': 'keep-alive',
     },
   })
-
-  
+ 
   const contentType = response.headers['content-type'] || ''
   if (contentType.includes('text/html')) {
-    throw new Error('Pixeldrain devolvió HTML en vez del archivo. El archivo puede estar limitado por rate limit o captcha.')
+    throw new Error('Pixeldrain devolvió HTML. El archivo puede estar bloqueado por rate limit o captcha.')
   }
-
+ 
   const buffer = Buffer.from(response.data)
-
-  
+ 
   if (buffer.length > 8) {
     const magic = buffer.slice(4, 8).toString('ascii')
     if (!['ftyp', 'mdat', 'moov', 'free', 'wide'].includes(magic)) {
-      throw new Error(`El archivo descargado no es un MP4 válido (magic: "${magic}"). Posible rate limit de Pixeldrain.`)
+      throw new Error(`Archivo no válido (magic: "${magic}"). Posible rate limit de Pixeldrain.`)
     }
   }
-
+ 
   return buffer
 }
-
+ 
 export default {
   command:  ['anime', 'animedl', 'adl'],
   category: 'downloader',
-
+ 
   run: async (client, m, args, usedPrefix, command) => {
     const text = args.join(' ').trim()
-
+ 
     if (!text) {
       return client.reply(
         m.chat,
@@ -98,11 +91,11 @@ export default {
         global.miku,
       )
     }
-
+ 
     const parts   = text.split(/\s+/)
     const lastArg = parts[parts.length - 1]
     let ep, query
-
+ 
     if (/^\d{1,4}$/.test(lastArg)) {
       ep    = String(lastArg).padStart(2, '0')
       query = parts.slice(0, -1).join(' ')
@@ -110,7 +103,7 @@ export default {
       ep    = '01'
       query = parts.join(' ')
     }
-
+ 
     if (!query) {
       return client.reply(
         m.chat,
@@ -119,15 +112,15 @@ export default {
         global.miku,
       )
     }
-
+ 
     await m.react('⏳')
-
+ 
     try {
       const { data } = await axios.get(_b, {
         params:  { query, ep, key: _k },
         timeout: 15000,
       })
-
+ 
       if (!data?.status) {
         await m.react('❌')
         return client.reply(
@@ -137,9 +130,9 @@ export default {
           global.miku,
         )
       }
-
+ 
       const { title, episode, language, pixeldrain, dl } = data
-
+ 
       await client.sendContextInfoIndex(
         m.chat,
         `${D_S}\n│ 💙 *ANIME ENCONTRADO*\n│\n│ 📺 *Título:*   ${title}\n│ 🎬 *Episodio:* ${episode}\n│ 🌐 *Idioma:*   ${language}\n│\n│ 🔗 *Ver online:*\n│ ${pixeldrain}\n│\n│ ⬇️  _Enviando archivo..._\n${D_E}`,
@@ -154,27 +147,44 @@ export default {
           redes:  global.db.data.settings[client.user.id.split(':')[0] + '@s.whatsapp.net'].link,
         },
       )
-
+ 
       const safeName = String(title || 'anime')
         .replace(/[^\w\s]/gi, '')
         .trim()
         .substring(0, 40) || 'anime'
-
+ 
       const fileBuffer = await downloadPixeldrain(dl)
-
-      await client.sendMessage(
-        m.chat,
-        {
-          document: fileBuffer,
-          mimetype: 'video/mp4',
-          fileName: `${safeName}_ep${episode}.mp4`,
-          caption:  `${D_S}\n│ 🎵 *${title}*\n│ 🎬 Ep. ${episode}  🌐 ${language}\n│\n│ 💙 _Hatsune Miku Bot_ ✨\n${D_E}`,
-        },
-        { quoted: m },
-      )
-
+ 
+    
+      const caption = `${D_S}\n│ 🎵 *${title}*\n│ 🎬 Ep. ${episode}  🌐 ${language}\n│\n│ 💙 _Hatsune Miku Bot_ ✨\n${D_E}`
+ 
+      try {
+        await client.sendMessage(
+          m.chat,
+          {
+            video: fileBuffer,
+            mimetype: 'video/mp4',
+            fileName: `${safeName}_ep${episode}.mp4`,
+            caption,
+          },
+          { quoted: m },
+        )
+      } catch {
+        
+        await client.sendMessage(
+          m.chat,
+          {
+            document: fileBuffer,
+            mimetype: 'video/mp4',
+            fileName: `${safeName}_ep${episode}.mp4`,
+            caption,
+          },
+          { quoted: m },
+        )
+      }
+ 
       await m.react('✅')
-
+ 
     } catch (e) {
       await m.react('❌')
       return client.reply(
