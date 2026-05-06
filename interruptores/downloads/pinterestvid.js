@@ -101,7 +101,7 @@ const D_S = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
 const D_E = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
 
 export default {
-  command:  ['pinvideo', 'pvideo', 'pv'],
+  command:  ['pinvideo', 'pvideo', 'pv','pinvid'],
   category: 'search',
 
   run: async (conn, m, args, usedPrefix, command) => {
