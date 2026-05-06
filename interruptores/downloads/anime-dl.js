@@ -112,10 +112,15 @@ export default {
       const safeName = String(title || 'anime').replace(/[^\w\s]/gi, '').trim().substring(0, 40) || 'anime'
       tmpFile = await downloadToTmp(dl, `${Date.now()}_${safeName}_ep${episode}.mp4`)
 
+      const fileBuffer = fs.readFileSync(tmpFile)
+      if (!fileBuffer || fileBuffer.length < 1024) {
+        throw new Error('El archivo descargado está vacío o incompleto')
+      }
+
       await client.sendMessage(
         m.chat,
         {
-          document: { url: tmpFile },
+          document: fileBuffer,
           mimetype: 'video/mp4',
           fileName: `${safeName}_ep${episode}.mp4`,
           caption:  `${D_S}\n│ 🎵 *${title}*\n│ 🎬 Ep. ${episode}  🌐 ${language}\n│\n│ 💙 _Hatsune Miku Bot_ ✨\n${D_E}`,
