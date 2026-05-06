@@ -1,10 +1,10 @@
 import { promises as fsp } from 'fs'
-import os from 'os'
 import path from 'path'
 import { spawn } from 'child_process'
+import { MP3_TMP_DIR } from '../nucleo/system/storage.js'
 
 export async function toMp3(buffer, ext) {
-  const tmpDir = path.join(os.tmpdir(), 'miku-mp3')
+  const tmpDir = MP3_TMP_DIR
   const inputExt = ext || 'mp4'
   const inputPath = path.join(tmpDir, `input_${Date.now()}.${inputExt}`)
   const outputPath = path.join(tmpDir, `output_${Date.now()}.mp3`)
@@ -44,7 +44,7 @@ export async function toMp3(buffer, ext) {
   })
 
   function cleanup() {
-    try { fsp.unlink(inputPath) } catch {}
-    try { fsp.unlink(outputPath) } catch {}
+    fsp.unlink(inputPath).catch(() => {})
+    fsp.unlink(outputPath).catch(() => {})
   }
 }

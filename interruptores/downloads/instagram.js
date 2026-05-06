@@ -1,10 +1,7 @@
 import fetch from 'node-fetch'
 import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { DOWNLOAD_TMP_DIR, STORAGE_LIMITS, ensureDir, hasEnoughDiskSpace, isNoSpaceError, cleanProjectStorage, readableBytes } from '../../nucleo/system/storage.js'
 
 const _h=[82,101,115,116,46,97,112,105,99,97,117,115,97,115,46,120,121,122].map(c=>String.fromCharCode(c)).join('')
 const NEW_API_BASE = process.env.NEW_API_BASE || `https://${_h}`
@@ -82,8 +79,7 @@ async function validateDownloadUrl(url) {
 }
 
 async function downloadFile(url, filename) {
-  const tempDir = path.join(__dirname, '../tmp-descargas');
-  if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+  const tempDir = ensureDir(DOWNLOAD_TMP_DIR);
 
   const tempFilePath = path.join(tempDir, filename);
 
@@ -112,13 +108,32 @@ async function downloadFile(url, filename) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
+    const contentLength = Number(response.headers.get('content-length') || 0);
+    if (contentLength > STORAGE_LIMITS.maxDownloadBytes) {
+      throw new Error(`Archivo demasiado grande (${readableBytes(contentLength)}). Límite: ${readableBytes(STORAGE_LIMITS.maxDownloadBytes)}`);
+    }
+    if (!(await hasEnoughDiskSpace(contentLength || STORAGE_LIMITS.maxDownloadBytes))) {
+      await cleanProjectStorage({ maxAgeMs: 0 });
+      if (!(await hasEnoughDiskSpace(contentLength || STORAGE_LIMITS.maxDownloadBytes))) {
+        throw new Error('No hay espacio libre suficiente para esta descarga.');
+      }
+    }
+
     const contentType = response.headers.get('content-type') || '';
     console.log(`📦 Content-Type: ${contentType}`);
 
     const fileStream = fs.createWriteStream(tempFilePath);
 
     return new Promise((resolve, reject) => {
-      response.body.on('data', (chunk) => fileStream.write(chunk));
+      let downloaded = 0;
+      response.body.on('data', (chunk) => {
+        downloaded += chunk.length;
+        if (downloaded > STORAGE_LIMITS.maxDownloadBytes) {
+          response.body.destroy(new Error(`Archivo demasiado grande. Límite: ${readableBytes(STORAGE_LIMITS.maxDownloadBytes)}`));
+          return;
+        }
+        fileStream.write(chunk);
+      });
 
       response.body.on('end', () => {
         fileStream.end();
@@ -151,6 +166,10 @@ async function downloadFile(url, filename) {
   } catch (error) {
     console.error(`❌ Error en descarga:`, error.message || error);
     try { if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath); } catch (e) {}
+    if (isNoSpaceError(error)) {
+      await cleanProjectStorage({ maxAgeMs: 0 }).catch(() => {});
+      throw new Error('ENOSPC: el disco se quedó sin espacio durante la descarga; se limpió el temporal.');
+    }
     throw error;
   }
 }

@@ -3,6 +3,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
+import { cleanProjectStorage, getDiskInfo, readableBytes, STORAGE_LIMITS } from './storage.js';
 
 const execAsync = promisify(exec);
 
@@ -41,6 +42,8 @@ class HealthCheck {
     this.schedule('memory-check', () => this.checkMemory(), 20 * 1000);
     
     this.schedule('subbot-cleanup', () => this.cleanDisconnectedSubbots(), 60 * 1000);
+    
+    this.schedule('disk-cleanup', () => this.checkDiskSpace(), 60 * 1000);
     
     console.log(chalk.green('✅ Health Check iniciado (versión optimizada)'));
   }
@@ -193,6 +196,29 @@ class HealthCheck {
     }
   }
 
+  async checkDiskSpace() {
+    const info = await getDiskInfo();
+    if (!info) return;
+
+    global.diskStats = {
+      free: readableBytes(info.free),
+      total: readableBytes(info.total),
+      used: readableBytes(info.used),
+      usedPercent: info.usedPercent.toFixed(1)
+    };
+
+    if (info.usedPercent >= 88 || info.free < STORAGE_LIMITS.minFreeBytes) {
+      const cleaned = await cleanProjectStorage({ maxAgeMs: 0 });
+      const after = await getDiskInfo();
+      if (cleaned.cleaned > 0 || cleaned.sessionsCleaned > 0) {
+        console.log(chalk.yellow(`[HealthCheck] Limpieza de disco: ${cleaned.cleaned + cleaned.sessionsCleaned} archivos, ${readableBytes(cleaned.freed)} liberados`));
+      }
+      if (after && after.free < STORAGE_LIMITS.minFreeBytes) {
+        console.log(chalk.red(`[HealthCheck] Disco bajo: ${readableBytes(after.free)} libres (${after.usedPercent.toFixed(1)}% usado)`));
+      }
+    }
+  }
+
   emergencyCleanup() {
     console.log(chalk.red('[HealthCheck] Ejecutando limpieza de EMERGENCIA...'));
 
@@ -206,6 +232,7 @@ class HealthCheck {
     this.cleanBaileysStores();
     this.cleanDatabaseCache();
     this.cleanSubBotManager(); 
+    this.checkDiskSpace();
 
     if (global.client?.chats && global.client.chats.size > 30) {
       const chats = global.client.chats;

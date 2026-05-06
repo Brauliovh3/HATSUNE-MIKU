@@ -19,7 +19,7 @@ import optimizer     from './nucleo/system/optimizer.js'
 import subBotManager from './nucleo/subbotManager.js'
 import healthCheck   from './nucleo/system/healthCheck.js'
 import { pruneGroupCache } from './nucleo/utils.js'   
-import { exec }      from "child_process"
+import { cleanProjectStorage, ensureDir, readableBytes, PROJECT_TMP_DIR } from './nucleo/system/storage.js'
 
 const log = {
   info:    (msg) => console.log(chalk.bgBlue.white.bold('INFO'),    chalk.white(msg)),
@@ -52,7 +52,7 @@ console.log(chalk.magentaBright('\n💙 Iniciando 01'))
 say('Hatsune\nMiku',        { align: 'center', gradient: ['red', 'blue'] })
 say('Made by (ㅎㅊDEPOOLㅊㅎ)', { font: 'console', align: 'center', gradient: ['blue', 'magenta'] })
 
-if (!fs.existsSync('./tmp')) fs.mkdirSync('./tmp', { recursive: true })
+ensureDir(PROJECT_TMP_DIR)
 
 
 let isCleaning = false
@@ -67,24 +67,9 @@ async function cleanCache() {
   if (isCleaning) return
   isCleaning = true
   try {
-    const tmpFolders = ['./tmp', './tmp-descargas', './channel-audios']
-    let cleanedTmp = 0
-    for (const tmpFolder of tmpFolders) {
-      if (!fs.existsSync(tmpFolder)) continue
-      const files = await fs.promises.readdir(tmpFolder)
-      for (let i = 0; i < files.length; i++) {
-        if (i % 10 === 0) await yield_()   
-        try {
-          const filePath = path.join(tmpFolder, files[i])
-          const stat     = await fs.promises.stat(filePath)
-          if (stat.size > 10 * 1024 * 1024 || Date.now() - stat.mtimeMs > 10 * 60 * 1000) {
-            await fs.promises.unlink(filePath)
-            cleanedTmp++
-          }
-        } catch {}
-      }
-    }
-    if (cleanedTmp > 0) log.info(`Cache temporal: ${cleanedTmp} archivos basura eliminados`)
+    const result = await cleanProjectStorage({ maxAgeMs: 10 * 60 * 1000, sessionFileMaxAgeMs: 2 * 60 * 60 * 1000 })
+    await yield_()
+    if (result.cleaned > 0) log.info(`Cache temporal: ${result.cleaned} archivos eliminados (${readableBytes(result.freed)})`)
 
     const sessionsFolder = './Sessions'
     if (fs.existsSync(sessionsFolder)) {
@@ -156,6 +141,7 @@ let reconexion = 0
 const intentos = 15
 
 const _sendQueue = []
+global._sendQueue = _sendQueue
 let _processing = false
 
 let _msgCount = 0
@@ -264,15 +250,15 @@ async function startBot() {
       const reason = lastDisconnect?.error?.output?.statusCode || 0
       if (reason === DisconnectReason.loggedOut) {
         log.warning("Escanee nuevamente y ejecute...")
-        exec("rm -rf ./Sessions/Owner/*")
+        clearOwnerSession()
         process.exit(1)
       } else if (reason === DisconnectReason.forbidden) {
         log.error("Error de conexión, escanee nuevamente...")
-        exec("rm -rf ./Sessions/Owner/*")
+        clearOwnerSession()
         process.exit(1)
       } else if (reason === DisconnectReason.multideviceMismatch) {
         log.warning("Inicia nuevamente")
-        exec("rm -rf ./Sessions/Owner/*")
+        clearOwnerSession()
         process.exit(0)
       } else if (reason === DisconnectReason.connectionReplaced) {
         log.warning("Primero cierre la sesión actual...")
@@ -427,6 +413,16 @@ async function startBot() {
   }
 }
 
+function clearOwnerSession() {
+  const ownerDir = path.join(process.cwd(), 'Sessions', 'Owner')
+  try {
+    if (!fs.existsSync(ownerDir)) return
+    for (const entry of fs.readdirSync(ownerDir)) {
+      fs.rmSync(path.join(ownerDir, entry), { recursive: true, force: true })
+    }
+  } catch {}
+}
+
 
 setInterval(cleanCache, 5 * 60 * 1000)
 cleanCache()
@@ -442,6 +438,11 @@ setTimeout(cleanCache, 1 * 60 * 1000)
 
 process.on('uncaughtException', (err) => {
   const msg = err?.message || ''
+  if (/enospc/i.test(msg)) {
+    cleanProjectStorage({ maxAgeMs: 0 }).catch(() => {})
+    console.error(chalk.red('[uncaughtException] ENOSPC: limpieza de emergencia iniciada'))
+    return
+  }
   if (
     msg.includes('rate-overlimit') || msg.includes('timed out')     ||
     msg.includes('Connection Closed') || msg.includes('429')        ||
@@ -453,6 +454,11 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason) => {
   const msg      = String(reason?.message || reason || '')
   const lowerMsg = msg.toLowerCase()
+  if (lowerMsg.includes('enospc')) {
+    cleanProjectStorage({ maxAgeMs: 0 }).catch(() => {})
+    console.error(chalk.red('[unhandledRejection] ENOSPC: limpieza de emergencia iniciada'))
+    return
+  }
   if (
     lowerMsg.includes('rate-overlimit')     || lowerMsg.includes('timed out')               ||
     lowerMsg.includes('timeout')            || lowerMsg.includes('connection closed')        ||
@@ -460,7 +466,7 @@ process.on('unhandledRejection', (reason) => {
     lowerMsg.includes('enoent')             || lowerMsg.includes('no such file or directory') ||
     lowerMsg.includes('404')               || lowerMsg.includes('request failed')            ||
     lowerMsg.includes('no sessions')       || lowerMsg.includes('unsupported state')         ||
-    lowerMsg.includes('bad mac')           || lowerMsg.includes('enospc')                    ||
+    lowerMsg.includes('bad mac')           ||
     lowerMsg.includes('enotfound')         || lowerMsg.includes('eai_again')                 ||
     lowerMsg.includes('fetch failed')      || lowerMsg.includes('not-acceptable')            ||
     lowerMsg.includes('conflict')          || lowerMsg.includes('internal server error')     ||

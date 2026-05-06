@@ -3,10 +3,7 @@ import NodeID3 from 'node-id3'
 import fetch from 'node-fetch'
 import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+import { DOWNLOAD_TMP_DIR, STORAGE_LIMITS, ensureDir, hasEnoughDiskSpace, isNoSpaceError, cleanProjectStorage, readableBytes } from '../../nucleo/system/storage.js'
 
 const _h=[82,101,115,116,46,97,112,105,99,97,117,115,97,115,46,120,121,122].map(c=>String.fromCharCode(c)).join('')
 const NEW_API_BASE = process.env.NEW_API_BASE || `https://${_h}`
@@ -200,8 +197,7 @@ function getVideoApis(youtubeUrl, quality = '360') {
 }
 
 async function downloadFile(url, filename, isGoogleVideo = false) {
-  const tempDir = path.join(__dirname, '../tmp-descargas')
-  if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true })
+  const tempDir = ensureDir(DOWNLOAD_TMP_DIR)
   const tempPath = path.join(tempDir, filename)
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 90000)
@@ -221,8 +217,26 @@ async function downloadFile(url, filename, isGoogleVideo = false) {
     const res = await fetch(url, { signal: controller.signal, redirect: 'follow', headers })
     clearTimeout(timer)
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+    const contentLength = Number(res.headers.get('content-length') || 0)
+    if (contentLength > STORAGE_LIMITS.maxDownloadBytes) {
+      throw new Error(`Archivo demasiado grande (${readableBytes(contentLength)}). Límite: ${readableBytes(STORAGE_LIMITS.maxDownloadBytes)}`)
+    }
+    if (!(await hasEnoughDiskSpace(contentLength || STORAGE_LIMITS.maxDownloadBytes))) {
+      await cleanProjectStorage({ maxAgeMs: 0 })
+      if (!(await hasEnoughDiskSpace(contentLength || STORAGE_LIMITS.maxDownloadBytes))) {
+        throw new Error('No hay espacio libre suficiente para esta descarga.')
+      }
+    }
     const fileStream = fs.createWriteStream(tempPath)
     await new Promise((resolve, reject) => {
+      let downloaded = 0
+      res.body.on('data', (chunk) => {
+        downloaded += chunk.length
+        if (downloaded > STORAGE_LIMITS.maxDownloadBytes) {
+          res.body.destroy(new Error(`Archivo demasiado grande. Límite: ${readableBytes(STORAGE_LIMITS.maxDownloadBytes)}`))
+          return
+        }
+      })
       res.body.pipe(fileStream)
       res.body.on('error', reject)
       fileStream.on('finish', resolve)
@@ -237,6 +251,10 @@ async function downloadFile(url, filename, isGoogleVideo = false) {
   } catch (e) {
     clearTimeout(timer)
     if (fs.existsSync(tempPath)) try { fs.unlinkSync(tempPath) } catch {}
+    if (isNoSpaceError(e)) {
+      await cleanProjectStorage({ maxAgeMs: 0 }).catch(() => {})
+      throw new Error('ENOSPC: el disco se quedó sin espacio durante la descarga; se limpió el temporal.')
+    }
     throw e
   }
 }

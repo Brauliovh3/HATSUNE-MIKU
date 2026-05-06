@@ -2,6 +2,7 @@ import path from 'path'
 import fs from 'fs'
 import _ from 'lodash'
 import yargs from 'yargs/yargs'
+import { cleanProjectStorage, isNoSpaceError } from './storage.js'
 
 global.opts = Object(yargs(process.argv.slice(2)).exitProcess(false).parse())
 
@@ -49,11 +50,21 @@ export function markDatabaseDirty() {
 
 global.saveDatabase = function saveDatabase(force = false) {
   if (!force && !hasPendingChanges()) return
+  const payload = JSON.stringify(global.db.data, null, 2)
+  const tmpFile = `${dbFile}.tmp`
   try {
-    fs.writeFileSync(dbFile, JSON.stringify(global.db.data, null, 2))
+    fs.writeFileSync(tmpFile, payload)
+    fs.renameSync(tmpFile, dbFile)
     global.db._snapshot = JSON.stringify(global.db.data)
     global.db._pendingChanges = false
   } catch (err) {
+    try { if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile) } catch {}
+    if (isNoSpaceError(err)) {
+      cleanProjectStorage({ maxAgeMs: 0 }).catch(() => {})
+      global.db._pendingChanges = true
+      console.error('Error saving database: ENOSPC, temporales limpiados; se reintentará en el próximo ciclo.')
+      return
+    }
     console.error('Error saving database:', err.message)
   }
 }

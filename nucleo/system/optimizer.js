@@ -1,12 +1,14 @@
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
-import { promisify } from 'util';
-import { exec } from 'child_process';
 import NodeCache from 'node-cache';
 import chalk from 'chalk';
-
-const execAsync = promisify(exec);
+import {
+  cleanProjectStorage,
+  getDiskInfo,
+  readableBytes,
+  STORAGE_LIMITS
+} from './storage.js';
 
 class SystemOptimizer {
   constructor() {
@@ -26,7 +28,8 @@ class SystemOptimizer {
       tmpMaxAge: 5 * 60 * 1000,
       tmpMaxSize: 3 * 1024 * 1024,
       rssThresholdMB: 512,
-      heapThresholdMB: 256
+      heapThresholdMB: 256,
+      minFreeBytes: STORAGE_LIMITS.minFreeBytes
     };
     
     this.timers = new Map();
@@ -50,6 +53,7 @@ class SystemOptimizer {
     this.schedule('memory-check', () => this.checkMemory(), 15000);
     this.schedule('tmp-cleanup', () => this.cleanTempFiles(), 2 * 60000);
     this.schedule('session-cleanup', () => this.cleanSessions(), 5 * 60000);
+    this.schedule('disk-check', () => this.checkDisk(), 60 * 1000);
     this.schedule('prekey-rotation', () => this.rotatePrekeys(), 10 * 60000);
     this.schedule('aggressive-cleanup', () => this.aggressiveCleanup(), 15 * 60000);
     this.schedule('stats-report', () => this.printStats(), 60 * 60000);
@@ -128,56 +132,39 @@ class SystemOptimizer {
   }
 
   async cleanTempFiles() {
-    let cleaned = 0;
-    let freed = 0;
-    
-    const tmpDirs = [
-      './tmp',
-      './temp',
-      os.tmpdir(),
-      path.join(process.cwd(), 'Sessions', 'temp')
-    ];
-    
-    for (const dir of tmpDirs) {
-      try {
-        if (!fs.existsSync(dir)) continue;
-        
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        
-        for (const entry of entries) {
-          const fullPath = path.join(dir, entry.name);
-          
-          try {
-            const stat = fs.statSync(fullPath);
-            const age = Date.now() - stat.mtimeMs;
-            const size = stat.size;
-            
-            const shouldDelete = 
-              age > this.limits.tmpMaxAge ||
-              size > this.limits.tmpMaxSize ||
-              entry.name.endsWith('.tmp') ||
-              entry.name.startsWith('tmp-');
-            
-            if (shouldDelete) {
-              if (stat.isDirectory()) {
-                fs.rmSync(fullPath, { recursive: true, force: true });
-              } else {
-                fs.unlinkSync(fullPath);
-              }
-              cleaned++;
-              freed += size;
-            }
-          } catch {}
-        }
-      } catch {}
-    }
-    
+    const result = await cleanProjectStorage({
+      maxAgeMs: this.limits.tmpMaxAge,
+      maxBytes: STORAGE_LIMITS.maxTmpDirBytes,
+      sessionFileMaxAgeMs: this.limits.sessionMaxAge
+    });
+
     this.cache.flushStats();
-    
-    if (cleaned > 0) {
+
+    if (result.cleaned > 0 || result.sessionsCleaned > 0) {
       this.stats.cleanups++;
-      this.stats.memoryFreed += freed;
-      
+      this.stats.memoryFreed += result.freed;
+      this.stats.sessionsCleaned += result.sessionsCleaned;
+      console.log(chalk.gray(`[Optimizador] ${result.cleaned + result.sessionsCleaned} archivos limpiados, ${readableBytes(result.freed)} liberados`));
+    }
+  }
+
+  async checkDisk() {
+    const info = await getDiskInfo();
+    if (!info) return;
+
+    global.diskStats = {
+      free: readableBytes(info.free),
+      total: readableBytes(info.total),
+      used: readableBytes(info.used),
+      usedPercent: info.usedPercent.toFixed(1)
+    };
+
+    if (info.usedPercent >= this.limits.diskThreshold || info.free < this.limits.minFreeBytes) {
+      await this.cleanTempFiles();
+      const after = await getDiskInfo();
+      if (after && after.free < this.limits.minFreeBytes) {
+        console.log(chalk.yellow(`[Optimizador] Disco bajo: ${readableBytes(after.free)} libres (${after.usedPercent.toFixed(1)}% usado)`));
+      }
     }
   }
 
@@ -313,6 +300,7 @@ class SystemOptimizer {
 
   async aggressiveCleanup() {
     await this.cleanTempFiles();
+    await this.checkDisk();
 
     try {
       if (global.client?.ev?.flush) {
