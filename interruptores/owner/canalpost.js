@@ -2,6 +2,7 @@
 import path from 'path'
 import { randomUUID } from 'crypto'
 import { spawn } from 'child_process'
+import { CHANNEL_AUDIO_DIR, STORAGE_LIMITS, ensureDir, readableBytes } from '../../nucleo/system/storage.js'
 
 function trimCaption(text = '', max = 1000) {
   const t = String(text || '').trim()
@@ -9,11 +10,11 @@ function trimCaption(text = '', max = 1000) {
 }
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-const channelAudioDir = path.join(process.cwd(), 'channel-audios')
+const channelAudioDir = CHANNEL_AUDIO_DIR
 const sentPostIds = new Map()
 
 function ensureChannelAudioDir() {
-  if (!fs.existsSync(channelAudioDir)) fs.mkdirSync(channelAudioDir, { recursive: true })
+  ensureDir(channelAudioDir)
 }
 
 function scheduleDelete(filePath, ms = 120000) {
@@ -84,9 +85,10 @@ async function sendAudioToChannel(client, channelId, voicePath) {
   await delay(450)
   
   return await client.sendMessage(channelId, {
-    audio: { stream: fs.createReadStream(voicePath) },
+    audio: voiceBuffer,
     mimetype: 'audio/ogg; codecs=opus',
     ptt: true,
+    fileName: 'voice.ogg',
   })
 }
 
@@ -192,6 +194,9 @@ function detectMediaKind(source, mime = '', buffer) {
 
 async function convertToVoiceOpus(inputBuffer, inputMime = 'audio/mpeg') {
   ensureChannelAudioDir()
+  if (inputBuffer.length > STORAGE_LIMITS.maxDownloadBytes) {
+    throw new Error(`Audio demasiado grande (${readableBytes(inputBuffer.length)}). Límite: ${readableBytes(STORAGE_LIMITS.maxDownloadBytes)}`)
+  }
   const id = randomUUID()
   const inFile = path.join(channelAudioDir, `miku-canal-in-${id}${extFromMime(inputMime)}`)
   const outFile = path.join(channelAudioDir, `miku-canal-out-${id}.ogg`)
@@ -202,16 +207,24 @@ async function convertToVoiceOpus(inputBuffer, inputMime = 'audio/mpeg') {
     await new Promise((resolve, reject) => {
       const args = [
         '-y', '-i', inFile,
+        '-map', '0:a:0',
         '-vn',
         '-c:a', 'libopus',
+        '-ar', '48000',
+        '-ac', '1',
         '-b:a', '64k',
         '-vbr', 'on',
+        '-application', 'voip',
         '-compression_level', '10',
+        '-avoid_negative_ts', 'make_zero',
+        '-fflags', '+genpts',
+        '-f', 'ogg',
         outFile,
       ]
       const p = spawn('ffmpeg', args, { stdio: ['ignore', 'ignore', 'pipe'] })
       let err = ''
-      const timer = setTimeout(() => { try { p.kill('SIGKILL') } catch {} reject(new Error('ffmpeg timeout')) }, 35000)
+      const timeoutMs = Math.min(10 * 60 * 1000, Math.max(120000, Math.ceil(inputBuffer.length / (256 * 1024)) * 1000))
+      const timer = setTimeout(() => { try { p.kill('SIGKILL') } catch {} reject(new Error('ffmpeg timeout')) }, timeoutMs)
       p.stderr.on('data', (d) => { err += d.toString() })
       p.on('error', (e) => { clearTimeout(timer); reject(e) })
       p.on('close', (code) => {
@@ -223,8 +236,10 @@ async function convertToVoiceOpus(inputBuffer, inputMime = 'audio/mpeg') {
 
     const out = await fs.promises.readFile(outFile)
     if (!out || out.length < 512) throw new Error('audio convertido invalido')
+    if (out.subarray(0, 4).toString() !== 'OggS') throw new Error('audio convertido sin cabecera OGG')
+    if (!out.subarray(0, Math.min(512, out.length)).toString('latin1').includes('OpusHead')) throw new Error('audio convertido sin cabecera Opus')
     scheduleDelete(inFile, 120000)
-    scheduleDelete(outFile, 120000)
+    scheduleDelete(outFile, 10 * 60 * 1000)
     return { inFile, outFile }
   } catch (e) {
     try { fs.unlinkSync(inFile) } catch {}
