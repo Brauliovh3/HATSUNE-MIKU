@@ -1,13 +1,5 @@
 import axios from 'axios'
-import fs from 'fs'
-import path from 'path'
-import { createWriteStream } from 'fs'
-import { pipeline } from 'stream/promises'
 import {
-  DOWNLOAD_TMP_DIR,
-  ensureDir,
-  isNoSpaceError,
-  cleanProjectStorage,
   readableBytes,
 } from '../../nucleo/system/storage.js'
 
@@ -15,7 +7,7 @@ const _k = Buffer.from('REVQT09MLWtleTYwMDE1MDkx', 'base64').toString()
 const _b = Buffer.from('aHR0cHM6Ly9hcGkuYWx5YWNvcmUueHl6L2RsL2FuaW1lL2VwaXNvZGU=', 'base64').toString()
 
 const BANNER    = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
-const MAX_BYTES = 300 * 1024 * 1024 
+const MAX_BYTES = 300 * 1024 * 1024  
 
 const D_S = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
 const D_E = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
@@ -23,10 +15,6 @@ const D_E = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
 function extractPixeldrainId(url) {
   const match = url.match(/pixeldrain\.com\/(?:api\/file|u)\/([a-zA-Z0-9]+)/)
   return match ? match[1] : null
-}
-
-function deleteSafe(filePath) {
-  try { if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath) } catch {}
 }
 
 async function getRemoteSize(url, headers = {}) {
@@ -39,7 +27,8 @@ async function getRemoteSize(url, headers = {}) {
   }
 }
 
-async function downloadAnimeFile(url, destPath) {
+
+async function downloadToBuffer(url) {
   const fileId = extractPixeldrainId(url)
 
   const dlUrl = fileId
@@ -70,28 +59,27 @@ async function downloadAnimeFile(url, destPath) {
     throw new Error(`Pixeldrain devolvió ${ct} en vez de video. Posible rate limit o captcha.`)
   }
 
-  const writer = createWriteStream(destPath)
-  await pipeline(response.data, writer)
+ 
+  const buffer = await new Promise((resolve, reject) => {
+    const chunks = []
+    response.data.on('data',  chunk => chunks.push(Buffer.from(chunk)))
+    response.data.on('end',   ()    => resolve(Buffer.concat(chunks)))
+    response.data.on('error', reject)
+  })
 
-  const stat = fs.statSync(destPath)
-  if (stat.size < 102400) {
-    const preview = fs.readFileSync(destPath).slice(0, 150).toString('utf8')
-    throw new Error(`Archivo demasiado pequeño (${readableBytes(stat.size)}). Respuesta: ${preview.substring(0, 100)}`)
+  if (buffer.length < 102400) {
+    const preview = buffer.slice(0, 150).toString('utf8')
+    throw new Error(`Archivo demasiado pequeño (${readableBytes(buffer.length)}). Respuesta: ${preview.substring(0, 100)}`)
   }
 
-  
-  const fd    = fs.openSync(destPath, 'r')
-  const magic = Buffer.alloc(8)
-  fs.readSync(fd, magic, 0, 8, 0)
-  fs.closeSync(fd)
-
-  const box = magic.slice(4, 8).toString('ascii')
+ 
+  const box = buffer.slice(4, 8).toString('ascii')
   if (!['ftyp', 'mdat', 'moov', 'free', 'wide'].includes(box)) {
-    const preview = fs.readFileSync(destPath).slice(0, 150).toString('utf8')
+    const preview = buffer.slice(0, 150).toString('utf8')
     throw new Error(`No es un MP4 válido (magic="${box}"). Respuesta: ${preview.substring(0, 100)}`)
   }
 
-  return stat.size
+  return buffer
 }
 
 export default {
@@ -133,10 +121,8 @@ export default {
 
     await m.react('⏳')
 
-    let tmpPath = null
-
     try {
-      
+     
       const { data } = await axios.get(_b, {
         params:  { query, ep, key: _k },
         timeout: 15000,
@@ -154,7 +140,7 @@ export default {
 
       const { title, episode, language, pixeldrain, dl } = data
 
-      
+    
       const fileId = extractPixeldrainId(dl)
       const dlUrl  = fileId ? `https://pixeldrain.com/api/file/${fileId}?download` : dl
       const remoteHeaders = fileId
@@ -173,10 +159,10 @@ export default {
         )
       }
 
-     
+      
       await client.sendContextInfoIndex(
         m.chat,
-        `${D_S}\n│ 💙 *ANIME ENCONTRADO*\n│\n│ 📺 *Título:*   ${title}\n│ 🎬 *Episodio:* ${episode}\n│ 🌐 *Idioma:*   ${language}\n│ 📦 *Tamaño:*   ${remoteSize ? readableBytes(remoteSize) : 'desconocido'}\n│\n│ 🔗 *Ver online:*\n│ ${pixeldrain}\n│\n│ ⬇️  _Enviando archivo..._\n${D_E}`,
+        `${D_S}\n│ 💙 *ANIME ENCONTRADO*\n│\n│ 📺 *Título:*   ${title}\n│ 🎬 *Episodio:* ${episode}\n│ 🌐 *Idioma:*   ${language}\n│ 📦 *Tamaño:*   ${remoteSize ? readableBytes(remoteSize) : 'desconocido'}\n│\n│ 🔗 *Ver online:*\n│ ${pixeldrain}\n│\n│ ⬇️  _Descargando en memoria..._\n${D_E}`,
         {},
         m,
         true,
@@ -189,24 +175,21 @@ export default {
         },
       )
 
-      
+     
       const safeName = String(title || 'anime')
         .replace(/[^\w\s]/gi, '')
         .trim()
         .substring(0, 40) || 'anime'
 
-      const tmpDir = ensureDir(DOWNLOAD_TMP_DIR)
-      tmpPath = path.join(tmpDir, `${Date.now()}_${safeName}_ep${episode}.mp4`)
+      const fileBuffer = await downloadToBuffer(dl)
 
-      const finalSize = await downloadAnimeFile(dl, tmpPath)
+      const caption = `${D_S}\n│ 🎵 *${title}*\n│ 🎬 Ep. ${episode}  🌐 ${language}\n│ 📦 ${readableBytes(fileBuffer.length)}\n│\n│ 💙 _Hatsune Miku Bot_ ✨\n${D_E}`
 
-      const caption = `${D_S}\n│ 🎵 *${title}*\n│ 🎬 Ep. ${episode}  🌐 ${language}\n│ 📦 ${readableBytes(finalSize)}\n│\n│ 💙 _Hatsune Miku Bot_ ✨\n${D_E}`
-
-    
+     
       await client.sendMessage(
         m.chat,
         {
-          video:    { stream: fs.createReadStream(tmpPath) },
+          video:    fileBuffer,
           mimetype: 'video/mp4',
           fileName: `${safeName}_ep${episode}.mp4`,
           caption,
@@ -218,26 +201,12 @@ export default {
 
     } catch (e) {
       await m.react('❌')
-
-      
-      if (isNoSpaceError(e)) {
-        try { await cleanProjectStorage() } catch {}
-        return client.reply(
-          m.chat,
-          `${D_S}\n│ 💔 *DISCO LLENO*\n│\n│ 🧹 Se limpió el almacenamiento temporal.\n│ ✨ Intenta de nuevo.\n${D_E}`,
-          m,
-          global.miku,
-        )
-      }
-
       return client.reply(
         m.chat,
         `${D_S}\n│ 💔 *ERROR*\n│\n│ ⚙️ *Cmd:* ${usedPrefix + command}\n│ 🌱 ${e.message}\n│\n│ ✨ Inténtalo de nuevo.\n${D_E}`,
         m,
         global.miku,
       )
-    } finally {
-      deleteSafe(tmpPath)
     }
   },
 }
