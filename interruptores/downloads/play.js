@@ -6,7 +6,6 @@ import { pipeline } from 'stream/promises'
 import {
   DOWNLOAD_TMP_DIR,
   ensureDir,
-  hasEnoughDiskSpace,
   isNoSpaceError,
   cleanProjectStorage,
   readableBytes,
@@ -17,7 +16,6 @@ const _b = Buffer.from('aHR0cHM6Ly9hcGkuYWx5YWNvcmUueHl6L2RsL2FuaW1lL2VwaXNvZGU=
 
 const BANNER    = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
 const MAX_BYTES = 300 * 1024 * 1024 
-const MIN_FREE  = 300 * 1024 * 1024  
 
 const D_S = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
 const D_E = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
@@ -60,7 +58,7 @@ async function downloadAnimeFile(url, destPath) {
     url:              dlUrl,
     method:           'GET',
     responseType:     'stream',
-    timeout:          300000,         
+    timeout:          300000,
     maxContentLength: Infinity,
     maxBodyLength:    Infinity,
     headers,
@@ -81,7 +79,7 @@ async function downloadAnimeFile(url, destPath) {
     throw new Error(`Archivo demasiado pequeño (${readableBytes(stat.size)}). Respuesta: ${preview.substring(0, 100)}`)
   }
 
- 
+  
   const fd    = fs.openSync(destPath, 'r')
   const magic = Buffer.alloc(8)
   fs.readSync(fd, magic, 0, 8, 0)
@@ -138,7 +136,7 @@ export default {
     let tmpPath = null
 
     try {
-     
+      
       const { data } = await axios.get(_b, {
         params:  { query, ep, key: _k },
         timeout: 15000,
@@ -175,33 +173,7 @@ export default {
         )
       }
 
-      
-      const needed   = remoteSize ?? MAX_BYTES
-      const hasSpace = await hasEnoughDiskSpace(needed + MIN_FREE)
-
-      if (!hasSpace) {
-        await client.reply(
-          m.chat,
-          `${D_S}\n│ 🧹 *Limpiando espacio...*\n│ Por favor espera.\n${D_E}`,
-          m,
-          global.miku,
-        )
-
-        const cleaned     = await cleanProjectStorage()
-        const hasSpaceNow = await hasEnoughDiskSpace(needed + MIN_FREE)
-
-        if (!hasSpaceNow) {
-          await m.react('❌')
-          return client.reply(
-            m.chat,
-            `${D_S}\n│ 💔 *SIN ESPACIO EN DISCO*\n│\n│ 🧹 Liberado: ${readableBytes(cleaned.freed)}\n│ ❌ Sigue sin espacio suficiente.\n│\n│ 🔗 Descárgalo directamente:\n│ ${pixeldrain}\n${D_E}`,
-            m,
-            global.miku,
-          )
-        }
-      }
-
-      
+     
       await client.sendContextInfoIndex(
         m.chat,
         `${D_S}\n│ 💙 *ANIME ENCONTRADO*\n│\n│ 📺 *Título:*   ${title}\n│ 🎬 *Episodio:* ${episode}\n│ 🌐 *Idioma:*   ${language}\n│ 📦 *Tamaño:*   ${remoteSize ? readableBytes(remoteSize) : 'desconocido'}\n│\n│ 🔗 *Ver online:*\n│ ${pixeldrain}\n│\n│ ⬇️  _Enviando archivo..._\n${D_E}`,
@@ -230,7 +202,7 @@ export default {
 
       const caption = `${D_S}\n│ 🎵 *${title}*\n│ 🎬 Ep. ${episode}  🌐 ${language}\n│ 📦 ${readableBytes(finalSize)}\n│\n│ 💙 _Hatsune Miku Bot_ ✨\n${D_E}`
 
-   
+    
       await client.sendMessage(
         m.chat,
         {
@@ -247,13 +219,20 @@ export default {
     } catch (e) {
       await m.react('❌')
 
-      const msg = isNoSpaceError(e)
-        ? `Sin espacio en disco. Libera espacio en el servidor e intenta de nuevo.`
-        : e.message
+      
+      if (isNoSpaceError(e)) {
+        try { await cleanProjectStorage() } catch {}
+        return client.reply(
+          m.chat,
+          `${D_S}\n│ 💔 *DISCO LLENO*\n│\n│ 🧹 Se limpió el almacenamiento temporal.\n│ ✨ Intenta de nuevo.\n${D_E}`,
+          m,
+          global.miku,
+        )
+      }
 
       return client.reply(
         m.chat,
-        `${D_S}\n│ 💔 *ERROR*\n│\n│ ⚙️ *Cmd:* ${usedPrefix + command}\n│ 🌱 ${msg}\n│\n│ ✨ Inténtalo de nuevo.\n${D_E}`,
+        `${D_S}\n│ 💔 *ERROR*\n│\n│ ⚙️ *Cmd:* ${usedPrefix + command}\n│ 🌱 ${e.message}\n│\n│ ✨ Inténtalo de nuevo.\n${D_E}`,
         m,
         global.miku,
       )
