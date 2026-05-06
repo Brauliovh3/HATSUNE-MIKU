@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { DOWNLOAD_TMP_DIR, ensureDir } from '../../nucleo/system/storage.js'
 
 const _k = Buffer.from('REVQT09MLWtleTYwMDE1MDkx', 'base64').toString()
 const _b = Buffer.from('aHR0cHM6Ly9hcGkuYWx5YWNvcmUueHl6L2RsL2FuaW1lL2VwaXNvZGU=', 'base64').toString()
@@ -9,14 +8,79 @@ const BANNER = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a
 const D_S = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
 const D_E = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
 
-async function downloadToBuffer(url) {
+
+function extractPixeldrainId(url) {
+  const match = url.match(/pixeldrain\.com\/(?:api\/file|u)\/([a-zA-Z0-9]+)/)
+  return match ? match[1] : null
+}
+
+async function downloadPixeldrain(url) {
+  const fileId = extractPixeldrainId(url)
+
+  
+  if (!fileId) {
+    const response = await axios({
+      url,
+      method: 'GET',
+      responseType: 'arraybuffer',
+      timeout: 120000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      },
+    })
+    return Buffer.from(response.data)
+  }
+
+ 
+  const infoRes = await axios.get(`https://pixeldrain.com/api/file/${fileId}/info`, {
+    timeout: 10000,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    },
+  })
+
+  const info = infoRes.data
+  if (!info || info.abuse_type) {
+    throw new Error(`Pixeldrain: archivo no disponible (${info?.abuse_type || 'desconocido'})`)
+  }
+
+  
+  const dlUrl = `https://pixeldrain.com/api/file/${fileId}?download`
+
   const response = await axios({
-    url,
+    url: dlUrl,
     method: 'GET',
     responseType: 'arraybuffer',
-    timeout: 90000,
+    timeout: 120000,
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Referer': `https://pixeldrain.com/u/${fileId}`,
+      'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'identity',
+      'Connection': 'keep-alive',
+    },
   })
-  return Buffer.from(response.data)
+
+  
+  const contentType = response.headers['content-type'] || ''
+  if (contentType.includes('text/html')) {
+    throw new Error('Pixeldrain devolvió HTML en vez del archivo. El archivo puede estar limitado por rate limit o captcha.')
+  }
+
+  const buffer = Buffer.from(response.data)
+
+  
+  if (buffer.length > 8) {
+    const magic = buffer.slice(4, 8).toString('ascii')
+    if (!['ftyp', 'mdat', 'moov', 'free', 'wide'].includes(magic)) {
+      throw new Error(`El archivo descargado no es un MP4 válido (magic: "${magic}"). Posible rate limit de Pixeldrain.`)
+    }
+  }
+
+  return buffer
 }
 
 export default {
@@ -96,11 +160,7 @@ export default {
         .trim()
         .substring(0, 40) || 'anime'
 
-      const fileBuffer = await downloadToBuffer(dl)
-
-      if (!fileBuffer || fileBuffer.length < 1024) {
-        throw new Error('El archivo descargado está vacío o incompleto')
-      }
+      const fileBuffer = await downloadPixeldrain(dl)
 
       await client.sendMessage(
         m.chat,
