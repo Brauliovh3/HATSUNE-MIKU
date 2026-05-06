@@ -1,9 +1,4 @@
 import axios from 'axios'
-import fs from 'fs'
-import path from 'path'
-import { createWriteStream } from 'fs'
-import { pipeline } from 'stream/promises'
-import { DOWNLOAD_TMP_DIR, ensureDir } from '../../nucleo/system/storage.js'
 
 const _k = Buffer.from('REVQT09MLWtleTYwMDE1MDkx', 'base64').toString()
 const _b = Buffer.from('aHR0cHM6Ly9hcGkuYWx5YWNvcmUueHl6L2RsL2FuaW1lL2VwaXNvZGU=', 'base64').toString()
@@ -18,23 +13,20 @@ function extractPixeldrainId(url) {
   return match ? match[1] : null
 }
 
-function deleteSafe(filePath) {
-  try { if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath) } catch {}
-}
 
-
-async function downloadToFile(url, destPath) {
+async function downloadToBuffer(url) {
   const fileId = extractPixeldrainId(url)
 
-  const dlUrl  = fileId
+  const dlUrl = fileId
     ? `https://pixeldrain.com/api/file/${fileId}?download`
     : url
 
   const headers = fileId ? {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    'Referer':    `https://pixeldrain.com/u/${fileId}`,
-    'Accept':     'video/mp4,video/*;q=0.9,*/*;q=0.8',
+    'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Referer':         `https://pixeldrain.com/u/${fileId}`,
+    'Accept':          'video/mp4,video/*;q=0.9,*/*;q=0.8',
     'Accept-Encoding': 'identity',
+    'Connection':      'keep-alive',
   } : {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   }
@@ -53,32 +45,32 @@ async function downloadToFile(url, destPath) {
   const ct = response.headers['content-type'] || ''
   if (ct.includes('text/html') || ct.includes('application/json')) {
     response.data.destroy()
-    throw new Error(`El servidor respondió con ${ct} en vez de video. Posible rate limit o captcha en Pixeldrain.`)
-  }
-
-  const writer = createWriteStream(destPath)
-  await pipeline(response.data, writer)
-
- 
-  const stat = fs.statSync(destPath)
-  if (stat.size < 1024 * 100) { 
-    throw new Error(`Archivo demasiado pequeño (${stat.size} bytes). Probablemente es una respuesta de error.`)
+    throw new Error(`Pixeldrain no envió video (content-type: ${ct}). Posible rate limit o captcha.`)
   }
 
   
-  const fd     = fs.openSync(destPath, 'r')
-  const magic  = Buffer.alloc(8)
-  fs.readSync(fd, magic, 0, 8, 0)
-  fs.closeSync(fd)
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    response.data.on('data',  chunk => chunks.push(chunk))
+    response.data.on('end',   ()    => {
+      const buffer = Buffer.concat(chunks)
 
-  const box = magic.slice(4, 8).toString('ascii')
-  if (!['ftyp', 'mdat', 'moov', 'free', 'wide'].includes(box)) {
-    
-    const preview = fs.readFileSync(destPath).slice(0, 200).toString('utf8', 0, 200)
-    throw new Error(`No es un MP4 válido (magic="${box}"). Respuesta del servidor:\n${preview.substring(0, 120)}`)
-  }
+      
+      if (buffer.length < 102400) { 
+        return reject(new Error(`Archivo demasiado pequeño (${buffer.length} bytes). El servidor puede haber devuelto un error.`))
+      }
 
-  return destPath
+      
+      const box = buffer.slice(4, 8).toString('ascii')
+      if (!['ftyp', 'mdat', 'moov', 'free', 'wide'].includes(box)) {
+        const preview = buffer.slice(0, 150).toString('utf8')
+        return reject(new Error(`No es un MP4 válido (magic="${box}"). Respuesta del servidor: ${preview.substring(0, 100)}`))
+      }
+
+      resolve(buffer)
+    })
+    response.data.on('error', reject)
+  })
 }
 
 export default {
@@ -120,10 +112,8 @@ export default {
 
     await m.react('⏳')
 
-    let tmpPath = null
-
     try {
-      
+     
       const { data } = await axios.get(_b, {
         params:  { query, ep, key: _k },
         timeout: 15000,
@@ -157,24 +147,21 @@ export default {
         },
       )
 
-      
+    
       const safeName = String(title || 'anime')
         .replace(/[^\w\s]/gi, '')
         .trim()
         .substring(0, 40) || 'anime'
 
-      const tmpDir = ensureDir(DOWNLOAD_TMP_DIR)
-      tmpPath = path.join(tmpDir, `${Date.now()}_${safeName}_ep${episode}.mp4`)
-
-      await downloadToFile(dl, tmpPath)
+      const fileBuffer = await downloadToBuffer(dl)
 
       const caption = `${D_S}\n│ 🎵 *${title}*\n│ 🎬 Ep. ${episode}  🌐 ${language}\n│\n│ 💙 _Hatsune Miku Bot_ ✨\n${D_E}`
 
-      
+     
       await client.sendMessage(
         m.chat,
         {
-          video:    { stream: fs.createReadStream(tmpPath) },
+          video:    fileBuffer,
           mimetype: 'video/mp4',
           fileName: `${safeName}_ep${episode}.mp4`,
           caption,
@@ -192,8 +179,6 @@ export default {
         m,
         global.miku,
       )
-    } finally {
-      deleteSafe(tmpPath)
     }
   },
 }
