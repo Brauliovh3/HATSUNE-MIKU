@@ -115,10 +115,10 @@ export default {
       await client.sendMessage(
         m.chat,
         {
-          video:       { url: tmpFile },
-          mimetype:    'video/mp4',
-          caption:     `${D_S}\n│ 🎵 *${title}*\n│ 🎬 Ep. ${episode}  🌐 ${language}\n│\n│ 💙 _Hatsune Miku Bot_ ✨\n${D_E}`,
-          gifPlayback: false,
+          document: { url: tmpFile },
+          mimetype: 'video/mp4',
+          fileName: `${safeName}_ep${episode}.mp4`,
+          caption:  `${D_S}\n│ 🎵 *${title}*\n│ 🎬 Ep. ${episode}  🌐 ${language}\n│\n│ 💙 _Hatsune Miku Bot_ ✨\n${D_E}`,
         },
         { quoted: m },
       )
