@@ -141,7 +141,7 @@ export default async (client, m) => {
           mentionedJid: [validJid]
         };
         
-        if (anu.action === 'add' && isPrimaryHandler(client, chat)) {
+        if (anu.action === 'add' && chat?.welcome && isPrimaryHandler(client, chat)) {
           const customMessage = chat?.sWelcome ? chat.sWelcome.replace(/{usuario}/g, `@${phone}`).replace(/{grupo}/g, metadata.subject).replace(/{desc}/g, metadata?.desc || 'Sin descripción') : '';
 
           queueWelcome(async () => {
@@ -215,7 +215,7 @@ export default async (client, m) => {
                   mentionedJid: [validJid, kicker, ...groupAdmins.map(v => v.id)]
                 };
                 await safeSend(client, anu.id, { image: { url: kickImage }, caption: kickCaption, contextInfo: kickContextInfo })
-              } else if (!isKick) {
+              } else if (!isKick && chat?.goodbye) {
                 const caption = customMessage || `╭━━━🌸━━━💙━━━🌸━━━╮
 ┃  🎵 *¡ Hasta pronto !* 🎵
 ╰━━━🌸━━━💙━━━🌸━━━╯
