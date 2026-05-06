@@ -1,6 +1,4 @@
 import axios from 'axios'
-import fs from 'fs'
-import path from 'path'
 import { DOWNLOAD_TMP_DIR, ensureDir } from '../../nucleo/system/storage.js'
 
 const _k = Buffer.from('REVQT09MLWtleTYwMDE1MDkx', 'base64').toString()
@@ -11,29 +9,14 @@ const BANNER = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a
 const D_S = `╭─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╮`
 const D_E = `╰─💙 ━ ━ ━ ━ ━ ━ ━ ━ 💙─╯`
 
-async function downloadToTmp(url, filename) {
-  const tmpDir = ensureDir(DOWNLOAD_TMP_DIR)
-  const tmpPath = path.join(tmpDir, filename)
-  const writer = fs.createWriteStream(tmpPath)
+async function downloadToBuffer(url) {
   const response = await axios({
     url,
     method: 'GET',
-    responseType: 'stream',
+    responseType: 'arraybuffer',
     timeout: 90000,
   })
-  response.data.pipe(writer)
-  await new Promise((resolve, reject) => {
-    writer.on('finish', resolve)
-    writer.on('error', reject)
-    response.data.on('error', reject)
-  })
-  return tmpPath
-}
-
-function deleteFile(filePath) {
-  try {
-    if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath)
-  } catch {}
+  return Buffer.from(response.data)
 }
 
 export default {
@@ -74,7 +57,6 @@ export default {
     }
 
     await m.react('⏳')
-    let tmpFile = null
 
     try {
       const { data } = await axios.get(_b, {
@@ -109,10 +91,13 @@ export default {
         },
       )
 
-      const safeName = String(title || 'anime').replace(/[^\w\s]/gi, '').trim().substring(0, 40) || 'anime'
-      tmpFile = await downloadToTmp(dl, `${Date.now()}_${safeName}_ep${episode}.mp4`)
+      const safeName = String(title || 'anime')
+        .replace(/[^\w\s]/gi, '')
+        .trim()
+        .substring(0, 40) || 'anime'
 
-      const fileBuffer = fs.readFileSync(tmpFile)
+      const fileBuffer = await downloadToBuffer(dl)
+
       if (!fileBuffer || fileBuffer.length < 1024) {
         throw new Error('El archivo descargado está vacío o incompleto')
       }
@@ -138,8 +123,6 @@ export default {
         m,
         global.miku,
       )
-    } finally {
-      if (tmpFile) deleteFile(tmpFile)
     }
   },
 }
