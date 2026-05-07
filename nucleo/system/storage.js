@@ -5,10 +5,47 @@ import path from 'path'
 const MB = 1024 * 1024
 const root = process.cwd()
 
+function parseEnvNumber(...keys) {
+  for (const key of keys) {
+    const value = process.env[key]
+    if (!value) continue
+    const number = Number(value)
+    if (!Number.isNaN(number) && number >= 0) return number
+  }
+  return 0
+}
+
+export function detectPterodactylServer() {
+  const memoryMB = parseEnvNumber('PTERODACTYL_MEMORY', 'MEMORY', 'SERVICE_MEMORY', 'SERVER_MEMORY')
+  const diskMB = parseEnvNumber('PTERODACTYL_DISK', 'DISK', 'DISK_LIMIT', 'SERVER_DISK')
+  const cpuLimit = parseEnvNumber('PTERODACTYL_CPU', 'CPU', 'CPU_LIMIT')
+  const isPterodactyl = !!(
+    process.env.PTERODACTYL_SERVER_UUID ||
+    process.env.PTERODACTYL_MEMORY ||
+    process.env.PTERODACTYL_DISK ||
+    process.env.PTERODACTYL_SERVICE ||
+    process.env.PTERODACTYL_NODE
+  )
+  const serverName = process.env.PTERODACTYL_SERVER_NAME || process.env.SERVER_NAME || ''
+  return {
+    isPterodactyl,
+    memoryMB,
+    diskMB,
+    diskBytes: diskMB * MB,
+    memoryBytes: memoryMB * MB,
+    cpuLimit,
+    serverName
+  }
+}
+
+export const HOST_LIMITS = detectPterodactylServer()
 export const STORAGE_LIMITS = {
   maxDownloadBytes: Number(process.env.MIKU_MAX_DOWNLOAD_MB || 80) * MB,
   maxTmpDirBytes: Number(process.env.MIKU_TMP_QUOTA_MB || 250) * MB,
-  minFreeBytes: Number(process.env.MIKU_MIN_FREE_MB || 512) * MB,
+  minFreeBytes: Math.max(
+    Number(process.env.MIKU_MIN_FREE_MB || 512) * MB,
+    HOST_LIMITS.diskBytes ? Math.min(HOST_LIMITS.diskBytes * 0.05, 1024 * MB) : 0
+  ),
   tmpMaxAgeMs: Number(process.env.MIKU_TMP_MAX_AGE_MIN || 30) * 60 * 1000,
   sessionFileMaxAgeMs: Number(process.env.MIKU_SESSION_FILE_MAX_HOURS || 6) * 60 * 60 * 1000,
 }

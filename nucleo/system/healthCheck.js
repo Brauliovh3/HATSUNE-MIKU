@@ -3,7 +3,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
-import { cleanProjectStorage, getDiskInfo, readableBytes, STORAGE_LIMITS } from './storage.js';
+import { cleanProjectStorage, getDiskInfo, readableBytes, STORAGE_LIMITS, HOST_LIMITS } from './storage.js';
 
 const execAsync = promisify(exec);
 
@@ -45,6 +45,11 @@ class HealthCheck {
     
     this.schedule('disk-cleanup', () => this.checkDiskSpace(), 60 * 1000);
     
+    if (HOST_LIMITS.isPterodactyl) {
+      console.log(chalk.cyan(`[HealthCheck] Servidor Pterodactyl detectado${HOST_LIMITS.serverName ? `: ${HOST_LIMITS.serverName}` : ''}`));
+      if (HOST_LIMITS.memoryMB) console.log(chalk.cyan(`[HealthCheck] Límite memoria: ${HOST_LIMITS.memoryMB} MB`));
+      if (HOST_LIMITS.diskMB) console.log(chalk.cyan(`[HealthCheck] Límite de disco: ${HOST_LIMITS.diskMB} MB`));
+    }
     console.log(chalk.green('✅ Health Check iniciado (versión optimizada)'));
   }
 
@@ -170,28 +175,34 @@ class HealthCheck {
     const rssMB = memUsage.rss / 1024 / 1024;
     const externalMB = memUsage.external / 1024 / 1024;
 
+    const hostMemoryMB = HOST_LIMITS.memoryMB || 0;
+    const criticalRss = hostMemoryMB ? hostMemoryMB * 0.95 : 1500;
+    const highRss = hostMemoryMB ? hostMemoryMB * 0.85 : 800;
+    const criticalHeap = hostMemoryMB ? hostMemoryMB * 0.65 : 600;
+    const highHeap = hostMemoryMB ? hostMemoryMB * 0.55 : 400;
+
     global.memoryStats = {
       rss: rssMB.toFixed(2),
       heapUsed: heapUsedMB.toFixed(2),
       heapTotal: heapTotalMB.toFixed(2),
-      external: externalMB.toFixed(2)
+      external: externalMB.toFixed(2),
+      hostMemory: hostMemoryMB ? `${hostMemoryMB} MB` : 'N/A'
     };
 
-    if (rssMB > 1200 || heapUsedMB > 600) {
+    if (rssMB > criticalRss || heapUsedMB > criticalHeap) {
       console.log(chalk.red(`[HealthCheck] Memoria CRÍTICA: RSS ${rssMB.toFixed(2)}MB, Heap ${heapUsedMB.toFixed(2)}MB, External ${externalMB.toFixed(2)}MB`));
 
       this.emergencyCleanup();
 
-      if (rssMB > 1500) {
+      if (rssMB > criticalRss * 1.03) {
         console.log(chalk.red('[HealthCheck] Memoria insostenible, reinicio necesario'));
-        // Forzar reinicio si es crítico
         process.exit(1);
       }
-    } else if (rssMB > 800 || heapUsedMB > 400) {
+    } else if (rssMB > highRss || heapUsedMB > highHeap) {
       console.log(chalk.yellow(`[HealthCheck] Alta memoria: RSS ${rssMB.toFixed(2)}MB, Heap ${heapUsedMB.toFixed(2)}MB`));
 
       this.aggressiveCleanup();
-    } else if (rssMB > 700 || heapUsedMB > 350) {
+    } else if (rssMB > (hostMemoryMB ? hostMemoryMB * 0.7 : 700) || heapUsedMB > (hostMemoryMB ? hostMemoryMB * 0.45 : 350)) {
       this.standardCleanup();
     }
   }
@@ -200,20 +211,23 @@ class HealthCheck {
     const info = await getDiskInfo();
     if (!info) return;
 
+    const minFreeBytes = HOST_LIMITS.diskBytes ? Math.max(HOST_LIMITS.diskBytes * 0.05, STORAGE_LIMITS.minFreeBytes) : STORAGE_LIMITS.minFreeBytes;
+
     global.diskStats = {
       free: readableBytes(info.free),
       total: readableBytes(info.total),
       used: readableBytes(info.used),
-      usedPercent: info.usedPercent.toFixed(1)
+      usedPercent: info.usedPercent.toFixed(1),
+      hostDisk: HOST_LIMITS.diskMB ? `${HOST_LIMITS.diskMB} MB` : 'N/A'
     };
 
-    if (info.usedPercent >= 88 || info.free < STORAGE_LIMITS.minFreeBytes) {
+    if (info.usedPercent >= 88 || info.free < minFreeBytes) {
       const cleaned = await cleanProjectStorage({ maxAgeMs: 0 });
       const after = await getDiskInfo();
       if (cleaned.cleaned > 0 || cleaned.sessionsCleaned > 0) {
         console.log(chalk.yellow(`[HealthCheck] Limpieza de disco: ${cleaned.cleaned + cleaned.sessionsCleaned} archivos, ${readableBytes(cleaned.freed)} liberados`));
       }
-      if (after && after.free < STORAGE_LIMITS.minFreeBytes) {
+      if (after && after.free < minFreeBytes) {
         console.log(chalk.red(`[HealthCheck] Disco bajo: ${readableBytes(after.free)} libres (${after.usedPercent.toFixed(1)}% usado)`));
       }
     }
@@ -265,8 +279,8 @@ class HealthCheck {
     }
     this.cleanStuckDownloads();
     this.cleanBaileysStores();
-    this.cleanSubBotManager(); // También limpiar subbots del manager
-    this.cleanDisconnectedSubbots(); // Limpiar de global.conns
+    this.cleanSubBotManager(); 
+    this.cleanDisconnectedSubbots(); 
     this.forceGC();
   }
 
