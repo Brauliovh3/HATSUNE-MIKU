@@ -1,4 +1,6 @@
 import axios from 'axios'
+import fs from 'fs'
+import path from 'path'
 
 const _k = Buffer.from('REVQT09MLWtleTYwMDE1MDkx', 'base64').toString()
 const _b = Buffer.from('aHR0cHM6Ly9hcGkuYWx5YWNvcmUueHl6L2RsL2FuaW1lL2VwaXNvZGU=', 'base64').toString()
@@ -14,7 +16,7 @@ function extractPixeldrainId(url) {
 }
 
 
-async function downloadToBuffer(url) {
+async function downloadToFile(url, destPath) {
   const fileId = extractPixeldrainId(url)
 
   const dlUrl = fileId
@@ -41,35 +43,62 @@ async function downloadToBuffer(url) {
     headers,
   })
 
-  
   const ct = response.headers['content-type'] || ''
   if (ct.includes('text/html') || ct.includes('application/json')) {
     response.data.destroy()
     throw new Error(`Pixeldrain no envió video (content-type: ${ct}). Posible rate limit o captcha.`)
   }
 
-  
+  await fs.promises.mkdir(path.dirname(destPath), { recursive: true })
+
   return new Promise((resolve, reject) => {
-    const chunks = []
-    response.data.on('data',  chunk => chunks.push(chunk))
-    response.data.on('end',   ()    => {
-      const buffer = Buffer.concat(chunks)
+    const writeStream = fs.createWriteStream(destPath)
+    let received = 0
 
-      
-      if (buffer.length < 102400) { 
-        return reject(new Error(`Archivo demasiado pequeño (${buffer.length} bytes). El servidor puede haber devuelto un error.`))
-      }
-
-      
-      const box = buffer.slice(4, 8).toString('ascii')
-      if (!['ftyp', 'mdat', 'moov', 'free', 'wide'].includes(box)) {
-        const preview = buffer.slice(0, 150).toString('utf8')
-        return reject(new Error(`No es un MP4 válido (magic="${box}"). Respuesta del servidor: ${preview.substring(0, 100)}`))
-      }
-
-      resolve(buffer)
+    response.data.on('data', chunk => {
+      received += chunk.length
+      writeStream.write(chunk)
     })
-    response.data.on('error', reject)
+
+    response.data.on('end', async () => {
+      writeStream.end()
+      try {
+        const stat = await fs.promises.stat(destPath)
+        if (stat.size < 102400) {
+          await fs.promises.unlink(destPath).catch(() => {})
+          return reject(new Error(`Archivo demasiado pequeño (${stat.size} bytes). El servidor puede haber devuelto un error.`))
+        }
+
+        const fileHandle = await fs.promises.open(destPath, 'r')
+        const header = Buffer.alloc(12)
+        await fileHandle.read(header, 0, 12, 0)
+        await fileHandle.close()
+
+        const box = header.slice(4, 8).toString('ascii')
+        if (!['ftyp', 'mdat', 'moov', 'free', 'wide'].includes(box)) {
+          const preview = header.toString('utf8', 0, 100)
+          await fs.promises.unlink(destPath).catch(() => {})
+          return reject(new Error(`No es un MP4 válido (magic="${box}"). Respuesta del servidor: ${preview.substring(0, 100)}`))
+        }
+
+        resolve(destPath)
+      } catch (err) {
+        await fs.promises.unlink(destPath).catch(() => {})
+        reject(err)
+      }
+    })
+
+    response.data.on('error', async err => {
+      writeStream.destroy()
+      await fs.promises.unlink(destPath).catch(() => {})
+      reject(err)
+    })
+
+    writeStream.on('error', async err => {
+      response.data.destroy()
+      await fs.promises.unlink(destPath).catch(() => {})
+      reject(err)
+    })
   })
 }
 
@@ -153,22 +182,31 @@ export default {
         .trim()
         .substring(0, 40) || 'anime'
 
-      const fileBuffer = await downloadToBuffer(dl)
+      const tmpDir = path.join(process.cwd(), 'tmp-descargas')
+      await fs.promises.mkdir(tmpDir, { recursive: true })
+      const destPath = path.join(tmpDir, `${safeName}_ep${episode}.mp4`)
+      await downloadToFile(dl, destPath)
 
+      const stat = await fs.promises.stat(destPath)
+      const isLarge = stat.size > 40 * 1024 * 1024
       const caption = `${D_S}\n│ 🎵 *${title}*\n│ 🎬 Ep. ${episode}  🌐 ${language}\n│\n│ 💙 _Hatsune Miku Bot_ ✨\n${D_E}`
 
-     
-      await client.sendMessage(
-        m.chat,
-        {
-          video:    fileBuffer,
-          mimetype: 'video/mp4',
-          fileName: `${safeName}_ep${episode}.mp4`,
-          caption,
-        },
-        { quoted: m },
-      )
+      const messagePayload = isLarge
+        ? {
+            document: fs.createReadStream(destPath),
+            mimetype: 'video/mp4',
+            fileName: `${safeName}_ep${episode}.mp4`,
+            caption,
+          }
+        : {
+            video: fs.createReadStream(destPath),
+            mimetype: 'video/mp4',
+            fileName: `${safeName}_ep${episode}.mp4`,
+            caption,
+          }
 
+      await client.sendMessage(m.chat, messagePayload, { quoted: m })
+      await fs.promises.unlink(destPath).catch(() => {})
       await m.react('✅')
 
     } catch (e) {
