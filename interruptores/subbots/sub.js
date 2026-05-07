@@ -134,7 +134,8 @@ export default {
   category: 'subbots',
 
   run: async (client, m, args, usedPrefix, command) => {
-    const isQR = /^(qr)$/i.test(command);
+    let isQR = /^(qr)$/i.test(command);
+    let fallbackToQR = false;
 
    
     if (!global.db.data.users[m.sender]) global.db.data.users[m.sender] = {};
@@ -182,6 +183,7 @@ export default {
 
     let done           = false;
     let reconnectCount = 0;
+    let qrSent         = false;
     const MAX_RECONNECT = 5;
 
     const finish = (success) => {
@@ -236,7 +238,8 @@ export default {
           if (done) return;
 
          
-          if (qr && isQR) {
+          if (qr && (isQR || fallbackToQR)) {
+            if (qrSent) return;
             try {
               const qrBuffer = await qrcode.toBuffer(qr, { scale: 8 });
               await client.sendMessage(m.chat, {
@@ -244,6 +247,7 @@ export default {
                 caption: MSG.qrInstructions(usedPrefix),
                 ...global.miku
               }, { quoted: m });
+              qrSent = true;
             } catch {}
             return;
           }
@@ -313,6 +317,7 @@ export default {
                 }
                 try {
                   sock = await buildSocket();
+                  qrSent = false;
                   pendingSessions.set(sessionId, { sock, startTime: Date.now() });
                   attachEvents(sock);
                   console.log(chalk.cyan(`💙 Reconexión ${sessionId} (${reconnectCount}/${MAX_RECONNECT}) - Razón: ${reason}`));
@@ -347,6 +352,7 @@ export default {
               }
               try {
                 sock = await buildSocket();
+                qrSent = false;
                 pendingSessions.set(sessionId, { sock, startTime: Date.now() });
                 attachEvents(sock);
                 console.log(chalk.cyan(`💙 Reconexión ${sessionId} (${reconnectCount}/${MAX_RECONNECT})`));
@@ -359,6 +365,7 @@ export default {
         });
       };
 
+      qrSent = false;
       attachEvents(sock);
 
       
@@ -375,19 +382,29 @@ export default {
 
             const { state } = await useMultiFileAuthState(sessionFolder);
             if (!state.creds.registered && !done) {
-              const codePromise = sock.requestPairingCode(phoneNumber);
-              const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Timeout generando código')), 30000)
-              );
+              try {
+                const codePromise = sock.requestPairingCode(phoneNumber);
+                const timeoutPromise = new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error('Timeout generando código')), 30000)
+                );
 
-              const code = await Promise.race([codePromise, timeoutPromise]);
-              const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
-              if (done) return;
+                const code = await Promise.race([codePromise, timeoutPromise]);
+                const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
+                if (done) return;
 
-              await client.sendMessage(m.chat, {
-                text: MSG.pairingCode(formattedCode),
-                ...global.miku
-              }, { quoted: m });
+                await client.sendMessage(m.chat, {
+                  text: MSG.pairingCode(formattedCode),
+                  ...global.miku
+                }, { quoted: m });
+              } catch (err) {
+                if (done) return;
+                fallbackToQR = true;
+                await client.sendMessage(m.chat, {
+                  text: `⚠️ No se pudo generar el código de emparejamiento para WhatsApp normal.
+Usa el comando *${usedPrefix}qr* o vuelve a intentarlo con QR.`,
+                  ...global.miku
+                }, { quoted: m }).catch(() => {});
+              }
             }
           } catch (err) {
             if (done) return;

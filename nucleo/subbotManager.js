@@ -71,29 +71,29 @@ const shouldProcessRaw = (sock, raw) => {
   const currentBotId = sock.user?.id
   const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 
-  // Si no hay bot primario asignado, cualquier subbot puede responder
+  
   if (!primaryBotId) return true
 
   const primaryBotClean = normalizeJid(primaryBotId)
   const currentBotClean = normalizeJid(currentBotId)
 
-  // Verificar si el bot primario está conectado (en global.conns o en subBotManager)
+  
   const isPrimaryInConns = global.conns?.some(c => {
     const connId = c.user?.id || c.userId
     return normalizeJid(connId) === primaryBotClean && c.isInit
   })
   
-  // Verificar si el bot primario es un subbot activo
+  
   const primarySessionId = primaryBotId.split('@')[0]
   const isPrimarySubBot = subBotManager?.subbots?.has(primarySessionId) && 
                           subBotManager?.subbots?.get(primarySessionId)?.isInit
   
   const isPrimaryConnected = isPrimaryInConns || isPrimarySubBot
 
-  // Si el bot primario no está conectado, cualquier subbot puede responder
+ 
   if (!isPrimaryConnected) return true
 
-  // Solo el bot primario asignado debe responder
+  
   return primaryBotClean === currentBotClean
 }
 
@@ -131,7 +131,8 @@ class SubBotManager {
     this.subbots         = new Map()
     this.startingSubbots = new Set()
     this.initialized     = false
-    this._healthDebounce = new Map()  
+    this._healthDebounce = new Map()
+    if (!global.subBotManager) global.subBotManager = this
   }
 
   
@@ -434,7 +435,7 @@ class SubBotManager {
 
         
         sock.ev.on('messages.upsert', async ({ messages, type }) => {
-          if (type !== 'notify') return
+          if (type !== 'notify' && type !== 'append') return
 
           const activeCount = activeSubbotMessages.get(sessionId) || 0
           if (activeCount >= CONCURRENT_LIMIT) {
@@ -622,5 +623,6 @@ class SubBotManager {
 }
 
 const subBotManager = new SubBotManager()
+global.subBotManager = subBotManager
 export default subBotManager
 export { SubBotManager }
