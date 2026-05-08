@@ -1,4 +1,4 @@
-import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
+import { generateWAMessageFromContent, proto } from '@whiskeysockets/baileys'
 
 let handler = async (client, m, args, usedPrefix, command) => {
 
@@ -73,35 +73,49 @@ let handler = async (client, m, args, usedPrefix, command) => {
     } catch {}
   }
 
+
+  await client.sendMessage(m.chat, {
+    image: { url: 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg' },
+    caption: `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💙 Hatsune Miku Bot`
+  }, { quoted: m })
+
+ 
   try {
     const msg = generateWAMessageFromContent(m.chat, {
-      interactiveMessage: {
-        body: { text: `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Selecciona un juego o usa *${usedPrefix}hgames <número>*` },
-        footer: { text: '💙 Hatsune Miku Bot' },
-        header: {
-          title: '🎮 JUEGOS H',
-          hasMediaAttachment: true,
-          imageMessage: {
-            url: 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg',
-            mimetype: 'image/jpeg'
-          }
-        },
-        nativeFlowMessage: {
-          buttons: [{
-            name: 'single_select',
-            buttonParamsJson: JSON.stringify({
-              title: '🎮 Elegir juego',
-              sections: [{
-                title: '🎮 Juegos disponibles',
-                rows: games.map((game, index) => ({
-                  header: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
-                  title: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
-                  description: `📁 ${game.size}`,
-                  id: `hgame_${index + 1}`
-                }))
-              }]
+      viewOnceMessage: {
+        message: {
+          interactiveMessage: proto.Message.InteractiveMessage.create({
+            body: proto.Message.InteractiveMessage.Body.create({
+              text: `💡 Selecciona un juego o usa *${usedPrefix}hgames <número>*`
+            }),
+            footer: proto.Message.InteractiveMessage.Footer.create({
+              text: '💙 Hatsune Miku Bot'
+            }),
+            header: proto.Message.InteractiveMessage.Header.create({
+              title: '🎮 JUEGOS H',
+              subtitle: '',
+              hasMediaAttachment: false
+            }),
+            nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+              buttons: [
+                proto.Message.InteractiveMessage.NativeFlowMessage.NativeFlowButton.create({
+                  name: 'single_select',
+                  buttonParamsJson: JSON.stringify({
+                    title: '🎮 Elegir juego',
+                    sections: [{
+                      title: '🎮 Juegos disponibles',
+                      rows: games.map((game, index) => ({
+                        header: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
+                        title: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
+                        description: `📁 ${game.size}`,
+                        id: `hgame_${index + 1}`
+                      }))
+                    }]
+                  })
+                })
+              ]
             })
-          }]
+          })
         }
       }
     }, { quoted: m })
@@ -109,15 +123,10 @@ let handler = async (client, m, args, usedPrefix, command) => {
     await client.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
 
   } catch (err) {
-    console.error('Error enviando lista interactiva:', err)
+    console.error('nativeFlow falló, usando lista clásica:', err)
 
-   
+    
     try {
-      await client.sendMessage(m.chat, {
-        image: { url: 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg' },
-        caption: `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💙 Hatsune Miku Bot`
-      }, { quoted: m })
-
       await client.sendMessage(m.chat, {
         text: `💡 *Selecciona un juego:*`,
         footer: `💙 Hatsune Miku Bot | ${usedPrefix}hgames <número>`,
@@ -132,7 +141,6 @@ let handler = async (client, m, args, usedPrefix, command) => {
           }))
         }]
       }, { quoted: m })
-
     } catch {
      
       let message = `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n`
@@ -140,7 +148,7 @@ let handler = async (client, m, args, usedPrefix, command) => {
         message += `${(index + 1).toString().padStart(2, '0')}. ${game.name}\n   📁 ${game.size}\n\n`
       })
       message += `━━━━━━━━━━━━━━━━━━\n💡 Usa *${usedPrefix}hgames <número>* para descargar\n• Ejemplo: ${usedPrefix}hgames 1\n━━━━━━━━━━━━━━━━━━`
-      await client.sendFile(m.chat, 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg', 'hgames.jpg', message, m)
+      await m.reply(message)
     }
   }
 }
