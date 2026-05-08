@@ -28,53 +28,100 @@ let handler = async (client, m, args, usedPrefix, command) => {
     { name: 'Nemurimouto', size: '240 MB', file: 'NEMURIMOUTO.apk' }
   ];
 
-  let message = `🎮 *JUEGOS H - DESCARGAS* 🎮\n`;
-  message += `━━━━━━━━━━━━━━━━━━\n`;
-  message += `📦 Total: *${games.length} juegos*\n`;
-  message += `━━━━━━━━━━━━━━━━━━\n\n`;
+  const sendGame = async (index) => {
+    if (index < 0 || index >= games.length) {
+      return await m.reply(`❌ Número inválido. Elige del 1 al ${games.length}`);
+    }
 
-  games.forEach((game, index) => {
-    const num = (index + 1).toString().padStart(2, '0');
-    message += `${num}. ${game.name}\n`;
-    message += `   📁 ${game.size}\n\n`;
-  });
+    const game = games[index];
 
-  message += `━━━━━━━━━━━━━━━━━━\n`;
-  message += `💡 *Instrucciones:*\n`;
-  message += `• Usa ${usedPrefix}hgames <número> para descargar\n`;
-  message += `• Ejemplo: ${usedPrefix}hgames 1\n`;
-  message += `━━━━━━━━━━━━━━━━━━`;
+    let downloadMsg = `🎮 *DESCARGANDO JUEGO* 🎮\n\n`;
+    downloadMsg += `📱 *${game.name}*\n`;
+    downloadMsg += `📁 Tamaño: ${game.size}\n`;
+    downloadMsg += `📄 Archivo: ${game.file}\n\n`;
+    downloadMsg += `⏳ Enviando archivo...\n\n`;
+    downloadMsg += `💙 Hatsune Miku Bot`;
 
+    await m.reply(downloadMsg);
+
+    try {
+      await client.sendMessage(m.chat, {
+        document: { url: `https://github.com/Brauliovh3/BVH3_INDUSTRIES/releases/download/v1.0-hgames/${game.file}` },
+        mimetype: 'application/vnd.android.package-archive',
+        fileName: game.file,
+        caption: `🎮 ${game.name}\n\n💙 Hatsune Miku Bot`
+      }, { quoted: m });
+    } catch (err) {
+      console.error('Error descargando juego:', err);
+      await m.reply(`❌ Error al descargar el juego.\n\n💡 Enlace directo:\nhttps://github.com/Brauliovh3/BVH3_INDUSTRIES/releases/download/v1.0-hgames/${game.file}`);
+    }
+  };
+
+  
   if (args[0] && !isNaN(args[0])) {
-    const index = parseInt(args[0]) - 1;
-    if (index >= 0 && index < games.length) {
-      const game = games[index];
-      
-      let downloadMsg = `🎮 *DESCARGANDO JUEGO* 🎮\n\n`;
-      downloadMsg += `📱 *${game.name}*\n`;
-      downloadMsg += `📁 Tamaño: ${game.size}\n`;
-      downloadMsg += `📄 Archivo: ${game.file}\n\n`;
-      downloadMsg += `⏳ Enviando archivo...\n\n`;
-      downloadMsg += `💙 Hatsune Miku Bot`;
-      
-      await m.reply(downloadMsg);
-      
-      try {
-        await client.sendMessage(m.chat, {
-          document: { url: `https://github.com/Brauliovh3/BVH3_INDUSTRIES/releases/download/v1.0-hgames/${game.file}` },
-          mimetype: 'application/vnd.android.package-archive',
-          fileName: game.file,
-          caption: `🎮 ${game.name}\n\n💙 Hatsune Miku Bot`
-        }, { quoted: m });
-      } catch (err) {
-        console.error('Error descargando juego:', err);
-        await m.reply(`❌ Error al descargar el juego. El archivo podría no estar disponible.\n\n💡 Intenta más tarde o usa el enlace directo:\nhttps://github.com/Brauliovh3/BVH3_INDUSTRIES/releases/download/v1.0-hgames/${game.file}`);
-      }
+    await sendGame(parseInt(args[0]) - 1);
+    return;
+  }
+
+
+  if (m.listResponseMessage) {
+    const selectedId = m.listResponseMessage.singleSelectReply?.selectedRowId || '';
+    if (selectedId.startsWith('hgame_')) {
+      const idx = parseInt(selectedId.replace('hgame_', '')) - 1;
+      await sendGame(idx);
       return;
     }
   }
 
-  await client.sendFile(m.chat, 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg', 'hgames.jpg', message, m);
+
+  const sections = [
+    {
+      title: '🎮 Juegos disponibles',
+      rows: games.map((game, index) => ({
+        title: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
+        description: `📁 ${game.size}`,
+        rowId: `hgame_${index + 1}`
+      }))
+    }
+  ];
+
+  try {
+    await client.sendMessage(m.chat, {
+      image: { url: 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg' },
+      caption: `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Pulsa el botón para elegir un juego\no usa *${usedPrefix}hgames <número>*\n\n💙 Hatsune Miku Bot`
+    }, { quoted: m });
+
+    await client.sendMessage(m.chat, {
+      text: `🎮 *Selecciona el juego que quieres descargar:*`,
+      footer: '💙 Hatsune Miku Bot',
+      title: '🎮 JUEGOS H',
+      buttonText: '🎮 Elegir juego',
+      sections
+    }, { quoted: m });
+
+  } catch (err) {
+  
+    console.error('Lista no soportada, usando menú de texto:', err);
+
+    let message = `🎮 *JUEGOS H - DESCARGAS* 🎮\n`;
+    message += `━━━━━━━━━━━━━━━━━━\n`;
+    message += `📦 Total: *${games.length} juegos*\n`;
+    message += `━━━━━━━━━━━━━━━━━━\n\n`;
+
+    games.forEach((game, index) => {
+      const num = (index + 1).toString().padStart(2, '0');
+      message += `${num}. ${game.name}\n`;
+      message += `   📁 ${game.size}\n\n`;
+    });
+
+    message += `━━━━━━━━━━━━━━━━━━\n`;
+    message += `💡 *Instrucciones:*\n`;
+    message += `• Usa ${usedPrefix}hgames <número> para descargar\n`;
+    message += `• Ejemplo: ${usedPrefix}hgames 1\n`;
+    message += `━━━━━━━━━━━━━━━━━━`;
+
+    await client.sendFile(m.chat, 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg', 'hgames.jpg', message, m);
+  }
 };
 
 export default {
