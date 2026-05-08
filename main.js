@@ -8,15 +8,11 @@ import antilink    from './interruptores/antilink.js'
 import level       from './interruptores/level.js'
 import { markDatabaseDirty } from './nucleo/system/database.js'
 import subBotManager from './nucleo/subbotManager.js'
+import { getGroupMetadata } from './nucleo/utils.js'
 
 const COMMAND_TIMEOUT = 15000
 const commandTimeouts = new Map()
 
-
-const getGroupMetadata = async (client, jid) => {
-  const { getGroupMetadata: fn } = await import('./nucleo/utils.js')
-  return fn(client, jid)
-}
 
 seeCommands()
 

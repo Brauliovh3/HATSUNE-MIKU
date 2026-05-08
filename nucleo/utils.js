@@ -1,7 +1,8 @@
 const groupMetadataCache = new Map()
 const lidCache           = new Map()
 const pendingMetadataRequests = new Map()
-const metadataTTL = 5 * 60 * 1000
+const metadataTTL = Number(process.env.MIKU_GROUP_METADATA_TTL_MS || 10 * 60 * 1000)
+const metadataTimeoutMs = Number(process.env.MIKU_GROUP_METADATA_TIMEOUT_MS || 1500)
 const MAX_CACHE_SIZE = 500   
 
 
@@ -37,7 +38,7 @@ export async function getGroupMetadata(client, jid) {
     return pendingMetadataRequests.get(jid)
   }
 
-  const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 5000))
+  const timeout = new Promise((resolve) => setTimeout(() => resolve(null), metadataTimeoutMs))
   const request = Promise.race([
     client.groupMetadata(jid).catch(() => null),
     timeout,

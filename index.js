@@ -356,11 +356,15 @@ async function startBot() {
 
       activeMessageCount++
       ;(async () => {
+        const messageStart = Date.now()
+        let normalizeMs = 0
         try {
           kay.message = Object.keys(kay.message)[0] === 'ephemeralMessage'
             ? kay.message.ephemeralMessage.message
             : kay.message
+          const normalizeStart = Date.now()
           const m = await smsg(sock, kay)
+          normalizeMs = Date.now() - normalizeStart
           if (m) {
             await main(sock, m, chatUpdate)
             healthCheck.recordCommand()
@@ -378,6 +382,10 @@ async function startBot() {
             console.log(chalk.red('[ERROR msg]'), errorMsg.slice(0, 100))
           }
         } finally {
+          const totalMs = Date.now() - messageStart
+          if (totalMs > 2000) {
+            console.log(chalk.yellow(`[SlowMsg] total=${totalMs}ms normalize=${normalizeMs}ms jid=${sender}`))
+          }
           activeMessageCount--
         }
       })()
