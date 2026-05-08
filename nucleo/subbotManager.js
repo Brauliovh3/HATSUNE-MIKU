@@ -72,7 +72,7 @@ const shouldProcessRaw = (sock, raw) => {
   const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 
   
-  if (!primaryBotId) return true
+  if (!primaryBotId) return false
 
   const primaryBotClean = normalizeJid(primaryBotId)
   const currentBotClean = normalizeJid(currentBotId)
@@ -91,7 +91,7 @@ const shouldProcessRaw = (sock, raw) => {
   const isPrimaryConnected = isPrimaryInConns || isPrimarySubBot
 
  
-  if (!isPrimaryConnected) return true
+  if (!isPrimaryConnected) return primaryBotClean === currentBotClean
 
   
   return primaryBotClean === currentBotClean

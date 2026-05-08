@@ -3,6 +3,7 @@ import { search, download } from 'aptoide-scraper'
 
 const ALYA_APK_SEARCH = 'https://api.alyacore.xyz/search/apk'
 const ALYA_KEY = [68,69,80,79,79,76,45,107,101,121,54,48,48,49,53,48,57,49].map(c => String.fromCharCode(c)).join('')
+const API_TIMEOUT_MS = Number(process.env.MIKU_APK_API_TIMEOUT_MS || 7000)
 
 export default {
   command: ['apk', 'aptoide', 'apkdl'],
@@ -14,6 +15,7 @@ export default {
     
     await m.react('⏳')
     
+    const searchingMsg = await m.reply('💙 Buscando APK, espera un momento...')
     const query = args.join(' ').trim()
     try {
       const apkInfo = await resolveApkInfo(query)
@@ -46,7 +48,7 @@ export default {
             sourceUrl: downloadUrl
           }
         }
-      }, { quoted: m })
+      }, { quoted: searchingMsg || m })
       await m.react('✅')
      } catch (e) {
       await m.react('❌')
@@ -81,19 +83,26 @@ async function resolveApkInfo(query) {
 
     if (top.package) {
       try {
-        const apt = await download(top.package)
+        const apt = await withTimeout(download(top.package), API_TIMEOUT_MS, 'Aptoide download timeout')
         if (apt?.dllink) return normalizeAptoideData(apt)
       } catch {}
     }
   }
 
-  const searchA = await search(query)
+  const searchA = await withTimeout(search(query), API_TIMEOUT_MS, 'Aptoide search timeout')
   if (!searchA || searchA.length === 0) return null
 
-  const apt = await download(searchA[0].id)
+  const apt = await withTimeout(download(searchA[0].id), API_TIMEOUT_MS, 'Aptoide download timeout')
   if (!apt?.dllink) return null
 
   return normalizeAptoideData(apt)
+}
+
+function withTimeout(promise, ms, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+  ])
 }
 
 function normalizeAptoideData(apkInfo = {}) {
@@ -111,11 +120,14 @@ function normalizeAptoideData(apkInfo = {}) {
 async function searchAlyaApk(query = '') {
   try {
     const url = `${ALYA_APK_SEARCH}?query=${encodeURIComponent(query)}&key=${encodeURIComponent(ALYA_KEY)}`
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS)
     const res = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
       },
-    })
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout))
     if (!res.ok) return []
 
     const json = await res.json()

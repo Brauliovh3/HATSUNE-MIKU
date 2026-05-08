@@ -12,6 +12,7 @@ import { getGroupMetadata } from './nucleo/utils.js'
 
 const COMMAND_TIMEOUT = 15000
 const commandTimeouts = new Map()
+const SLOW_STEP_MS = Number(process.env.MIKU_SLOW_STEP_MS || 1200)
 
 
 seeCommands()
@@ -36,6 +37,13 @@ function safeMsg(fn) {
   })
 }
 
+function logSlowStep(command, step, startedAt) {
+  const elapsed = Date.now() - startedAt
+  if (elapsed > SLOW_STEP_MS) {
+    console.log(chalk.yellow(`[SlowStep] cmd=${command || '-'} step=${step} ms=${elapsed}`))
+  }
+}
+
 const normalizeJidDigits    = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 const getBotJid             = (client) => (client.user?.id?.split(':')[0] || client.user?.lid || '') + '@s.whatsapp.net'
 const getAssignedPrimaryBot = (chat)   => chat?.primaryBot || null
@@ -54,7 +62,7 @@ const isPrimaryHandler = (client, chat) => {
   if (isOwnerBot(client)) return true
 
   
-  if (!assignedBot) return true
+  if (!assignedBot) return isOwnerBot(client)
 
   const assignedBotClean = normalizeJidDigits(assignedBot)
   const currentBotClean = normalizeJidDigits(getBotJid(client))
@@ -74,13 +82,14 @@ const isPrimaryHandler = (client, chat) => {
   const isPrimaryConnected = isPrimaryInConns || isPrimarySubBot
   
   
-  if (!isPrimaryConnected) return true
+  if (!isPrimaryConnected) return assignedBotClean === currentBotClean || isOwnerBot(client)
 
   
   return assignedBotClean === currentBotClean
 }
 
 export default async (client, m) => {
+  const mainStart = Date.now()
   const sender = m.sender
   let body = m.message?.conversation
     || m.message?.extendedTextMessage?.text
@@ -344,7 +353,7 @@ export default async (client, m) => {
     }
   }
 
-  antilink(client, m)
+  antilink(client, m).catch(() => {})
 
   const from     = m.key.remoteJid
   const botJid   = getBotJid(client)
@@ -374,14 +383,17 @@ export default async (client, m) => {
     if (!m.isGroup || groupAdmins) return
     if (_groupContextPromise) return _groupContextPromise
     
+    const stepStart = Date.now()
     _groupContextPromise = getGroupMetadata(client, m.chat).then(meta => {
       groupMetadata = meta
       groupName = meta?.subject || ''
       groupAdmins = meta?.participants?.filter(
         p => p.admin === 'admin' || p.admin === 'superadmin'
       ) || []
+      logSlowStep(m.command, 'groupMetadata', stepStart)
     }).catch(() => {
       groupAdmins = []
+      logSlowStep(m.command, 'groupMetadata', stepStart)
     })
     return _groupContextPromise
   }
@@ -556,7 +568,9 @@ if (chat.adminonly && !isAdmins) return
 
   
   try {
+    let stepStart = Date.now()
     await safeMsg(() => client.readMessages([m.key]))
+    logSlowStep(command, 'readMessages', stepStart)
     user.usedcommands           = (user.usedcommands  || 0) + 1
     settings.commandsejecut     = (settings.commandsejecut || 0) + 1
     users.usedTime              = new Date()
@@ -567,15 +581,17 @@ if (chat.adminonly && !isAdmins) return
 
     markDatabaseDirty()
 
+    stepStart = Date.now()
     const cmdPromise = cmdData.run(client, m, args, usedPrefix, command, text)
     const timeoutPromise = new Promise((_, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error(`Command ${command} timeout`))
+        reject(new Error(`Command ${command} timeout after ${COMMAND_TIMEOUT}ms`))
       }, COMMAND_TIMEOUT)
       commandTimeouts.set(m.sender + command, timeout)
     })
 
     await Promise.race([cmdPromise, timeoutPromise])
+    logSlowStep(command, 'commandRun', stepStart)
   } catch (error) {
     clearTimeout(commandTimeouts.get(m.sender + command))
     commandTimeouts.delete(m.sender + command)
@@ -583,9 +599,13 @@ if (chat.adminonly && !isAdmins) return
     const errMsg = error?.message || String(error)
     if (
       errMsg.includes('rate-overlimit') || errMsg.includes('429') ||
-      errMsg.includes('Internal Server Error') ||
-      errMsg.includes('timeout')
-    ) return
+      errMsg.includes('Internal Server Error')
+    ) {
+      return client.sendMessage(m.chat, { text: `💙 WhatsApp/API está limitando el envío ahora mismo. Intenta de nuevo en unos segundos.` }, { quoted: m }).catch(() => {})
+    }
+    if (errMsg.includes('timeout')) {
+      return client.sendMessage(m.chat, { text: `💙 El comando *${command}* tardó demasiado y fue cancelado. Intenta de nuevo con algo más corto o espera unos segundos.` }, { quoted: m }).catch(() => {})
+    }
     await client.sendMessage(m.chat, { text: `💙 *ERROR*\n\n💙 Ocurrió un error al ejecutar el comando.\n🌱 *Error:* ${errMsg}` }, { quoted: m })
   } finally {
     clearTimeout(commandTimeouts.get(m.sender + command))
@@ -593,4 +613,5 @@ if (chat.adminonly && !isAdmins) return
   }
 
   level(m)
+  logSlowStep(m.command, 'mainTotal', mainStart)
 }
