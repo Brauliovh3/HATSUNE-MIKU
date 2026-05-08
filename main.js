@@ -327,6 +327,14 @@ export default async (client, m) => {
     return
   }
 
+ 
+if (buttonId && buttonId.startsWith('hgame_')) {
+  const chatDataBtn = global.db?.data?.chats?.[m.chat]
+  if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+  const { processHgameButton } = await import('./interruptores/nsfw/hgames.js') 
+  await processHgameButton(client, m, buttonId)
+  return
+}
   
   if (m.isBot && !m.message?.interactiveResponseMessage) return
   initDB(m, client)
