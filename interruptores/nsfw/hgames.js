@@ -32,18 +32,8 @@ let handler = async (client, m, args, usedPrefix, command) => {
     if (index < 0 || index >= games.length) {
       return await m.reply(`❌ Número inválido. Elige del 1 al ${games.length}`);
     }
-
     const game = games[index];
-
-    let downloadMsg = `🎮 *DESCARGANDO JUEGO* 🎮\n\n`;
-    downloadMsg += `📱 *${game.name}*\n`;
-    downloadMsg += `📁 Tamaño: ${game.size}\n`;
-    downloadMsg += `📄 Archivo: ${game.file}\n\n`;
-    downloadMsg += `⏳ Enviando archivo...\n\n`;
-    downloadMsg += `💙 Hatsune Miku Bot`;
-
-    await m.reply(downloadMsg);
-
+    await m.reply(`🎮 *DESCARGANDO JUEGO* 🎮\n\n📱 *${game.name}*\n📁 Tamaño: ${game.size}\n📄 Archivo: ${game.file}\n\n⏳ Enviando archivo...\n\n💙 Hatsune Miku Bot`);
     try {
       await client.sendMessage(m.chat, {
         document: { url: `https://github.com/Brauliovh3/BVH3_INDUSTRIES/releases/download/v1.0-hgames/${game.file}` },
@@ -57,69 +47,49 @@ let handler = async (client, m, args, usedPrefix, command) => {
     }
   };
 
-  
   if (args[0] && !isNaN(args[0])) {
     await sendGame(parseInt(args[0]) - 1);
     return;
   }
 
-
   if (m.listResponseMessage) {
     const selectedId = m.listResponseMessage.singleSelectReply?.selectedRowId || '';
     if (selectedId.startsWith('hgame_')) {
-      const idx = parseInt(selectedId.replace('hgame_', '')) - 1;
-      await sendGame(idx);
+      await sendGame(parseInt(selectedId.replace('hgame_', '')) - 1);
       return;
     }
   }
 
-
-  const sections = [
-    {
-      title: '🎮 Juegos disponibles',
-      rows: games.map((game, index) => ({
-        title: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
-        description: `📁 ${game.size}`,
-        rowId: `hgame_${index + 1}`
-      }))
-    }
-  ];
+  const sections = [{
+    title: '🎮 Juegos disponibles',
+    rows: games.map((game, index) => ({
+      title: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
+      description: `📁 ${game.size}`,
+      rowId: `hgame_${index + 1}`
+    }))
+  }];
 
   try {
     await client.sendMessage(m.chat, {
       image: { url: 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg' },
-      caption: `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Pulsa el botón para elegir un juego\no usa *${usedPrefix}hgames <número>*\n\n💙 Hatsune Miku Bot`
+      caption: `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💙 Hatsune Miku Bot`
     }, { quoted: m });
 
     await client.sendMessage(m.chat, {
-      text: `🎮 *Selecciona el juego que quieres descargar:*`,
-      footer: '💙 Hatsune Miku Bot',
+      text: `💡 *Selecciona un juego para descargar:*`,
+      footer: `💙 Hatsune Miku Bot | o usa ${usedPrefix}hgames <número>`,
       title: '🎮 JUEGOS H',
       buttonText: '🎮 Elegir juego',
       sections
     }, { quoted: m });
 
   } catch (err) {
-  
     console.error('Lista no soportada, usando menú de texto:', err);
-
-    let message = `🎮 *JUEGOS H - DESCARGAS* 🎮\n`;
-    message += `━━━━━━━━━━━━━━━━━━\n`;
-    message += `📦 Total: *${games.length} juegos*\n`;
-    message += `━━━━━━━━━━━━━━━━━━\n\n`;
-
+    let message = `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n`;
     games.forEach((game, index) => {
-      const num = (index + 1).toString().padStart(2, '0');
-      message += `${num}. ${game.name}\n`;
-      message += `   📁 ${game.size}\n\n`;
+      message += `${(index + 1).toString().padStart(2, '0')}. ${game.name}\n   📁 ${game.size}\n\n`;
     });
-
-    message += `━━━━━━━━━━━━━━━━━━\n`;
-    message += `💡 *Instrucciones:*\n`;
-    message += `• Usa ${usedPrefix}hgames <número> para descargar\n`;
-    message += `• Ejemplo: ${usedPrefix}hgames 1\n`;
-    message += `━━━━━━━━━━━━━━━━━━`;
-
+    message += `━━━━━━━━━━━━━━━━━━\n💡 *Instrucciones:*\n• Usa ${usedPrefix}hgames <número> para descargar\n• Ejemplo: ${usedPrefix}hgames 1\n━━━━━━━━━━━━━━━━━━`;
     await client.sendFile(m.chat, 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg', 'hgames.jpg', message, m);
   }
 };
