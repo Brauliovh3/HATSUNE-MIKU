@@ -143,6 +143,7 @@ const intentos = 15
 const _sendQueue = []
 global._sendQueue = _sendQueue
 let _processing = false
+const SEND_TIMEOUT_MS = Number(process.env.MIKU_SEND_TIMEOUT_MS || 20000)
 
 let _msgCount = 0
 const _yieldEvery = 10
@@ -160,24 +161,38 @@ async function processQueue() {
   if (_processing) return
   _processing = true
 
-  while (_sendQueue.length) {
-    const { fn, resolve, reject } = _sendQueue.shift()
-    try {
-      resolve(await fn())
-    } catch (e) {
-      reject(e)
+  try {
+    while (_sendQueue.length) {
+      const { fn, resolve, reject, startedAt } = _sendQueue.shift()
+      try {
+        const result = await Promise.race([
+          fn(),
+          new Promise((_, rejectTimeout) => {
+            setTimeout(() => rejectTimeout(new Error(`sendMessage timeout after ${SEND_TIMEOUT_MS}ms`)), SEND_TIMEOUT_MS)
+          }),
+        ])
+        resolve(result)
+      } catch (e) {
+        reject(e)
+      }
+
+      const elapsed = Date.now() - startedAt
+      if (elapsed > 3000) {
+        console.log(chalk.yellow(`[SendQueue] send took ${elapsed}ms pending=${_sendQueue.length}`))
+      }
+      await Promise.resolve()
     }
-
-    await Promise.resolve()
-    processQueue()
+  } finally {
+    _processing = false
   }
-
-  _processing = false
 }
 
 function enqueueMsg(fn) {
   return new Promise((resolve, reject) => {
-    _sendQueue.push({ fn, resolve, reject })
+    _sendQueue.push({ fn, resolve, reject, startedAt: Date.now() })
+    if (_sendQueue.length > 20) {
+      console.log(chalk.yellow(`[SendQueue] pending=${_sendQueue.length}`))
+    }
     processQueue()
   })
 }
