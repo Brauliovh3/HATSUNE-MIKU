@@ -1,5 +1,6 @@
+import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
+
 let handler = async (client, m, args, usedPrefix, command) => {
-  const { generateWAMessageFromContent } = require('@whiskeysockets/baileys')
 
   const games = [
     { name: 'Teaching Feeling v3.0', size: '519 MB', file: 'Teaching-Feeling.apk' },
@@ -74,7 +75,7 @@ let handler = async (client, m, args, usedPrefix, command) => {
 
   try {
     await client.sendMessage(m.chat, {
-      image: { url: 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsume-miku-38.jpg' },
+      image: { url: 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg' },
       caption: `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💙 Hatsune Miku Bot`
     }, { quoted: m })
 
