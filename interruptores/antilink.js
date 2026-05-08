@@ -1,5 +1,3 @@
-import { getGroupMetadata } from '../nucleo/utils.js'
-
 const linkRegex = /(https?:\/\/)?(chat\.whatsapp\.com\/[0-9A-Za-z]{20,24}|whatsapp\.com\/channel\/[0-9A-Za-z]{20,24})/i
 const allowedLinks = ['https://www.whatsapp.com/channel/0029VajYamSIHphMAl3ABi1o']
 
@@ -27,6 +25,7 @@ if (!m.isGroup || !m.text) return
 const chat = global?.db?.data?.chats?.[m.chat]
 if (!chat?.antilinks) return
 
+const { getGroupMetadata } = await import('../nucleo/utils.js')
 const groupMetadata = await getGroupMetadata(client, m.chat)
 if (!groupMetadata) return
 const participants = groupMetadata.participants || []

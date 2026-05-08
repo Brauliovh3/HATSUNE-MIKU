@@ -24,7 +24,6 @@ const groupCache           = new NodeCache({ stdTTL: 3600, checkperiod: 300 })
 const subbotRateLimiter = new Map()
 const MAX_MSG_PER_MINUTE = 20
 const CONCURRENT_LIMIT = 5
-const SUBBOT_START_CONCURRENCY = Math.max(1, Number(process.env.MIKU_SUBBOT_START_CONCURRENCY || 1))
 const activeSubbotMessages = new Map()
 
 const reintentos = new Map()
@@ -73,7 +72,7 @@ const shouldProcessRaw = (sock, raw) => {
   const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 
   
-  if (!primaryBotId) return false
+  if (!primaryBotId) return true
 
   const primaryBotClean = normalizeJid(primaryBotId)
   const currentBotClean = normalizeJid(currentBotId)
@@ -92,7 +91,7 @@ const shouldProcessRaw = (sock, raw) => {
   const isPrimaryConnected = isPrimaryInConns || isPrimarySubBot
 
  
-  if (!isPrimaryConnected) return primaryBotClean === currentBotClean
+  if (!isPrimaryConnected) return true
 
   
   return primaryBotClean === currentBotClean
@@ -159,11 +158,11 @@ class SubBotManager {
       return
     }
 
-    console.log(chalk.cyan(`💙 Iniciando ${sessions.length} subbots (concurrencia: ${SUBBOT_START_CONCURRENCY})...`))
+    console.log(chalk.cyan(`💙 Iniciando ${sessions.length} subbots (concurrencia: 3)...`))
 
     
     const tasks = sessions.map(sessionId => () => this.startSubBot(sessionId))
-    await runWithLimit(tasks, SUBBOT_START_CONCURRENCY)
+    await runWithLimit(tasks, 3)
 
     this.initialized = true
     console.log(chalk.cyan('💙 Sistema de subbots inicializado'))
@@ -199,10 +198,10 @@ class SubBotManager {
           creds: state.creds,
           keys:  makeCacheableSignalKeyStore(state.keys, logger),
         },
-        markOnlineOnConnect:      false,
+        markOnlineOnConnect:      true,
         generateHighQualityLinkPreview: false,
-        syncFullHistory:          false,
-        shouldSyncHistoryMessage: false,
+        syncFullHistory:          true,
+        shouldSyncHistoryMessage: true,
         getMessage:               async () => '',
         msgRetryCounterCache,
         userDevicesCache,
@@ -213,7 +212,7 @@ class SubBotManager {
         retryRequestDelayMs:      2_000,
         maxMsgRetryCount:         5,
         emitOwnEvents:            false,
-        fireInitQueries:          false,
+        fireInitQueries:          true,
       }
 
       let sock         = makeWASocket(connectionOptions)
