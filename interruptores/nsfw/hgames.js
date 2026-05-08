@@ -100,3 +100,53 @@ export default {
   nsfw: true,
   run: handler
 };
+
+
+
+
+
+E (async () => {
+
+const { generateWAMessageFromContent } = require('@whiskeysockets/baileys')
+
+const filas = [
+  { title: "Ejemplo uno", description: "Opción 1", id: "opcion_1" },
+  { title: "Ejemplo dos", description: "Opción 2", id: "opcion_2" },
+  { title: "Ejemplo cinco", description: "Opción 5", id: "opcion_5" }
+]
+
+const msg = generateWAMessageFromContent(m.chat, {
+  viewOnceMessage: {
+    message: {
+      interactiveMessage: {
+        body: { text: "Selecciona una opción" },
+        footer: { text: "Alya" },
+        header: {
+          title: "Lista de ejemplo",
+          hasMediaAttachment: false
+        },
+        nativeFlowMessage: {
+          buttons: [{
+            name: "single_select",
+            buttonParamsJson: JSON.stringify({
+              title: "Ver opciones",
+              sections: [{
+                title: "Opciones",
+                rows: filas.map(v => ({
+                  header: v.title,
+                  title: v.title,
+                  description: v.description,
+                  id: v.id
+                }))
+              }]
+            })
+          }]
+        }
+      }
+    }
+  }
+}, { quoted: m })
+
+await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
+
+})()
