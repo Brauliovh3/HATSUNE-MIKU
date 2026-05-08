@@ -47,6 +47,7 @@ function logSlowStep(command, step, startedAt) {
 const normalizeJidDigits    = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 const getBotJid             = (client) => (client.user?.id?.split(':')[0] || client.user?.lid || '') + '@s.whatsapp.net'
 const getAssignedPrimaryBot = (chat)   => chat?.primaryBot || null
+const isSubbotClient        = (client) => Boolean(client?._sessionId)
 
 const isOwnerBot = (client) => {
   const botJid = getBotJid(client)
@@ -62,7 +63,7 @@ const isPrimaryHandler = (client, chat) => {
   if (isOwnerBot(client)) return true
 
   
-  if (!assignedBot) return isOwnerBot(client)
+  if (!assignedBot) return !isSubbotClient(client)
 
   const assignedBotClean = normalizeJidDigits(assignedBot)
   const currentBotClean = normalizeJidDigits(getBotJid(client))
@@ -82,7 +83,7 @@ const isPrimaryHandler = (client, chat) => {
   const isPrimaryConnected = isPrimaryInConns || isPrimarySubBot
   
   
-  if (!isPrimaryConnected) return assignedBotClean === currentBotClean || isOwnerBot(client)
+  if (!isPrimaryConnected) return assignedBotClean === currentBotClean || !isSubbotClient(client)
 
   
   return assignedBotClean === currentBotClean
@@ -520,6 +521,7 @@ export default async (client, m) => {
       .some(p => textToMatch?.startsWith(p))
   
   if (m.isGroup && hasPrefix && !isPrimaryHandler(client, chat) && command !== 'setprimary') {
+    console.log(chalk.gray(`[PrimarySkip] cmd=${command} bot=${botJid} chat=${m.chat}`))
     return
   }
 
