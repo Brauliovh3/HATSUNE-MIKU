@@ -335,6 +335,15 @@ if (buttonId && buttonId.startsWith('hgame_')) {
   await processHgameButton(client, m, buttonId)
   return
 }
+
+  if (buttonId && buttonId.startsWith('game_')) {
+  const chatDataBtn = global.db?.data?.chats?.[m.chat]
+  if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+  const { processGamesButton } = await import('./interruptores/downloads/games.js')
+  await processGamesButton(client, m, buttonId)
+  return
+}
+
   
   if (m.isBot && !m.message?.interactiveResponseMessage) return
   initDB(m, client)
