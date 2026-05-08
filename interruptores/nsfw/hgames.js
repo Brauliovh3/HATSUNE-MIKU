@@ -48,13 +48,11 @@ let handler = async (client, m, args, usedPrefix, command) => {
     }
   }
 
-
   if (args[0] && !isNaN(args[0])) {
     await sendGame(parseInt(args[0]) - 1)
     return
   }
 
-  
   if (m.listResponseMessage) {
     const selectedId = m.listResponseMessage.singleSelectReply?.selectedRowId || ''
     if (selectedId.startsWith('hgame_')) {
@@ -63,9 +61,7 @@ let handler = async (client, m, args, usedPrefix, command) => {
     }
   }
 
-
   const nativeResponse = m.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson
-    || m.message?.viewOnceMessageV2?.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson
   if (nativeResponse) {
     try {
       const parsed = JSON.parse(nativeResponse)
@@ -77,44 +73,35 @@ let handler = async (client, m, args, usedPrefix, command) => {
     } catch {}
   }
 
-  
   try {
-    const imageBuffer = await (await fetch('https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg')).arrayBuffer()
-    const imageBytes = Buffer.from(imageBuffer)
-
     const msg = generateWAMessageFromContent(m.chat, {
-      viewOnceMessage: {
-        message: {
-          interactiveMessage: {
-            body: { text: `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Selecciona un juego para descargar\no usa *${usedPrefix}hgames <número>*` },
-            footer: { text: '💙 Hatsune Miku Bot' },
-            header: {
-              title: '🎮 JUEGOS H',
-              hasMediaAttachment: true,
-              imageMessage: {
-                url: 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg',
-                mimetype: 'image/jpeg',
-                jpegThumbnail: imageBytes
-              }
-            },
-            nativeFlowMessage: {
-              buttons: [{
-                name: 'single_select',
-                buttonParamsJson: JSON.stringify({
-                  title: '🎮 Elegir juego',
-                  sections: [{
-                    title: '🎮 Juegos disponibles',
-                    rows: games.map((game, index) => ({
-                      header: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
-                      title: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
-                      description: `📁 ${game.size}`,
-                      id: `hgame_${index + 1}`
-                    }))
-                  }]
-                })
-              }]
-            }
+      interactiveMessage: {
+        body: { text: `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Selecciona un juego o usa *${usedPrefix}hgames <número>*` },
+        footer: { text: '💙 Hatsune Miku Bot' },
+        header: {
+          title: '🎮 JUEGOS H',
+          hasMediaAttachment: true,
+          imageMessage: {
+            url: 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg',
+            mimetype: 'image/jpeg'
           }
+        },
+        nativeFlowMessage: {
+          buttons: [{
+            name: 'single_select',
+            buttonParamsJson: JSON.stringify({
+              title: '🎮 Elegir juego',
+              sections: [{
+                title: '🎮 Juegos disponibles',
+                rows: games.map((game, index) => ({
+                  header: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
+                  title: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
+                  description: `📁 ${game.size}`,
+                  id: `hgame_${index + 1}`
+                }))
+              }]
+            })
+          }]
         }
       }
     }, { quoted: m })
@@ -122,13 +109,39 @@ let handler = async (client, m, args, usedPrefix, command) => {
     await client.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
 
   } catch (err) {
-    
-    let message = `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n`
-    games.forEach((game, index) => {
-      message += `${(index + 1).toString().padStart(2, '0')}. ${game.name}\n   📁 ${game.size}\n\n`
-    })
-    message += `━━━━━━━━━━━━━━━━━━\n💡 Usa *${usedPrefix}hgames <número>* para descargar\n• Ejemplo: ${usedPrefix}hgames 1\n━━━━━━━━━━━━━━━━━━`
-    await client.sendFile(m.chat, 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg', 'hgames.jpg', message, m)
+    console.error('Error enviando lista interactiva:', err)
+
+   
+    try {
+      await client.sendMessage(m.chat, {
+        image: { url: 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg' },
+        caption: `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💙 Hatsune Miku Bot`
+      }, { quoted: m })
+
+      await client.sendMessage(m.chat, {
+        text: `💡 *Selecciona un juego:*`,
+        footer: `💙 Hatsune Miku Bot | ${usedPrefix}hgames <número>`,
+        title: '🎮 JUEGOS H',
+        buttonText: '🎮 Elegir juego',
+        sections: [{
+          title: '🎮 Juegos disponibles',
+          rows: games.map((game, index) => ({
+            title: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
+            description: `📁 ${game.size}`,
+            rowId: `hgame_${index + 1}`
+          }))
+        }]
+      }, { quoted: m })
+
+    } catch {
+     
+      let message = `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n`
+      games.forEach((game, index) => {
+        message += `${(index + 1).toString().padStart(2, '0')}. ${game.name}\n   📁 ${game.size}\n\n`
+      })
+      message += `━━━━━━━━━━━━━━━━━━\n💡 Usa *${usedPrefix}hgames <número>* para descargar\n• Ejemplo: ${usedPrefix}hgames 1\n━━━━━━━━━━━━━━━━━━`
+      await client.sendFile(m.chat, 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg', 'hgames.jpg', message, m)
+    }
   }
 }
 
