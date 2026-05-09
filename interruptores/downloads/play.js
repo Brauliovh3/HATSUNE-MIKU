@@ -315,7 +315,7 @@ export async function processDownload(conn, m, videoInfo, option) {
   const ext        = isAudio ? 'mp3' : 'mp4'
 
  
-  const mimetype   = isAudio ? 'audio/mp4' : 'video/mp4'
+  const mimetype   = isAudio ? 'audio/mpeg' : 'video/mp4'
 
   let tempFilePath = null
   let success = false
@@ -368,7 +368,7 @@ export async function processDownload(conn, m, videoInfo, option) {
             adReply.body = '🎵 Hatsune Miku Audio'
             await conn.sendMessage(m.chat, {
               audio: fileBuffer,
-              mimetype: 'audio/mp4',
+              mimetype: 'audio/mpeg',
               ptt: false,
               fileName: `${fileName}.mp3`,
               contextInfo: { externalAdReply: adReply }
