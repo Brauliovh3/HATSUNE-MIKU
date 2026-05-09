@@ -129,7 +129,9 @@ export default async (client, m) => {
     buttonId.startsWith('yt_pick_') ||
     buttonId.startsWith('yt_mp3_') ||
     buttonId.startsWith('yt_mp4_') ||
+    (buttonId.startsWith('yt_mp3_') || buttonId.startsWith('yt_mp4_')) ||
     (/^[1-4]$/.test(buttonId) && m.quoted?.text?.includes('MIKU YOUTUBE PLAY'))
+
   )) {
 
 

@@ -9,13 +9,7 @@ function getKey(chat, sender) {
   return `${chat}:${sender}`
 }
 
-function getButtonIdFromPickId(pickId) {
-
-  return pickId || ''
-}
-
 function buildRowsForVideoOption(videos, optionKey) {
-  
   return videos.map((v, i) => {
     const n = String(i + 1).padStart(2, '0')
     const safeTitle = String(v.title || '').replace(/\s+/g, ' ').trim().substring(0, 60)
@@ -29,7 +23,7 @@ function buildRowsForVideoOption(videos, optionKey) {
 }
 
 export default {
-  command: ['ytsearch', 'search'],
+  command: ['ytsearch', 'search', 'yts'],
   category: 'internet',
   run: async (client, m, args) => {
     const query = args?.join(' ').trim()
@@ -44,7 +38,6 @@ export default {
     const key = getKey(m.chat, m.sender)
     ytState.set(key, {
       timestamp: Date.now(),
-      
       videoInfoByIndex: shown.map(v => ({
         url: v.url,
         title: v.title,
@@ -62,49 +55,77 @@ export default {
     const total = shown.length
     const bodyText = `🎥 *RESULTADOS YOUTUBE*\n\nSelecciona una opción para descargar.\n\n• Query: ${query}`
 
-    
-    const nativeMsg = {
-      viewOnceMessage: {
-        message: {
-          interactiveMessage: {
-            body: { text: bodyText },
-            footer: { text: '🎵 Hatsune Miku' },
-            header: { title: 'YOUTUBE SEARCH', hasMediaAttachment: false },
-            nativeFlowMessage: {
-              buttons: [
+    const interactiveMessage = {
+      body: { text: bodyText },
+      footer: { text: '🎵 Hatsune Miku' },
+      header: { title: 'YOUTUBE SEARCH', hasMediaAttachment: false },
+      nativeFlowMessage: {
+        buttons: [
+          {
+            name: 'single_select',
+            buttonParamsJson: JSON.stringify({
+              title: 'Descargar',
+              sections: [
                 {
-                  name: 'single_select',
-                  buttonParamsJson: JSON.stringify({
-                    title: 'Descargar',
-                    sections: [
-                      {
-                        title: `🎵 Audio MP3 (${total})`,
-                        rows: buildRowsForVideoOption(shown, 'mp3'),
-                      },
-                      {
-                        title: `🎬 Video 360p (${total})`,
-                        rows: buildRowsForVideoOption(shown, 'mp4'),
-                      },
-                    ],
-                  }),
+                  title: `🎵 Audio MP3 (${total})`,
+                  rows: buildRowsForVideoOption(shown, 'mp3'),
+                },
+                {
+                  title: `🎬 Video 360p (${total})`,
+                  rows: buildRowsForVideoOption(shown, 'mp4'),
                 },
               ],
-            },
+            }),
           },
-        },
+        ],
       },
     }
 
-    
+  
     if (thumb) {
-      await client.sendMessage(m.chat, { image: thumb, caption: bodyText }, { quoted: m })
+      const payload = {
+        viewOnceMessage: {
+          message: {
+            interactiveMessage,
+          },
+        },
+      }
+
+
+      await client.relayMessage(
+        m.chat,
+        {
+          viewOnceMessage: {
+            message: {
+              interactiveMessage: {
+                ...interactiveMessage,
+              },
+              imageMessage: {
+                url: '',
+                caption: bodyText,
+                jpegThumbnail: thumb,
+              },
+            },
+          },
+        },
+        { messageId: m.key.id }
+      )
+      return
     }
 
-    const relay = await client.relayMessage(m.chat, nativeMsg.viewOnceMessage.message, { messageId: m.key.id })
-    return relay
+    await client.relayMessage(
+      m.chat,
+      {
+        viewOnceMessage: {
+          message: {
+            interactiveMessage,
+          },
+        },
+      },
+      { messageId: m.key.id }
+    )
   },
 }
-
 
 export async function processYouTubeButton(client, m) {
   let buttonId = null
@@ -120,7 +141,6 @@ export async function processYouTubeButton(client, m) {
   if (!buttonId) return false
   if (!buttonId.startsWith('yt_')) return false
 
-  
   const parts = buttonId.split('_')
   if (parts.length < 3) return false
   const kind = parts[1]
@@ -129,6 +149,7 @@ export async function processYouTubeButton(client, m) {
   const key = getKey(m.chat, m.sender)
   const state = ytState.get(key)
   if (!state) return false
+
   if (Date.now() - state.timestamp > 10 * 60 * 1000) {
     ytState.delete(key)
     await client.reply(m.chat, '⏳ Búsqueda expiró. Usa .ytsearch otra vez.', m)
@@ -137,6 +158,7 @@ export async function processYouTubeButton(client, m) {
 
   const info = state.videoInfoByIndex?.[idx]
   if (!info) return false
+
 
   const option = kind === 'mp3' ? 1 : 2
 
