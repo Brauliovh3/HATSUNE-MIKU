@@ -33,7 +33,6 @@ global.miku = {
     },
     externalAdReply: {
       title: "💙HATSUNE MIKU💙",
-      body: global.dev || "© 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ)",
       mediaUrl: null,
       description: null,
       previewType: "PHOTO",

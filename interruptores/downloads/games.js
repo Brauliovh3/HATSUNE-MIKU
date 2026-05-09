@@ -53,7 +53,7 @@ let handler = async (client, m, args, usedPrefix, command) => {
       message: {
         interactiveMessage: {
           body: { text: `🎮 *DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Selecciona un juego o usa *${usedPrefix}games <número>*` },
-          footer: { text: '🎮 Bot de Juegos' },
+          footer: { text: '🎮 Seccion de Juegos' },
           header: {
             title: '🎮 JUEGOS',
             hasMediaAttachment: false
