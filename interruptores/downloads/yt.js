@@ -65,11 +65,20 @@ async function sendYouTube(client, m, index, kind) {
 
   const option = kind === 'mp3' ? 1 : 2
 
+
+  await client.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
+  
+ 
   await m.reply(`🎥 *DESCARGANDO VÍDEO* 🎥\n\n📱 *${info.title}*\n📁 Formato: ${option === 1 ? 'Audio MP3' : 'Video 360p'}\n📄 URL: ${info.url}\n\n⏳ Enviando archivo...\n\n🎵 Bot de YouTube`)
   
   try {
     await processDownload(client, m, info, option)
-  } catch {
+    
+    await client.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
+  } catch (error) {
+    console.log('Download error:', error)
+    
+    await client.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
     await m.reply(`❌ Error al descargar.\n\n💡 Intenta con otro enlace o formato.`)
   }
 }
