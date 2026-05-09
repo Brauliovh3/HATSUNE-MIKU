@@ -57,6 +57,7 @@ let isCleaning = false
 const yield_ = () => new Promise(r => setImmediate(r))
 
 const messageRateLimiter = new Map()
+// 🌱 Aumentado masivamente para grupos pesados
 const MAX_MESSAGES_PER_MINUTE = 100 
 const CONCURRENT_MESSAGE_LIMIT = 25 
 let activeMessageCount = 0  
@@ -416,4 +417,3 @@ process.on('unhandledRejection', (reason) => {
     return
   }
 })
-          
