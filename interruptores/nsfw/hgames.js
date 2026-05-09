@@ -1,4 +1,4 @@
-import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
+import { prepareWAMessageMedia, generateWAMessageFromContent, getDevice } from '@whiskeysockets/baileys'
 
 const games = [
   { name: 'Teaching Feeling v3.0', size: '519 MB', file: 'Teaching-Feeling.apk' },
@@ -28,73 +28,153 @@ const games = [
   { name: 'Nemurimouto', size: '240 MB', file: 'NEMURIMOUTO.apk' }
 ]
 
+const COVER_URL = 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg'
+const BASE_DL   = 'https://github.com/Brauliovh3/BVH3_INDUSTRIES/releases/download/v1.0-hgames'
+
+global.hgameSessions = global.hgameSessions || {}
+
+async function enviarListaJuegos(conn, chat, m, usedPrefix) {
+
+  const now = Date.now()
+  for (const k of Object.keys(global.hgameSessions))
+    if (global.hgameSessions[k].expiry < now) delete global.hgameSessions[k]
+
+
+  const sessionKey = `${chat}|${m.sender}`
+  global.hgameSessions[sessionKey] = { owner: m.sender, chat, expiry: Date.now() + 300_000 }
+
+  const device   = getDevice(m.key.id)
+  const isMobile = device !== 'desktop' && device !== 'web'
+
+  const filas = games.map((game, i) => ({
+    rowId:       `hgame_${i + 1}`,
+    title:       `${(i + 1).toString().padStart(2, '0')}. ${game.name}`,
+    description: `📁 ${game.size}`
+  }))
+
+  const descripcion = `🎮 *JUEGOS H - DESCARGAS*\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💡 Selecciona un juego o usa *${usedPrefix}hgames <número>*`
+
+  if (isMobile) {
+    try {
+      const media  = await prepareWAMessageMedia(
+        { image: { url: COVER_URL } },
+        { upload: conn.waUploadToServer }
+      )
+      const header = { title: '🎮 JUEGOS H', hasMediaAttachment: true, imageMessage: media.imageMessage }
+
+      const interactiveMessage = {
+        body:   { text: descripcion },
+        footer: { text: '💙 Hatsune Miku Bot' },
+        header,
+        nativeFlowMessage: {
+          buttons: [{
+            name: 'single_select',
+            buttonParamsJson: JSON.stringify({
+              title: '🎮 Elegir juego',
+              sections: [{
+                title: '🎮 Juegos disponibles',
+                highlight_label: '',
+                rows: filas.map(r => ({
+                  header:      r.title,
+                  title:       r.title,
+                  description: r.description,
+                  id:          r.rowId
+                }))
+              }]
+            })
+          }],
+          messageParamsJson: ''
+        }
+      }
+
+      const msg = generateWAMessageFromContent(
+        chat,
+        { viewOnceMessage: { message: { interactiveMessage } } },
+        { userJid: conn.user.jid, quoted: m }
+      )
+      await conn.relayMessage(chat, msg.message, { messageId: msg.key.id })
+      return
+    } catch (err) {
+      console.error('[hgames interactiveMessage]', err.message)
+      
+    }
+  }
+
+
+  let txt = `${descripcion}\n\n`
+  games.forEach((g, i) => {
+    txt += `${(i + 1).toString().padStart(2, '0')}. *${g.name}* — 📁 ${g.size}\n`
+  })
+  txt += `\n_Responde con el número del juego._`
+
+  await conn.sendMessage(chat, { image: { url: COVER_URL }, caption: txt }, { quoted: m })
+}
+
+async function sendGame(client, m, index) {
+  if (index < 0 || index >= games.length)
+    return await m.reply(`❌ Número inválido. Elige del 1 al ${games.length}`)
+
+  const game = games[index]
+  await m.reply(`🎮 *DESCARGANDO JUEGO* 🎮\n\n📱 *${game.name}*\n📁 Tamaño: ${game.size}\n📄 Archivo: ${game.file}\n\n⏳ Enviando archivo...\n\n💙 Hatsune Miku Bot`)
+
+  try {
+    await client.sendMessage(m.chat, {
+      document: { url: `${BASE_DL}/${game.file}` },
+      mimetype: 'application/vnd.android.package-archive',
+      fileName: game.file,
+      caption:  `🎮 ${game.name}\n\n💙 Hatsune Miku Bot`
+    }, { quoted: m })
+  } catch {
+    await m.reply(`❌ Error al descargar.\n\n💡 Enlace directo:\n${BASE_DL}/${game.file}`)
+  }
+}
+
 export async function processHgameButton(client, m, buttonId) {
   await sendGame(client, m, parseInt(buttonId.replace('hgame_', '')) - 1)
 }
 
-async function sendGame(client, m, index) {
-  if (index < 0 || index >= games.length) {
-    return await m.reply(`❌ Número inválido. Elige del 1 al ${games.length}`)
-  }
-  const game = games[index]
-  await m.reply(`🎮 *DESCARGANDO JUEGO* 🎮\n\n📱 *${game.name}*\n📁 Tamaño: ${game.size}\n📄 Archivo: ${game.file}\n\n⏳ Enviando archivo...\n\n💙 Hatsune Miku Bot`)
-  try {
-    await client.sendMessage(m.chat, {
-      document: { url: `https://github.com/Brauliovh3/BVH3_INDUSTRIES/releases/download/v1.0-hgames/${game.file}` },
-      mimetype: 'application/vnd.android.package-archive',
-      fileName: game.file,
-      caption: `🎮 ${game.name}\n\n💙 Hatsune Miku Bot`
-    }, { quoted: m })
-  } catch {
-    await m.reply(`❌ Error al descargar.\n\n💡 Enlace directo:\nhttps://github.com/Brauliovh3/BVH3_INDUSTRIES/releases/download/v1.0-hgames/${game.file}`)
-  }
-}
-
 let handler = async (client, m, args, usedPrefix, command) => {
-
   if (args[0] && !isNaN(args[0])) {
     await sendGame(client, m, parseInt(args[0]) - 1)
     return
   }
 
-  await client.sendMessage(m.chat, {
-    image: { url: 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg' },
-    caption: `🎮 *JUEGOS H - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💙 Hatsune Miku Bot`
-  }, { quoted: m })
+  await enviarListaJuegos(client, m.chat, m, usedPrefix)
+}
 
-  const msg = generateWAMessageFromContent(m.chat, {
-    viewOnceMessage: {
-      message: {
-        interactiveMessage: {
-          body: { text: `💡 Selecciona un juego o usa *${usedPrefix}hgames <número>*` },
-          footer: { text: '💙 Hatsune Miku Bot' },
-          header: {
-            title: '🎮 JUEGOS H',
-            hasMediaAttachment: false
-          },
-          nativeFlowMessage: {
-            buttons: [{
-              name: 'single_select',
-              buttonParamsJson: JSON.stringify({
-                title: '🎮 Elegir juego',
-                sections: [{
-                  title: '🎮 Juegos disponibles',
-                  rows: games.map((game, index) => ({
-                    header: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
-                    title: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
-                    description: `📁 ${game.size}`,
-                    id: `hgame_${index + 1}`
-                  }))
-                }]
-              })
-            }]
-          }
-        }
-      }
-    }
-  }, { quoted: m })
+handler.before = async (m, { conn }) => {
 
-  await client.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
+  const nativeFlow = m.message?.interactiveResponseMessage?.nativeFlowResponseMessage
+  if (nativeFlow) {
+    try {
+      const selectedId = JSON.parse(nativeFlow.paramsJson || '{}')?.id || null
+      if (!selectedId || !selectedId.startsWith('hgame_')) return true
+
+      const sessionKey = `${m.chat}|${m.sender}`
+      const session    = global.hgameSessions?.[sessionKey]
+      if (!session || session.owner !== m.sender || Date.now() > session.expiry) return true
+
+      delete global.hgameSessions[sessionKey]
+      await sendGame(conn, m, parseInt(selectedId.replace('hgame_', '')) - 1)
+    } catch (err) { console.error('[hgames before nativeFlow]', err.message) }
+    return false
+  }
+
+  
+  const rawInput = m.message?.listResponseMessage?.singleSelectReply?.selectedRowId
+    || (m.text && /^\d+$/.test(m.text.trim()) ? m.text.trim() : null)
+
+  if (!rawInput) return false
+
+  const sessionKey = `${m.chat}|${m.sender}`
+  const session    = global.hgameSessions?.[sessionKey]
+  if (!session || session.owner !== m.sender || Date.now() > session.expiry) return false
+
+  delete global.hgameSessions[sessionKey]
+
+  const index = parseInt(rawInput) - 1
+  await sendGame(conn, m, index)
+  return true
 }
 
 export default {
@@ -102,4 +182,4 @@ export default {
   category: 'nsfw',
   nsfw: true,
   run: handler
-}
+    }
