@@ -46,7 +46,6 @@ function normalizePhoneForPairing(input) {
 let phoneNumber = global.botNumber || ""
 let phoneInput  = ""
 
-
 const { say } = cfonts
 console.log(chalk.magentaBright('\n💙 Iniciando 01'))
 say('Hatsune\nMiku',        { align: 'center', gradient: ['red', 'blue'] })
@@ -54,13 +53,12 @@ say('Made by (ㅎㅊDEPOOLㅊㅎ)', { font: 'console', align: 'center', gradient
 
 ensureDir(PROJECT_TMP_DIR)
 
-
 let isCleaning = false
 const yield_ = () => new Promise(r => setImmediate(r))
 
 const messageRateLimiter = new Map()
-const MAX_MESSAGES_PER_MINUTE = 30
-const CONCURRENT_MESSAGE_LIMIT = 10
+const MAX_MESSAGES_PER_MINUTE = 100 
+const CONCURRENT_MESSAGE_LIMIT = 25 
 let activeMessageCount = 0  
 
 async function cleanCache() {
@@ -82,11 +80,7 @@ async function cleanCache() {
           if (yieldCounter % 10 === 0) await yield_()
           const filePath = path.join(dir, file)
           let stat
-          try {
-            stat = await fs.promises.stat(filePath)
-          } catch {
-            continue
-          }
+          try { stat = await fs.promises.stat(filePath) } catch { continue }
           if (stat.isDirectory()) {
             await cleanSessionsRecursive(filePath)
           } else if (
@@ -110,7 +104,6 @@ async function cleanCache() {
     isCleaning = false
   }
 }
-
 
 let opcion
 if (methodCodeQR) {
@@ -136,7 +129,6 @@ if (methodCodeQR) {
   }
 }
 
-
 let reconexion = 0
 const intentos = 15
 
@@ -159,19 +151,12 @@ export { _maybeYield }
 async function processQueue() {
   if (_processing) return
   _processing = true
-
   while (_sendQueue.length) {
     const { fn, resolve, reject } = _sendQueue.shift()
-    try {
-      resolve(await fn())
-    } catch (e) {
-      reject(e)
-    }
-
+    try { resolve(await fn()) } catch (e) { reject(e) }
     await Promise.resolve()
     processQueue()
   }
-
   _processing = false
 }
 
@@ -323,10 +308,7 @@ async function startBot() {
 
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return
-    if (activeMessageCount >= CONCURRENT_MESSAGE_LIMIT) {
-      console.log(chalk.yellow('[Rate Limit] Mensajes concurrentes limitados'))
-      return
-    }
+    if (activeMessageCount >= CONCURRENT_MESSAGE_LIMIT) return
 
     for (const kay of chatUpdate.messages) {
       if (!kay?.message)                                  continue
@@ -344,12 +326,7 @@ async function startBot() {
       userMessages.count++
       messageRateLimiter.set(sender, userMessages)
 
-      if (userMessages.count > MAX_MESSAGES_PER_MINUTE) {
-        if (userMessages.count === MAX_MESSAGES_PER_MINUTE + 1) {
-          console.log(chalk.yellow(`[Rate Limit] Usuario ${sender} excedió límite de mensajes`))
-        }
-        continue
-      }
+      if (userMessages.count > MAX_MESSAGES_PER_MINUTE) continue
 
       healthCheck.recordMessage()
       _maybeYield()
@@ -367,16 +344,6 @@ async function startBot() {
           }
         } catch (err) {
           healthCheck.recordError(err)
-          const errorMsg = err?.message || 'Unknown error'
-          if (!errorMsg.includes('rate-overlimit') &&
-              !errorMsg.includes('timed out') &&
-              !errorMsg.includes('Connection Closed') &&
-              !errorMsg.includes('connection lost') &&
-              !errorMsg.includes('rate_overlimit') &&
-              !errorMsg.includes('429') &&
-              !errorMsg.includes('Internal Server Error')) {
-            console.log(chalk.red('[ERROR msg]'), errorMsg.slice(0, 100))
-          }
         } finally {
           activeMessageCount--
         }
@@ -423,11 +390,9 @@ function clearOwnerSession() {
   } catch {}
 }
 
-
 setInterval(cleanCache, 5 * 60 * 1000)
 cleanCache()
 setTimeout(cleanCache, 1 * 60 * 1000)
-
 
 ;(async () => {
   global.loadDatabase()
@@ -435,20 +400,12 @@ setTimeout(cleanCache, 1 * 60 * 1000)
   await startBot()
 })()
 
-
 process.on('uncaughtException', (err) => {
   const msg = err?.message || ''
   if (/enospc/i.test(msg)) {
     cleanProjectStorage({ maxAgeMs: 0 }).catch(() => {})
-    console.error(chalk.red('[uncaughtException] ENOSPC: limpieza de emergencia iniciada'))
     return
   }
-  if (
-    msg.includes('rate-overlimit') || msg.includes('timed out')     ||
-    msg.includes('Connection Closed') || msg.includes('429')        ||
-    msg.includes('Internal Server Error')
-  ) return
-  console.error(chalk.red('[uncaughtException]'), msg.slice(0, 120))
 })
 
 process.on('unhandledRejection', (reason) => {
@@ -456,21 +413,7 @@ process.on('unhandledRejection', (reason) => {
   const lowerMsg = msg.toLowerCase()
   if (lowerMsg.includes('enospc')) {
     cleanProjectStorage({ maxAgeMs: 0 }).catch(() => {})
-    console.error(chalk.red('[unhandledRejection] ENOSPC: limpieza de emergencia iniciada'))
     return
   }
-  if (
-    lowerMsg.includes('rate-overlimit')     || lowerMsg.includes('timed out')               ||
-    lowerMsg.includes('timeout')            || lowerMsg.includes('connection closed')        ||
-    lowerMsg.includes('connection lost')    || lowerMsg.includes('etimeout')                 ||
-    lowerMsg.includes('enoent')             || lowerMsg.includes('no such file or directory') ||
-    lowerMsg.includes('404')               || lowerMsg.includes('request failed')            ||
-    lowerMsg.includes('no sessions')       || lowerMsg.includes('unsupported state')         ||
-    lowerMsg.includes('bad mac')           ||
-    lowerMsg.includes('enotfound')         || lowerMsg.includes('eai_again')                 ||
-    lowerMsg.includes('fetch failed')      || lowerMsg.includes('not-acceptable')            ||
-    lowerMsg.includes('conflict')          || lowerMsg.includes('internal server error')     ||
-    lowerMsg.includes('429')
-  ) return
-  console.error(chalk.red('[unhandledRejection]'), msg.slice(0, 120))
 })
+          
