@@ -313,10 +313,10 @@ export async function processDownload(conn, m, videoInfo, option) {
   const asDocument = option === 3 || option === 4
   const fileName   = String(videoInfo.title || 'descarga').replace(/[^\w\s]/gi, '').trim().substring(0, 50) || 'descarga'
   const ext        = isAudio ? 'mp3' : 'mp4'
-  
+
   // 🌱 CRÍTICO: audio/mp4 es más seguro en WhatsApp porque las APIs de YouTube devuelven audios M4A
-  const mimetype   = isAudio ? 'audio/mp4' : 'video/mp4' 
-  
+  const mimetype   = isAudio ? 'audio/mp4' : 'video/mp4'
+
   let tempFilePath = null
   let success = false
   let lastError = null
@@ -340,6 +340,9 @@ export async function processDownload(conn, m, videoInfo, option) {
         try {
           tempFilePath = await downloadFile(data.downloadUrl, `${Date.now()}_${fileName}.${ext}`, data.isGoogleVideo ?? false)
 
+          // ✅ FIX: Leer el archivo como Buffer para que Baileys lo envíe correctamente
+          const fileBuffer = fs.readFileSync(tempFilePath)
+
           const adReply = {
             title: videoInfo.title ? videoInfo.title.substring(0, 60) : 'Descarga',
             body: '💙 Hatsune Miku Bot',
@@ -355,7 +358,7 @@ export async function processDownload(conn, m, videoInfo, option) {
 
           if (asDocument) {
             await conn.sendMessage(m.chat, {
-              document: { url: tempFilePath }, // 🌱 Stream directo desde el disco (Ahorra RAM)
+              document: fileBuffer, // ✅ Buffer desde disco
               mimetype,
               fileName: `${fileName}.${ext}`,
               caption: `📄 ${videoInfo.title}`,
@@ -364,15 +367,15 @@ export async function processDownload(conn, m, videoInfo, option) {
           } else if (isAudio) {
             adReply.body = '🎵 Hatsune Miku Audio'
             await conn.sendMessage(m.chat, {
-              audio: { url: tempFilePath }, // 🌱 Stream directo para audios
-              mimetype: 'audio/mp4', // Soporta nativamente M4A de YouTube
+              audio: fileBuffer, // ✅ Buffer desde disco
+              mimetype: 'audio/mp4',
               ptt: false,
               fileName: `${fileName}.mp3`,
               contextInfo: { externalAdReply: adReply }
             }, { quoted: m })
           } else {
             await conn.sendMessage(m.chat, {
-              video: { url: tempFilePath }, // 🌱 Stream directo para videos
+              video: fileBuffer, // ✅ Buffer desde disco
               mimetype: 'video/mp4',
               fileName: `${fileName}.mp4`,
               caption: `🎬 ${videoInfo.title}`,
@@ -381,7 +384,7 @@ export async function processDownload(conn, m, videoInfo, option) {
 
           success = true
           // 🌱 LIMPIEZA INMEDIATA: Borra el archivo temporal tras enviarlo con éxito para no llenar el disco.
-          deleteFile(tempFilePath) 
+          deleteFile(tempFilePath)
           tempFilePath = null
           break
         } catch (e) {
