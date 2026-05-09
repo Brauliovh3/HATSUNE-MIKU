@@ -9,7 +9,7 @@ import level       from './interruptores/level.js'
 import { markDatabaseDirty } from './nucleo/system/database.js'
 import subBotManager from './nucleo/subbotManager.js'
 
-const COMMAND_TIMEOUT = 15000
+const COMMAND_TIMEOUT = 60000
 const commandTimeouts = new Map()
 
 
@@ -54,33 +54,23 @@ const isOwnerBot = (client) => {
 
 const isPrimaryHandler = (client, chat) => {
   const assignedBot = getAssignedPrimaryBot(chat)
-
   if (isOwnerBot(client)) return true
-
-  
   if (!assignedBot) return true
 
   const assignedBotClean = normalizeJidDigits(assignedBot)
   const currentBotClean = normalizeJidDigits(getBotJid(client))
   
- 
   const isPrimaryInConns = global.conns?.some(c => {
     const connId = c.user?.id || c.userId
     return normalizeJidDigits(connId) === assignedBotClean && c.isInit
   })
   
-  
   const assignedSessionId = assignedBot.split('@')[0]
   const isPrimarySubBot = subBotManager.subbots?.has(assignedSessionId) && 
                           subBotManager.subbots?.get(assignedSessionId)?.isInit
   
-
   const isPrimaryConnected = isPrimaryInConns || isPrimarySubBot
-  
-  
   if (!isPrimaryConnected) return true
-
-  
   return assignedBotClean === currentBotClean
 }
 
@@ -96,14 +86,10 @@ export default async (client, m) => {
     || m.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson
     || ''
 
-  
   let buttonId = m.body || m.text || null
-  if (m.message?.buttonsResponseMessage?.selectedButtonId)
-    buttonId = m.message.buttonsResponseMessage.selectedButtonId
-  if (m.message?.templateButtonReplyMessage?.selectedId)
-    buttonId = m.message.templateButtonReplyMessage.selectedId
-  if (m.message?.listResponseMessage?.singleSelectReply?.selectedRowId)
-    buttonId = m.message.listResponseMessage.singleSelectReply.selectedRowId
+  if (m.message?.buttonsResponseMessage?.selectedButtonId) buttonId = m.message.buttonsResponseMessage.selectedButtonId
+  if (m.message?.templateButtonReplyMessage?.selectedId) buttonId = m.message.templateButtonReplyMessage.selectedId
+  if (m.message?.listResponseMessage?.singleSelectReply?.selectedRowId) buttonId = m.message.listResponseMessage.singleSelectReply.selectedRowId
   if (m.message?.interactiveResponseMessage) {
     try {
       const paramsJson = m.message.interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson
@@ -114,14 +100,11 @@ export default async (client, m) => {
     } catch {}
   }
 
-  
   if (m.message?.buttonsResponseMessage || m.message?.templateButtonReplyMessage
       || m.message?.listResponseMessage  || m.message?.interactiveResponseMessage) {
-    
     await safeMsg(() => client.readMessages([m.key]))
   }
 
-  
   if (buttonId && (buttonId.startsWith('menu_') || buttonId.startsWith('shop_') || buttonId.startsWith('buy_'))) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
     if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
@@ -137,7 +120,6 @@ export default async (client, m) => {
     return
   }
 
-  
   if (buttonId && (
     buttonId.includes('youtube_audio_') ||
     buttonId.includes('youtube_video_360_') ||
@@ -176,7 +158,6 @@ export default async (client, m) => {
     return
   }
 
-  
   if (buttonId && (buttonId.startsWith('waifu_claim_') || buttonId.startsWith('waifu_sell_'))) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
     if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
@@ -274,7 +255,6 @@ export default async (client, m) => {
     }
   }
 
-  
   if (buttonId && (buttonId.startsWith('gallery_prev_') || buttonId.startsWith('gallery_next_'))) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
     if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
@@ -327,24 +307,22 @@ export default async (client, m) => {
     return
   }
 
- 
-if (buttonId && buttonId.startsWith('hgame_')) {
-  const chatDataBtn = global.db?.data?.chats?.[m.chat]
-  if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
-  const { processHgameButton } = await import('./interruptores/nsfw/hgames.js')
-  await processHgameButton(client, m, buttonId)
-  return
-}
+  if (buttonId && buttonId.startsWith('hgame_')) {
+    const chatDataBtn = global.db?.data?.chats?.[m.chat]
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+    const { processHgameButton } = await import('./interruptores/nsfw/hgames.js')
+    await processHgameButton(client, m, buttonId)
+    return
+  }
 
   if (buttonId && buttonId.startsWith('game_')) {
-  const chatDataBtn = global.db?.data?.chats?.[m.chat]
-  if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
-  const { processGamesButton } = await import('./interruptores/downloads/games.js')
-  await processGamesButton(client, m, buttonId)
-  return
-}
+    const chatDataBtn = global.db?.data?.chats?.[m.chat]
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+    const { processGamesButton } = await import('./interruptores/downloads/games.js')
+    await processGamesButton(client, m, buttonId)
+    return
+  }
 
-  
   if (m.isBot && !m.message?.interactiveResponseMessage) return
   initDB(m, client)
 
@@ -353,13 +331,10 @@ if (buttonId && buttonId.startsWith('hgame_')) {
     if (chat?.mutedUsers?.[m.sender]) {
       const muteData = chat.mutedUsers[m.sender]
       const now = Date.now()
-
       if (muteData.unmuteAt && now >= muteData.unmuteAt) {
         delete chat.mutedUsers[m.sender]
       } else {
-        try {
-          await client.sendMessage(m.chat, { delete: m.key })
-        } catch {}
+        try { await client.sendMessage(m.chat, { delete: m.key }) } catch {}
         return
       }
     }
@@ -369,14 +344,12 @@ if (buttonId && buttonId.startsWith('hgame_')) {
 
   const from     = m.key.remoteJid
   const botJid   = getBotJid(client)
-
   const chat = global.db.data.chats[m.chat] || {}
   
   const sessionId = botJid.split('@')[0]
   const isSubBot = subBotManager.subbots?.has(sessionId) || 
                    global.db.data?.settings?.[botJid]?.type === 'Sub'
   
-
   const settings = isSubBot 
     ? (global.db.data.subbots?.[botJid] || {})
     : (global.db.data.settings?.[botJid] || {})
@@ -385,7 +358,6 @@ if (buttonId && buttonId.startsWith('hgame_')) {
   const users  = chat.users[sender] || {}
   const pushname = m.pushName || 'Sin nombre'
 
-  
   let groupMetadata = null
   let groupAdmins   = null
   let groupName     = null
@@ -415,7 +387,6 @@ if (buttonId && buttonId.startsWith('hgame_')) {
     ...global.owner.map(num => num + '@s.whatsapp.net'),
   ].includes(sender)
 
-  
   const allPlugins = Object.entries(global.plugins)
     .filter(([, p]) => p && typeof p.all === 'function')
   if (allPlugins.length > 0) {
@@ -425,7 +396,6 @@ if (buttonId && buttonId.startsWith('hgame_')) {
     runAllPlugins(allTasks)
   }
 
-
   const today = new Date().toLocaleDateString('es-CO', {
     timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit',
   }).split('/').reverse().join('-')
@@ -434,7 +404,6 @@ if (buttonId && buttonId.startsWith('hgame_')) {
   if (!users.stats[today]) users.stats[today] = { msgs: 0, cmds: 0 }
   users.stats[today].msgs++
 
-  
   const rawBotname    = settings.namebot || 'Miku'
   const tipo          = settings.type    || 'Sub'
   const cleanBotname  = rawBotname.replace(/[^a-zA-Z0-9\s]/g, '')
@@ -471,11 +440,9 @@ if (buttonId && buttonId.startsWith('hgame_')) {
 
   let match = matchs.find(p => p[0])
 
-  
   if (global.plugins && m.command) {
     const beforeEntries = Object.entries(global.plugins)
       .filter(([, p]) => p && !p.disabled && typeof p.before === 'function')
-    
     
     if (beforeEntries.length > 10) {
       const cmdData = global.comandos.get(m.command)
@@ -492,7 +459,6 @@ if (buttonId && buttonId.startsWith('hgame_')) {
         }
       }
     } else if (beforeEntries.length > 0) {
-      
       const results = await Promise.allSettled(
         beforeEntries.map(([, p]) => 
           Promise.race([
@@ -512,7 +478,6 @@ if (buttonId && buttonId.startsWith('hgame_')) {
   let text       = args.join(' ')
   if (!command) return
 
-  
   const chatData      = global.db.data.chats[from] || {}
   const consolePrimary = getAssignedPrimaryBot(chatData)
   if (m.message || !consolePrimary || consolePrimary === botJid) {
@@ -521,97 +486,4 @@ if (buttonId && buttonId.startsWith('hgame_')) {
     const h = chalk.bold.blue('╔⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍···')
     const t = chalk.bold.blue('╚⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍⚍···')
     const v = chalk.bold.blue('┇')
-    console.log(`\n${h}\n${chalk.bold.yellow(`${v} Fecha: ${chalk.whiteBright(moment().format('DD/MM/YY HH:mm:ss'))} p. m.`)}\n${chalk.bold.blueBright(`${v} Usuario: ${chalk.whiteBright(`(${pushname})`)}`)}\n${chalk.bold.magentaBright(`${v} Remitente: ${gradient('deepskyblue', 'darkorchid')(sender)}`)}\n${m.isGroup ? chalk.bold.cyanBright(`${v} Grupo: ${chalk.greenBright(groupName || m.chat.split('@')[0])}\n${v} Mensaje: ${bodyPreview}`) : chalk.bold.greenBright(`${v} Mensaje: ${bodyPreview}`)}\n${t}`)
-  }
-
-  const hasPrefix    = settings.prefix === true ? true
-    : (Array.isArray(settings.prefix) ? settings.prefix : typeof settings.prefix === 'string' ? [settings.prefix] : [])
-      .some(p => textToMatch?.startsWith(p))
-  
-  if (m.isGroup && hasPrefix && !isPrimaryHandler(client, chat) && command !== 'setprimary') {
-    return
-  }
-
-if (!isOwners && settings.self)   return
-if (m.chat && !m.chat.endsWith('g.us')) {
-  const allowedInPrivate = ['allmenu','help','menu','infobot','botinfo','invite','invitar','ping','speed','p','status','estado','report','reporte','sug','suggest','token','join','unir','logout','reload','self','setbanner','setbotbanner','setchannel','setbotchannel','setbotcurrency','setcurrency','seticon','setboticon','setlink','setbotlink','setbotname','setname','setbotowner','setowner','setimage','setpfp','setprefix','setbotprefix','setstatus','setusername','code','qr']
-  if (!global.owner.map(n => n + '@s.whatsapp.net').includes(sender) && !allowedInPrivate.includes(command)) return
-}
-if (chat?.isBanned && !/^(bot|banchat|unbanchat|enable|disable|options)$/i.test(command)) return
-if (m.text && user.banned && !global.owner.map(n => n + '@s.whatsapp.net').includes(sender)) {
-  await m.reply(`💙 Estás ${user.genre === 'Mujer' ? 'baneada' : user.genre === 'Hombre' ? 'baneado' : 'baneado/a'}, no puedes usar comandos en este bot!\n\n> 🌱 *Razón ›* ${user.bannedReason || 'Sin especificar'}\n\n> 🌱 Si tienes evidencia que respalde que este mensaje es un error, puedes exponer tu caso con un moderador.`)
-  return
-}
-
-if (m.isGroup && chat.adminonly) {
-  await ensureGroupContext()
-  isAdmins = groupAdmins.some(p => p.phoneNumber === sender || p.jid === sender || p.id === sender || p.lid === sender)
-}
-if (chat.adminonly && !isAdmins) return
-
-  
-  const cmdData = global.comandos.get(command)
-  if (!cmdData) {
-    if (settings.prefix === true) return
-    await safeMsg(() => client.readMessages([m.key]))
-    return m.reply(`💙 El comando *${command}* no existe.\n> 🌱 Usa *${usedPrefix}help* para ver la lista de comandos disponibles.`)
-  }
-  if (cmdData.isOwner && !global.owner.map(n => n + '@s.whatsapp.net').includes(sender)) {
-    if (settings.prefix === true) return
-    return m.reply(`El comando *${command}* no existe.\n> Usa *${usedPrefix}help* para ver la lista de comandos disponibles.`)
-  }
-  if (m.isGroup && (cmdData.isAdmin || cmdData.botAdmin)) {
-    await ensureGroupContext()
-    isAdmins    = groupAdmins.some(p => p.phoneNumber === sender || p.jid === sender || p.id === sender || p.lid === sender)
-    isBotAdmins = groupAdmins.some(p => p.phoneNumber === botJid  || p.jid === botJid  || p.id === botJid  || p.lid === botJid)
-  }
-
-  if (cmdData.isAdmin  && !isAdmins)    return client.reply(m.chat, mess.admin,    m)
-  if (cmdData.botAdmin && !isBotAdmins) return client.reply(m.chat, mess.botAdmin, m)
-  if (cmdData.isOwner  && !isOwners)    return
-
-  if (m.isGroup && (cmdData.nsfw || cmdData.category === 'nsfw') && !chat.nsfw) {
-    safeMsg(() => client.readMessages([m.key]))
-    return client.sendMessage(m.chat, { text: `💙 El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*` }, { quoted: m })
-  }
-
-  
-  try {
-    await safeMsg(() => client.readMessages([m.key]))
-    user.usedcommands           = (user.usedcommands  || 0) + 1
-    settings.commandsejecut     = (settings.commandsejecut || 0) + 1
-    users.usedTime              = new Date()
-    users.lastCmd               = Date.now()
-    user.exp                    = (user.exp || 0) + Math.floor(Math.random() * 100)
-    user.name                   = m.pushName
-    users.stats[today].cmds++
-
-    markDatabaseDirty()
-
-    const cmdPromise = cmdData.run(client, m, args, usedPrefix, command, text)
-    const timeoutPromise = new Promise((_, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error(`Command ${command} timeout`))
-      }, COMMAND_TIMEOUT)
-      commandTimeouts.set(m.sender + command, timeout)
-    })
-
-    await Promise.race([cmdPromise, timeoutPromise])
-  } catch (error) {
-    clearTimeout(commandTimeouts.get(m.sender + command))
-    commandTimeouts.delete(m.sender + command)
-
-    const errMsg = error?.message || String(error)
-    if (
-      errMsg.includes('rate-overlimit') || errMsg.includes('429') ||
-      errMsg.includes('Internal Server Error') ||
-      errMsg.includes('timeout')
-    ) return
-    await client.sendMessage(m.chat, { text: `💙 *ERROR*\n\n💙 Ocurrió un error al ejecutar el comando.\n🌱 *Error:* ${errMsg}` }, { quoted: m })
-  } finally {
-    clearTimeout(commandTimeouts.get(m.sender + command))
-    commandTimeouts.delete(m.sender + command)
-  }
-
-  level(m)
-}
+    console.log(`\n${h}\n${chalk.bold.yellow(`${v} Fecha: ${chalk.whiteBright(moment().format('DD/MM/YY HH:mm:ss'))} p. m.`)}\n${chalk.bold.blueBright(`${v} Usuario: ${chalk.whiteBright(`(${pushname})`)}`)}\n${chalk.bold.magentaBright(`${v} Remitente: ${gradient('deepskyblue', 'darkorchid')(sender)}`)}\n${m.isGroup ? chalk.bold.cyanBright(`${v} Grupo: ${chalk.greenBright(groupName || m.chat.split('@')[0])}\n${v} Mensaje: ${bodyPrevi
