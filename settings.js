@@ -32,6 +32,8 @@ global.miku = {
       newsletterName: "💙 HATSUNE MIKU CHANNEL💙"
     },
     externalAdReply: {
+      title: "💙HATSUNE MIKU💙",
+      body: global.dev || "© 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ)",
       mediaUrl: null,
       description: null,
       previewType: "PHOTO",
