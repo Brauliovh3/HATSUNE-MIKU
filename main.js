@@ -331,6 +331,14 @@ export default async (client, m) => {
     return
   }
 
+  if (buttonId && buttonId.startsWith('yt_')) {
+    const chatDataBtn = global.db?.data?.chats?.[m.chat]
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+    const { processYouTubeButton } = await import('./interruptores/downloads/yt.js')
+    const processed = await processYouTubeButton(client, m)
+    if (processed) return
+  }
+
   if (m.isBot && !m.message?.interactiveResponseMessage) return
   initDB(m, client)
 

@@ -1,4 +1,5 @@
 import yts from 'yt-search'
+import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
 import { getBuffer } from '../../nucleo/message.js'
 import { processDownload } from './play.js'
 
@@ -45,69 +46,54 @@ export default {
       })),
     })
 
-    const first = shown[0]
-    let thumb = null
-    try {
-      const imgUrl = first?.image || first?.thumbnail
-      if (imgUrl) thumb = await getBuffer(imgUrl)
-    } catch {}
-
     const total = shown.length
-    const bodyText = `🎥 *RESULTADOS YOUTUBE*\n\nSelecciona una opción para descargar.\n\n• Query: ${query}`
+    const bodyText = `🎥 *RESULTADOS YOUTUBE*\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${total} vídeos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Selecciona un vídeo para descargar\n\n• Query: ${query}`
 
-    const interactiveMessage = {
-      body: { text: bodyText },
-      footer: { text: '🎵 Hatsune Miku' },
-      header: { title: 'YOUTUBE SEARCH', hasMediaAttachment: false },
-      nativeFlowMessage: {
-        buttons: [
-          {
-            name: 'single_select',
-            buttonParamsJson: JSON.stringify({
-              title: 'Descargar',
-              sections: [
-                {
-                  title: `🎵 Audio MP3 (${total})`,
-                  rows: buildRowsForVideoOption(shown, 'mp3'),
-                },
-                {
-                  title: `🎬 Video 360p (${total})`,
-                  rows: buildRowsForVideoOption(shown, 'mp4'),
-                },
-              ],
-            }),
-          },
-        ],
-      },
+    
+    let thumbnailBuffer = null
+    try {
+      const firstVideo = shown[0]
+      if (firstVideo?.thumbnail) {
+        thumbnailBuffer = await getBuffer(firstVideo.thumbnail)
+      }
+    } catch (error) {
+      console.log('Error getting thumbnail:', error)
     }
 
-
-    if (thumb) {
-      await client.relayMessage(
-        m.chat,
-        {
-          viewOnceMessage: {
-            message: {
-              interactiveMessage,
+    const msg = generateWAMessageFromContent(m.chat, {
+      viewOnceMessage: {
+        message: {
+          interactiveMessage: {
+            body: { text: bodyText },
+            footer: { text: '🎵 Hatsune Miku' },
+            header: {
+              title: '🎥 YOUTUBE SEARCH',
+              hasMediaAttachment: false
             },
-          },
-        },
-        { messageId: m.key.id }
-      )
-      return
-    }
+            nativeFlowMessage: {
+              buttons: [{
+                name: 'single_select',
+                buttonParamsJson: JSON.stringify({
+                  title: '🎥 Elegir formato',
+                  sections: [
+                    {
+                      title: `🎵 Audio MP3 (${total})`,
+                      rows: buildRowsForVideoOption(shown, 'mp3'),
+                    },
+                    {
+                      title: `🎬 Video 360p (${total})`,
+                      rows: buildRowsForVideoOption(shown, 'mp4'),
+                    },
+                  ],
+                })
+              }]
+            }
+          }
+        }
+      }
+    }, { quoted: m })
 
-    await client.relayMessage(
-      m.chat,
-      {
-        viewOnceMessage: {
-          message: {
-            interactiveMessage,
-          },
-        },
-      },
-      { messageId: m.key.id }
-    )
+    await client.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
 
   },
 }
