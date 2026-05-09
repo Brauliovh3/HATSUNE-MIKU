@@ -25,6 +25,12 @@ gmail: "brauliovh3@gmail.com"
 
 global.miku = { 
   contextInfo: { 
+    isForwarded: true, 
+    forwardedNewsletterMessageInfo: { 
+      newsletterJid: "120363315369913363@newsletter", 
+      serverMessageId: "0", 
+      newsletterName: "💙 HATSUNE MIKU CHANNEL💙"
+    },
     externalAdReply: {
       title: "💙HATSUNE MIKU💙",
       body: global.dev || "© 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ)",
