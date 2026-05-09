@@ -52,7 +52,7 @@ async function enviarListaJuegos(conn, chat, m, usedPrefix) {
     description: `📁 ${game.size}`
   }))
 
-  const descripcion = `🎮 *JUEGOS H - DESCARGAS*\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💡 Selecciona un juego o usa *${usedPrefix}hgames <número>*`
+  const descripcion = `*JUEGOS H - DESCARGAS*\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💡 Selecciona un juego o usa *${usedPrefix}hgames <número>*`
 
   if (isMobile) {
     try {
@@ -60,12 +60,9 @@ async function enviarListaJuegos(conn, chat, m, usedPrefix) {
         { image: { url: COVER_URL } },
         { upload: conn.waUploadToServer }
       )
-      const header = { title: '🎮 JUEGOS H', hasMediaAttachment: true, imageMessage: media.imageMessage }
-
       const interactiveMessage = {
         body:   { text: descripcion },
         footer: { text: '💙 Hatsune Miku Bot' },
-        header,
         nativeFlowMessage: {
           buttons: [{
             name: 'single_select',

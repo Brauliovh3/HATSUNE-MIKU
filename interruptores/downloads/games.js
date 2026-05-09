@@ -2,6 +2,8 @@ import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
 
 const games = [
   { name: 'Minecraft v1.21', size: '433 MB', file: 'Minecraft.apk' },
+  { name: 'Plants vs Zombies 2', size: '1.01 GB', file: 'plants.vs.zombies.2.apk' },
+  { name: 'BVH3 Wallpaper', size: '8 MB', file: 'WALLPAPER.apk' },
   { name: 'GTA San Andreas v2.11', size: '2.4 GB', file: 'GTA_SanAndreas.apk' },
   { name: 'Terraria v1.4.4', size: '200 MB', file: 'Terraria.apk' },
   { name: 'Stardew Valley v1.5', size: '250 MB', file: 'StardewValley.apk' },
@@ -13,7 +15,6 @@ const games = [
   { name: 'Roblox v2.6', size: '180 MB', file: 'Roblox.apk' },
   { name: 'Angry Birds Reloaded', size: '150 MB', file: 'AngryBirds.apk' },
   { name: 'Subway Surfers v3.21', size: '130 MB', file: 'SubwaySurfers.apk' },
-  { name: 'Plants vs Zombies 2', size: '290 MB', file: 'PlantsVsZombies2.apk' },
   { name: "Alto's Odyssey", size: '200 MB', file: 'AltosOdyssey.apk' },
   { name: 'Monument Valley 2', size: '220 MB', file: 'MonumentValley2.apk' },
 ]
