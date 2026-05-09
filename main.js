@@ -9,7 +9,7 @@ import level       from './interruptores/level.js'
 import { markDatabaseDirty } from './nucleo/system/database.js'
 import subBotManager from './nucleo/subbotManager.js'
 
-// 🌱 Aumentado a 60 segundos para evitar que se ignoren comandos pesados
+
 const COMMAND_TIMEOUT = 60000
 const commandTimeouts = new Map()
 
@@ -555,7 +555,7 @@ export default async (client, m) => {
     const cmdPromise = cmdData.run(client, m, args, usedPrefix, command, text)
     const timeoutPromise = new Promise((_, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error(`TIMEOUT_LIMIT`)) // 🌱 Error específico para comandos lentos
+        reject(new Error(`TIMEOUT_LIMIT`))
       }, COMMAND_TIMEOUT)
       commandTimeouts.set(m.sender + command, timeout)
     })
@@ -567,7 +567,7 @@ export default async (client, m) => {
 
     const errMsg = error?.message || String(error)
     
-    // 🌱 Avisar al usuario en lugar de no responder nada
+    
     if (errMsg.includes('429') || errMsg.includes('rate-overlimit')) {
         return await client.sendMessage(m.chat, { text: '⚠️ *Sistema saturado:* Espera un momento antes de volver a intentarlo.' }, { quoted: m })
     }
