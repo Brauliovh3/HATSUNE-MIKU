@@ -23,134 +23,106 @@ function buildRowsForVideoOption(videos, optionKey) {
   })
 }
 
-export default {
-  command: ['ytsearch', 'search', 'yts'],
-  category: 'internet',
-  run: async (client, m, args) => {
-    const query = args?.join(' ').trim()
-    if (!query) return m.reply('💙 Por favor, Ingrese el título de un vídeo.')
-
-    const ress = await yts(query)
-    const results = (ress?.all || []).filter(v => v && v.type === 'video')
-    if (!results.length) return m.reply('❌ No se encontraron vídeos para tu búsqueda.')
-
-    const shown = results.slice(0, 10)
-
-    const key = getKey(m.chat, m.sender)
-    ytState.set(key, {
-      timestamp: Date.now(),
-      videoInfoByIndex: shown.map(v => ({
-        url: v.url,
-        title: v.title,
-        thumbnail: v.thumbnail,
-      })),
-    })
-
-    const total = shown.length
-    const bodyText = `🎥 *RESULTADOS YOUTUBE*\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${total} vídeos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Selecciona un vídeo para descargar\n\n• Query: ${query}`
-
-    
-    let thumbnailBuffer = null
-    try {
-      const firstVideo = shown[0]
-      if (firstVideo?.thumbnail) {
-        thumbnailBuffer = await getBuffer(firstVideo.thumbnail)
-      }
-    } catch (error) {
-      console.log('Error getting thumbnail:', error)
-    }
-
-    const msg = generateWAMessageFromContent(m.chat, {
-      viewOnceMessage: {
-        message: {
-          interactiveMessage: {
-            body: { text: bodyText },
-            footer: { text: '🎵 Hatsune Miku' },
-            header: {
-              title: '🎥 YOUTUBE SEARCH',
-              hasMediaAttachment: !!thumbnailBuffer,
-              ...(thumbnailBuffer && {
-                imageMessage: {
-                  jpegThumbnail: thumbnailBuffer
-                }
-              })
-            },
-            nativeFlowMessage: {
-              buttons: [{
-                name: 'single_select',
-                buttonParamsJson: JSON.stringify({
-                  title: '🎥 Elegir formato',
-                  sections: [
-                    {
-                      title: `🎵 Audio MP3 (${total})`,
-                      rows: buildRowsForVideoOption(shown, 'mp3'),
-                    },
-                    {
-                      title: `🎬 Video 360p (${total})`,
-                      rows: buildRowsForVideoOption(shown, 'mp4'),
-                    },
-                  ],
-                })
-              }]
-            }
-          }
-        }
-      }
-    }, { quoted: m })
-
-    await client.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
-
-  },
+export async function processYouTubeButton(client, m, buttonId) {
+  await sendYouTube(client, m, parseInt(buttonId.replace('yt_', '').split('_')[1]))
 }
 
-export async function processYouTubeButton(client, m) {
-  let buttonId = null
-  if (m.message?.interactiveResponseMessage) {
-    try {
-      const paramsJson = m.message.interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson
-      if (paramsJson) {
-        const params = JSON.parse(paramsJson)
-        buttonId = params?.id || null
-      }
-    } catch {}
-  }
-  if (!buttonId) return false
-  if (!buttonId.startsWith('yt_')) return false
-
-  const parts = buttonId.split('_')
-  if (parts.length < 3) return false
-  const kind = parts[1]
-  const idx = Number(parts[2])
-
+async function sendYouTube(client, m, index) {
   const key = getKey(m.chat, m.sender)
   const state = ytState.get(key)
   if (!state) {
-    console.log('No state found for key:', key)
-    return false
+    return await m.reply(`❌ Búsqueda expiró. Usa .ytsearch otra vez.`)
   }
 
   if (Date.now() - state.timestamp > 10 * 60 * 1000) {
     ytState.delete(key)
-    await client.reply(m.chat, '⏳ Búsqueda expiró. Usa .ytsearch otra vez.', m)
-    return false
+    return await m.reply(`⏳ Búsqueda expiró. Usa .ytsearch otra vez.`)
   }
 
-  const info = state.videoInfoByIndex?.[idx]
+  const info = state.videoInfoByIndex?.[index]
   if (!info) {
-    console.log('No info found for index:', idx, 'total videos:', state.videoInfoByIndex.length)
-    return false
+    return await m.reply(`❌ Número inválido. Elige entre 1 y ${state.videoInfoByIndex.length}.`)
   }
 
-  console.log('Processing download:', { kind, idx, info: info.title })
+  
+  const buttonId = m.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson
+  let option = 1
+  if (buttonId) {
+    const params = JSON.parse(buttonId)
+    option = params.id.includes('mp4') ? 2 : 1
+  }
 
-  const option = kind === 'mp3' ? 1 : 2
-
+  await m.reply(`🎥 *DESCARGANDO VÍDEO* 🎥\n\n📱 *${info.title}*\n📁 Formato: ${option === 1 ? 'Audio MP3' : 'Video 360p'}\n📄 URL: ${info.url}\n\n⏳ Enviando archivo...\n\n🎵 Bot de YouTube`)
+  
   try {
     await processDownload(client, m, info, option)
-    return true
-  } catch (error) {
-    console.log('Download error:', error)
-    return false
+  } catch {
+    await m.reply(`❌ Error al descargar.\n\n💡 Intenta con otro enlace o formato.`)
   }
 }
+
+let handler = async (client, m, args, usedPrefix, command) => {
+  const query = args?.join(' ').trim()
+  if (!query) return m.reply('💙 Por favor, Ingrese el título de un vídeo.')
+
+  const ress = await yts(query)
+  const results = (ress?.all || []).filter(v => v && v.type === 'video')
+  if (!results.length) return m.reply('❌ No se encontraron vídeos para tu búsqueda.')
+
+  const shown = results.slice(0, 10)
+
+  const key = getKey(m.chat, m.sender)
+  ytState.set(key, {
+    timestamp: Date.now(),
+    videoInfoByIndex: shown.map(v => ({
+      url: v.url,
+      title: v.title,
+      thumbnail: v.thumbnail,
+    })),
+  })
+
+  const total = shown.length
+
+  const msg = generateWAMessageFromContent(m.chat, {
+    viewOnceMessage: {
+      message: {
+        interactiveMessage: {
+          body: { text: `🎥 *DESCARGAS* 🎥\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${total} vídeos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Selecciona un vídeo o usa *${usedPrefix}yts <número>*\n\n• Query: ${query}` },
+          footer: { text: '🎵 Seccion de YouTube' },
+          header: {
+            title: '🎥 YOUTUBE',
+            hasMediaAttachment: false
+          },
+          nativeFlowMessage: {
+            buttons: [{
+              name: 'single_select',
+              buttonParamsJson: JSON.stringify({
+                title: '🎥 Elegir formato',
+                sections: [
+                  {
+                    title: `🎵 Audio MP3 (${total})`,
+                    rows: buildRowsForVideoOption(shown, 'mp3'),
+                  },
+                  {
+                    title: `🎬 Video 360p (${total})`,
+                    rows: buildRowsForVideoOption(shown, 'mp4'),
+                  },
+                ],
+              })
+            }]
+          }
+        }
+      }
+    }
+  }, { quoted: m })
+
+  await client.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
+}
+
+export default {
+  command: ['ytsearch', 'search', 'yts'],
+  category: 'internet',
+  run: handler
+}
+
 
