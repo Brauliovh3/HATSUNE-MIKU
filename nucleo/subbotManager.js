@@ -16,36 +16,30 @@ import { _maybeYield } from '../index.js'
 
 if (!global.conns) global.conns = []
 
-
 const msgRetryCounterCache = new NodeCache({ stdTTL: 3600, checkperiod: 300, useClones: false })
 const userDevicesCache     = new NodeCache({ stdTTL: 3600, checkperiod: 300, useClones: false })
 const groupCache           = new NodeCache({ stdTTL: 3600, checkperiod: 300 })
 
 const subbotRateLimiter = new Map()
-const MAX_MSG_PER_MINUTE = 20
-const CONCURRENT_LIMIT = 5
+const MAX_MSG_PER_MINUTE = 100 
+const CONCURRENT_LIMIT = 20 
 const activeSubbotMessages = new Map()
 
 const reintentos = new Map()
 
-
 let _cachedBaileysVersion = null
 async function getBaileysVersion() {
- 
   if (global.baileysVersion) {
     _cachedBaileysVersion = global.baileysVersion
     return _cachedBaileysVersion
   }
-  
   if (_cachedBaileysVersion) return _cachedBaileysVersion
-  
   const { version } = await fetchLatestBaileysVersion()
   _cachedBaileysVersion = version
   global.baileysVersion = version
   setTimeout(() => { _cachedBaileysVersion = null }, 6 * 60 * 60 * 1000)
   return version
 }
-
 
 const cleanJid     = (jid = '') => jid.replace(/:\d+/, '').split('@')[0]
 const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
@@ -71,18 +65,15 @@ const shouldProcessRaw = (sock, raw) => {
   const currentBotId = sock.user?.id
   const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
 
-  
   if (!primaryBotId) return true
 
   const primaryBotClean = normalizeJid(primaryBotId)
   const currentBotClean = normalizeJid(currentBotId)
 
-  
   const isPrimaryInConns = global.conns?.some(c => {
     const connId = c.user?.id || c.userId
     return normalizeJid(connId) === primaryBotClean && c.isInit
   })
-  
   
   const primarySessionId = primaryBotId.split('@')[0]
   const isPrimarySubBot = subBotManager?.subbots?.has(primarySessionId) && 
@@ -90,10 +81,7 @@ const shouldProcessRaw = (sock, raw) => {
   
   const isPrimaryConnected = isPrimaryInConns || isPrimarySubBot
 
- 
   if (!isPrimaryConnected) return true
-
-  
   return primaryBotClean === currentBotClean
 }
 
@@ -114,8 +102,7 @@ const upsertConn = (sock, sessionId) => {
   global.conns.push(sock)
 }
 
-
-async function runWithLimit(tasks, limit = 3) {
+async function runWithLimit(tasks, limit = 5) {
   const pool = []
   for (const task of tasks) {
     const p = task().finally(() => pool.splice(pool.indexOf(p), 1))
@@ -124,7 +111,6 @@ async function runWithLimit(tasks, limit = 3) {
   }
   await Promise.all(pool)
 }
-
 
 class SubBotManager {
   constructor() {
@@ -135,12 +121,8 @@ class SubBotManager {
     if (!global.subBotManager) global.subBotManager = this
   }
 
-  
   async initializeAll() {
-    if (this.initialized) {
-      console.log(chalk.gray('💙 Subbots ya inicializados, omitiendo...'))
-      return
-    }
+    if (this.initialized) return
 
     const subsPath = './Sessions/subbots'
     if (!fs.existsSync(subsPath)) {
@@ -158,9 +140,6 @@ class SubBotManager {
       return
     }
 
-    console.log(chalk.cyan(`💙 Iniciando ${sessions.length} subbots (concurrencia: 3)...`))
-
-    
     const tasks = sessions.map(sessionId => () => this.startSubBot(sessionId))
     await runWithLimit(tasks, 3)
 
@@ -168,7 +147,6 @@ class SubBotManager {
     console.log(chalk.cyan('💙 Sistema de subbots inicializado'))
   }
 
-  
   async startSubBot(id) {
     const sessionId     = String(id).trim()
     const sessionFolder = `./Sessions/subbots/${sessionId}`
@@ -177,15 +155,10 @@ class SubBotManager {
     if (this.startingSubbots.has(sessionId)) return
     if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) return
 
-    const credsPath    = path.join(sessionFolder, 'creds.json')
-    const stats        = fs.statSync(credsPath)
-    const isNewSession = (Date.now() - stats.mtimeMs) < 300000
-
     this.startingSubbots.add(sessionId)
 
     try {
       const { state, saveCreds } = await useMultiFileAuthState(sessionFolder)
-      
       const version              = await getBaileysVersion()
       const logger               = pino({ level: 'silent' })
 
@@ -248,7 +221,6 @@ class SubBotManager {
           sock.ev.on('creds.update', saveCreds)
 
           if (!optimizer.active) optimizer.start()
-         
 
           sock.decodeJid = (jid) => {
             if (!jid || typeof jid !== 'string') return jid
@@ -256,9 +228,7 @@ class SubBotManager {
               try {
                 const decode = jidDecode(jid) || {}
                 return (decode.user && decode.server && `${decode.user}@${decode.server}`) || jid
-              } catch {
-                return jid
-              }
+              } catch { return jid }
             }
             return jid
           }
@@ -267,11 +237,7 @@ class SubBotManager {
             if (connection !== 'open') return
             clearTimeout(timeout)
             sock.ev.off('connection.update', onOpen)
-            
-            
             sock._reconnectHandled = true
-            
-           
             sock.uptime = Date.now()
             sock.isInit = true
             sock.userId = cleanJid(sock.user?.id || '')
@@ -286,16 +252,13 @@ class SubBotManager {
             reintentos.delete(sessionId)
             this.startingSubbots.delete(sessionId)
             this.subbots.set(sessionId, sock)
-            
             optimizer.registerSession(sessionId, 'Sub', { userId: sock.userId })
-            
             
             try { 
               const { default: events } = await import('../events.js')
               await events(sock, null) 
             } catch (e) {}
             
-            console.log(chalk.green(`💙 Subbot reconectado: ${sock.userId} (sesión: ${sessionId})`))
             resolve()
           }
           sock.ev.on('connection.update', onOpen)
@@ -306,15 +269,7 @@ class SubBotManager {
       const attachEvents = (sock) => {
         const safeHandler = (eventName, handler) => {
           return async (...args) => {
-            try {
-              await handler(...args);
-            } catch (err) {
-              if (err?.message?.includes('not-acceptable')) {
-                console.log(chalk.yellow(`[SubBot] Ignorando error not-acceptable en ${eventName}`));
-              } else {
-                console.error(chalk.red(`[SubBot] Error en ${eventName}:`), err.message);
-              }
-            }
+            try { await handler(...args) } catch (err) {}
           };
         };
         
@@ -322,12 +277,10 @@ class SubBotManager {
           if (isNewLogin) sock.isInit = false
 
           if (connection === 'open') {
-           
             if (sock._reconnectHandled) {
               sock._reconnectHandled = false
               return
             }
-            
             sock.uptime = Date.now()
             sock.isInit = true
             sock.userId = cleanJid(sock.user?.id || '')
@@ -345,63 +298,34 @@ class SubBotManager {
 
             if (!optimizer.active) optimizer.start()
             optimizer.registerSession(sessionId, 'Sub', { userId: sock.userId })
-
             try { await events(sock, null) } catch (e) {}
-
-            console.log(chalk.green(`💙 Subbot conectado: ${sock.userId} (sesión: ${sessionId})`))
             return
           }
 
           if (connection === 'close') {
-            const reason = lastDisconnect?.error?.output?.statusCode
-              ?? lastDisconnect?.error?.output?.payload?.statusCode
-              ?? 0
-
+            const reason = lastDisconnect?.error?.output?.statusCode ?? 0
             this.subbots.delete(sessionId)
             removeFromConns(sessionId)
             optimizer.unregisterSession(sessionId)
 
-            
             if ([428, 408, 500, 503, 515, 502, DisconnectReason.restartRequired, DisconnectReason.connectionLost].includes(reason)) {
-              const label = { 428: 'cierre inesperado', 408: 'pérdida de conexión', 500: 'conexión perdida', 503: 'servicio no disponible', 515: 'reinicio requerido', 502: 'error de gateway' }[reason] || 'reinicio requerido'
-
               if (this.startingSubbots.has(sessionId)) return
               this.startingSubbots.add(sessionId)
 
               const delayMs = 1000 + Math.floor(Math.random() * 4000)
               setTimeout(async () => {
-                try {
-                  await reconectar()
-                } catch (err) {
-                  this.startingSubbots.delete(sessionId)
-                }
+                try { await reconectar() } catch (err) { this.startingSubbots.delete(sessionId) }
               }, delayMs)
               return
             }
 
-           
-            if (reason === DisconnectReason.loggedOut || reason === 401) {
-              console.log(chalk.red(`💙 Sub-Bot (${sessionId}) desconectado (sesión cerrada). Eliminando.`))
+            if (reason === DisconnectReason.loggedOut || reason === 401 || reason === 403) {
               fs.promises.rm(sessionFolder, { recursive: true, force: true }).catch(() => {})
-              reintentos.delete(sessionId)
-              this.startingSubbots.delete(sessionId)
-              return
-            }
-            if (reason === 403) {
-              console.log(chalk.red(`💙 Sub-Bot (${sessionId}) suspendido (${reason}). Eliminando.`))
-              fs.promises.rm(sessionFolder, { recursive: true, force: true }).catch(() => {})
-              reintentos.delete(sessionId)
-              this.startingSubbots.delete(sessionId)
-              return
-            }
-            if (reason === 440) {
-              console.log(chalk.magentaBright(`💙 Sub-Bot (${sessionId}) reemplazado por otra sesión.`))
               reintentos.delete(sessionId)
               this.startingSubbots.delete(sessionId)
               return
             }
 
-            
             if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
               reintentos.delete(sessionId)
               this.startingSubbots.delete(sessionId)
@@ -410,7 +334,6 @@ class SubBotManager {
 
             if (this.startingSubbots.has(sessionId)) return
 
-            
             const intento  = reintentos.get(sessionId) || 0
             const delayMs  = Math.min(3000 * (intento + 1), 15_000)
             reintentos.set(sessionId, intento + 1)
@@ -418,29 +341,20 @@ class SubBotManager {
 
             setTimeout(async () => {
               try {
-                if (!fs.existsSync(sessionFolder) || !fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
-                  this.startingSubbots.delete(sessionId)
-                  reintentos.delete(sessionId)
-                  return
-                }
                 this.startingSubbots.delete(sessionId)
                 await this.startSubBot(sessionId)
               } catch (e) {
-                console.error(chalk.red(`💙 Error reconexión general ${sessionId}:`), e.message)
                 this.startingSubbots.delete(sessionId)
               }
             }, delayMs)
           }
         }))
 
-        
         sock.ev.on('messages.upsert', async ({ messages, type }) => {
           if (type !== 'notify' && type !== 'append') return
 
           const activeCount = activeSubbotMessages.get(sessionId) || 0
-          if (activeCount >= CONCURRENT_LIMIT) {
-            return
-          }
+          if (activeCount >= CONCURRENT_LIMIT) return
 
           for (const raw of messages) {
             if (!raw.message) continue
@@ -459,9 +373,7 @@ class SubBotManager {
             userRate.count++
             subbotRateLimiter.set(userKey, userRate)
 
-            if (userRate.count > MAX_MSG_PER_MINUTE) {
-              continue
-            }
+            if (userRate.count > MAX_MSG_PER_MINUTE) continue
 
             _maybeYield()
             const currentCount = activeSubbotMessages.get(sessionId) || 0
@@ -473,13 +385,10 @@ class SubBotManager {
                 if (m) {
                   await Promise.race([
                     main(sock, m, messages),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Command timeout')), 30000))
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_LIMIT')), 60000))
                   ])
                 }
               } catch (err) {
-                if (!err.message?.includes('timeout')) {
-                  console.error(`Error en subbot ${sessionId}:`, err.message)
-                }
               } finally {
                 const current = activeSubbotMessages.get(sessionId) || 0
                 activeSubbotMessages.set(sessionId, Math.max(0, current - 1))
@@ -490,23 +399,18 @@ class SubBotManager {
           if (subbotRateLimiter.size > 2000) {
             const now = Date.now()
             for (const [key, data] of subbotRateLimiter) {
-              if (now > data.resetTime) {
-                subbotRateLimiter.delete(key)
-              }
+              if (now > data.resetTime) subbotRateLimiter.delete(key)
             }
           }
         })
       }
 
       attachEvents(sock)
-      
       this.subbots.set(sessionId, sock)
 
     } catch (err) {
-      console.error(chalk.red(`Error iniciando subbot ${sessionId}:`), err.message)
       this.startingSubbots.delete(sessionId)
       this.subbots.delete(sessionId)
-
       if (fs.existsSync(sessionFolder) && fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
         const intento = reintentos.get(sessionId) || 0
         if (intento < 5) {
@@ -518,7 +422,6 @@ class SubBotManager {
     }
   }
 
-  
   async stopSubBot(sessionId) {
     const sock = this.subbots.get(sessionId)
     if (sock) {
@@ -531,10 +434,8 @@ class SubBotManager {
     reintentos.delete(sessionId)
     removeFromConns(sessionId)
     optimizer.unregisterSession(sessionId)
-    console.log(chalk.yellow(`💙 Subbot ${sessionId} detenido`))
   }
 
-  
   getStatus() {
     for (let i = global.conns.length - 1; i >= 0; i--) {
       const c = global.conns[i]
@@ -557,24 +458,13 @@ class SubBotManager {
 
     for (const [sessionId, sock] of this.subbots) {
       if (!sock?.chats) continue
-
       const chats = sock.chats
-      let deleted = 0
-
       for (const [jid, chat] of chats) {
-        const lastMsgTime = chat?.lastMessage?.messageTimestamp
-          ? chat.lastMessage.messageTimestamp * 1000
-          : 0
-
-        if (now - lastMsgTime > CHAT_AGE) {
-          chats.delete(jid)
-          deleted++
-        }
+        const lastMsgTime = chat?.lastMessage?.messageTimestamp ? chat.lastMessage.messageTimestamp * 1000 : 0
+        if (now - lastMsgTime > CHAT_AGE) chats.delete(jid)
       }
-
       if (chats.size > MAX_CHATS) {
-        const sorted = Array.from(chats.entries())
-          .sort((a, b) => {
+        const sorted = Array.from(chats.entries()).sort((a, b) => {
             const tA = a[1]?.lastMessage?.messageTimestamp || 0
             const tB = b[1]?.lastMessage?.messageTimestamp || 0
             return tB - tA
@@ -582,12 +472,7 @@ class SubBotManager {
         const toDelete = chats.size - MAX_CHATS
         for (let i = sorted.length - 1; i >= sorted.length - toDelete; i--) {
           chats.delete(sorted[i][0])
-          deleted++
         }
-      }
-
-      if (deleted > 0) {
-        console.log(chalk.gray(`💙 Subbot ${sessionId}: ${deleted} chats limpiados`))
       }
     }
   }
@@ -596,16 +481,13 @@ class SubBotManager {
     setInterval(async () => {
       const subsPath = './Sessions/subbots'
       if (!fs.existsSync(subsPath)) return
-
       const sessions = fs.readdirSync(subsPath).filter(dir =>
         fs.existsSync(path.join(subsPath, dir, 'creds.json'))
       )
-
       for (const sessionId of sessions) {
         const sock = this.subbots.get(sessionId)
         if (!sock || !sock.isInit) {
           if (this.startingSubbots.has(sessionId)) continue
-          
           if (this._healthDebounce.has(sessionId)) continue
           const handle = setTimeout(async () => {
             this._healthDebounce.delete(sessionId)
@@ -616,7 +498,6 @@ class SubBotManager {
           this._healthDebounce.set(sessionId, handle)
         }
       }
-
       this.pruneSubbotChats()
     }, 60_000)
   }
@@ -626,3 +507,4 @@ const subBotManager = new SubBotManager()
 global.subBotManager = subBotManager
 export default subBotManager
 export { SubBotManager }
+    
