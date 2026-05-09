@@ -1,5 +1,4 @@
 import yts from 'yt-search'
-import NodeID3 from 'node-id3'
 import fetch from 'node-fetch'
 import fs from 'fs'
 import path from 'path'
@@ -273,24 +272,6 @@ async function fetchThumbnailBuffer(url) {
   }
 }
 
-function embedCoverArt(mp3Buffer, imageBuffer, title) {
-  try {
-    const tags = {
-      title: title || 'Audio',
-      image: {
-        mime: 'image/jpeg',
-        type: { id: 3, name: 'front cover' },
-        description: 'Cover',
-        imageBuffer,
-      },
-    }
-    const tagged = NodeID3.write(tags, mp3Buffer)
-    return tagged && tagged.length > 1024 ? tagged : mp3Buffer
-  } catch {
-    return mp3Buffer
-  }
-}
-
 function getMikuMenuText(title, author, duration, views) {
   return (
     `${DIVIDER_START}\n` +
@@ -332,7 +313,10 @@ export async function processDownload(conn, m, videoInfo, option) {
   const asDocument = option === 3 || option === 4
   const fileName   = String(videoInfo.title || 'descarga').replace(/[^\w\s]/gi, '').trim().substring(0, 50) || 'descarga'
   const ext        = isAudio ? 'mp3' : 'mp4'
-  const mimetype   = isAudio ? 'audio/mpeg' : 'video/mp4'
+  
+  
+  const mimetype   = isAudio ? 'audio/mp4' : 'video/mp4' 
+  
   let tempFilePath = null
   let success = false
   let lastError = null
@@ -355,7 +339,6 @@ export async function processDownload(conn, m, videoInfo, option) {
       while (retries > 0) {
         try {
           tempFilePath = await downloadFile(data.downloadUrl, `${Date.now()}_${fileName}.${ext}`, data.isGoogleVideo ?? false)
-          const fileBuffer = fs.readFileSync(tempFilePath)
 
           const adReply = {
             title: videoInfo.title ? videoInfo.title.substring(0, 60) : 'Descarga',
@@ -372,28 +355,24 @@ export async function processDownload(conn, m, videoInfo, option) {
 
           if (asDocument) {
             await conn.sendMessage(m.chat, {
-              document: fileBuffer,
+              document: { url: tempFilePath }, 
               mimetype,
               fileName: `${fileName}.${ext}`,
               caption: `📄 ${videoInfo.title}`,
               contextInfo: { externalAdReply: adReply }
             }, { quoted: m })
           } else if (isAudio) {
-            const audioBuffer = thumbnailBuffer
-              ? embedCoverArt(fileBuffer, thumbnailBuffer, videoInfo.title)
-              : fileBuffer
-            
             adReply.body = '🎵 Hatsune Miku Audio'
             await conn.sendMessage(m.chat, {
-              audio: audioBuffer,
-              mimetype: 'audio/mpeg',
+              audio: { url: tempFilePath }, 
+              mimetype: 'audio/mp4', 
               ptt: false,
               fileName: `${fileName}.mp3`,
               contextInfo: { externalAdReply: adReply }
             }, { quoted: m })
           } else {
             await conn.sendMessage(m.chat, {
-              video: fileBuffer,
+              video: { url: tempFilePath },
               mimetype: 'video/mp4',
               fileName: `${fileName}.mp4`,
               caption: `🎬 ${videoInfo.title}`,
@@ -401,6 +380,9 @@ export async function processDownload(conn, m, videoInfo, option) {
           }
 
           success = true
+          
+          deleteFile(tempFilePath) 
+          tempFilePath = null
           break
         } catch (e) {
           if (tempFilePath) {
