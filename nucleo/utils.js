@@ -4,8 +4,6 @@ const pendingMetadataRequests = new Map()
 const metadataTTL = 5 * 60 * 1000
 const MAX_CACHE_SIZE = 500   
 
-
-
 function getCachedMetadata(groupChatId) {
   const cached = groupMetadataCache.get(groupChatId)
   if (!cached || Date.now() - cached.timestamp > metadataTTL) return undefined
@@ -18,34 +16,38 @@ function normalizeToJid(phone) {
   return base ? `${base}@s.whatsapp.net` : null
 }
 
-
-
-/**
-
- * @param {object} client   
- * @param {string} jid      
- * @returns {object|null}   
- */
 export async function getGroupMetadata(client, jid) {
   if (!jid?.endsWith('@g.us')) return null
 
   const cached = getCachedMetadata(jid)
   if (cached !== undefined) return cached
 
-  
   if (pendingMetadataRequests.has(jid)) {
     return pendingMetadataRequests.get(jid)
   }
 
-  const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 5000))
-  const request = Promise.race([
-    client.groupMetadata(jid).catch(() => null),
-    timeout,
-  ])
+
+  const fetchMetadata = async () => {
+    for (let i = 0; i < 2; i++) {
+      try {
+        const metadata = await Promise.race([
+          client.groupMetadata(jid),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000))
+        ])
+        if (metadata) return metadata
+      } catch (e) {
+        await new Promise(r => setTimeout(r, 1000)) // Espera 1s y reintenta
+      }
+    }
+    return null
+  }
+
+  const request = fetchMetadata()
   pendingMetadataRequests.set(jid, request)
 
   const metadata = await request
   pendingMetadataRequests.delete(jid)
+  
   if (metadata) {
     groupMetadataCache.set(jid, { metadata, timestamp: Date.now() })
   }
@@ -53,11 +55,9 @@ export async function getGroupMetadata(client, jid) {
   return metadata
 }
 
-
 export function invalidateGroupCache(jid) {
   groupMetadataCache.delete(jid)
 }
-
 
 export function pruneGroupCache() {
   const now = Date.now()
@@ -79,7 +79,6 @@ export function pruneGroupCache() {
 
   if (lidCache.size > 1000) lidCache.clear()
 }
-
 
 export async function resolveLidToRealJid(lid, client, groupChatId) {
   const input = lid?.toString().trim()
@@ -109,4 +108,4 @@ export async function resolveLidToRealJid(lid, client, groupChatId) {
 
   lidCache.set(input, input)
   return input
-}
+    }
