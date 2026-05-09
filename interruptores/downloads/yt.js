@@ -23,11 +23,30 @@ function buildRowsForVideoOption(videos, optionKey) {
   })
 }
 
-export async function processYouTubeButton(client, m, buttonId) {
-  await sendYouTube(client, m, parseInt(buttonId.replace('yt_', '').split('_')[1]))
+export async function processYouTubeButton(client, m) {
+  let buttonId = null
+  if (m.message?.interactiveResponseMessage) {
+    try {
+      const paramsJson = m.message.interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson
+      if (paramsJson) {
+        const params = JSON.parse(paramsJson)
+        buttonId = params?.id || null
+      }
+    } catch {}
+  }
+  if (!buttonId) return false
+  if (!buttonId.startsWith('yt_')) return false
+
+  const parts = buttonId.split('_')
+  if (parts.length < 3) return false
+  const kind = parts[1] 
+  const idx = Number(parts[2]) 
+
+  await sendYouTube(client, m, idx, kind)
+  return true
 }
 
-async function sendYouTube(client, m, index) {
+async function sendYouTube(client, m, index, kind) {
   const key = getKey(m.chat, m.sender)
   const state = ytState.get(key)
   if (!state) {
@@ -44,13 +63,7 @@ async function sendYouTube(client, m, index) {
     return await m.reply(`❌ Número inválido. Elige entre 1 y ${state.videoInfoByIndex.length}.`)
   }
 
-  
-  const buttonId = m.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson
-  let option = 1
-  if (buttonId) {
-    const params = JSON.parse(buttonId)
-    option = params.id.includes('mp4') ? 2 : 1
-  }
+  const option = kind === 'mp3' ? 1 : 2
 
   await m.reply(`🎥 *DESCARGANDO VÍDEO* 🎥\n\n📱 *${info.title}*\n📁 Formato: ${option === 1 ? 'Audio MP3' : 'Video 360p'}\n📄 URL: ${info.url}\n\n⏳ Enviando archivo...\n\n🎵 Bot de YouTube`)
   
