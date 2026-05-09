@@ -105,8 +105,21 @@ function collectUrls(value, out = []) {
 
 function extractAlyaDownloadUrl(json = {}, kind = 'audio') {
   const preferredPaths = kind === 'video'
-    ? ['data.dl', 'data.url', 'download.url', 'result.dl', 'result.url', 'url']
-    : ['data.dl', 'data.url', 'download.url', 'result.dl', 'result.url']
+    ? [
+        'data.dl',
+        'data.url',
+        'download.url',
+        'result.dl',
+        'result.url',
+        'url',
+      ]
+    : [
+        'data.dl',
+        'data.url',
+        'download.url',
+        'result.dl',
+        'result.url',
+      ]
 
   const preferred = pickFirstUrl(json, preferredPaths)
   if (preferred) return preferred
@@ -121,119 +134,66 @@ function extractAlyaDownloadUrl(json = {}, kind = 'audio') {
   return filtered[0] || null
 }
 
-
-function detectMimetype(url, fallback = 'audio/mpeg') {
-  const s = String(url).toLowerCase()
-  if (s.includes('.m4a') || s.includes('m4a') || s.includes('audio/x-m4a')) return 'audio/mp4'
-  if (s.includes('.aac')) return 'audio/aac'
-  if (s.includes('.ogg')) return 'audio/ogg'
-  if (s.includes('.mp4')) return 'video/mp4'
-  if (s.includes('.webm')) return 'video/webm'
-  return fallback
-}
-
-async function getNewApiDownload(youtubeUrl, type, quality = '360', timeoutMs = 25000) {
-  
-  const v2Url = `${NEW_API_BASE}/api/v1/descargas/youtubev2?apikey=${encodeURIComponent(NEW_API_KEY)}&url=${encodeURIComponent(youtubeUrl)}&type=${type}&quality=${quality}`
-  const v2Json = await fetchJsonWithRetry(v2Url, timeoutMs, 2, 1500)
-  if (v2Json?.status === true && v2Json?.data?.download?.url) {
-    const dlUrl = v2Json.data.download.url
+async function getNewApiDownload(youtubeUrl, type, timeoutMs = 20000) {
+  const url = `${NEW_API_BASE}/api/v1/descargas/youtube?apikey=${encodeURIComponent(NEW_API_KEY)}&url=${encodeURIComponent(youtubeUrl)}&type=${type}`
+  const json = await fetchJsonWithRetry(url, timeoutMs, 2, 1500)
+  if (json?.status === true && json?.data?.download?.url) {
     return {
-      downloadUrl: dlUrl,
-      isGoogleVideo: /googlevideo\.com/i.test(dlUrl),
-      mimetype: v2Json.data.download.type || detectMimetype(dlUrl, type === 'audio' ? 'audio/mp4' : 'video/mp4'),
-      title: v2Json.data.title || v2Json.data.uploader || 'Download',
-      thumbnail: v2Json.data.thumbnail || null,
+      downloadUrl: json.data.download.url,
+      isGoogleVideo: /googlevideo\.com/i.test(json.data.download.url),
+      title: json.data.title || json.data.uploader || 'Download',
+      thumbnail: json.data.thumbnail || null,
     }
   }
-
-  
-  const v1Url = `${NEW_API_BASE}/api/v1/descargas/youtube?apikey=${encodeURIComponent(NEW_API_KEY)}&url=${encodeURIComponent(youtubeUrl)}&type=${type}`
-  const v1Json = await fetchJsonWithRetry(v1Url, timeoutMs, 2, 1500)
-  if (v1Json?.status === true && v1Json?.data?.download?.url) {
-    const dlUrl = v1Json.data.download.url
-    return {
-      downloadUrl: dlUrl,
-      isGoogleVideo: /googlevideo\.com/i.test(dlUrl),
-      mimetype: v1Json.data.download.type || detectMimetype(dlUrl, type === 'audio' ? 'audio/mpeg' : 'video/mp4'),
-      title: v1Json.data.title || v1Json.data.uploader || 'Download',
-      thumbnail: v1Json.data.thumbnail || null,
-    }
-  }
-
   return null
 }
 
 function getAudioApis(youtubeUrl) {
   return [
     async () => {
-      const result = await getNewApiDownload(youtubeUrl, 'audio', '360')
-      if (result) return result
-      throw new Error('NewAPI audio falló')
-    },
-    async () => {
       const alyaUrl = `https://api.alyacore.xyz/dl/ytmp3v2?url=${encodeURIComponent(youtubeUrl)}&key=${encodeURIComponent(ALYA_KEY)}`
       const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
       const alyaDl = alyaJson?.status !== false ? (alyaJson?.data?.dl || extractAlyaDownloadUrl(alyaJson, 'audio')) : null
-      if (alyaDl) return {
-        downloadUrl: alyaDl,
-        isGoogleVideo: false,
-        mimetype: detectMimetype(alyaDl, 'audio/mpeg'),
-        title: alyaJson?.data?.title || 'Audio',
-        thumbnail: alyaJson?.data?.thumbnail || null
-      }
-      throw new Error('AlyaCore v2 falló')
+      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: false, title: alyaJson?.data?.title || 'Audio', thumbnail: alyaJson?.data?.thumbnail || null }
+      throw new Error('AlyaCore v2 Falló')
     },
     async () => {
       const alyaUrl = `https://api.alyacore.xyz/dl/ytmp3?url=${encodeURIComponent(youtubeUrl)}&key=${encodeURIComponent(ALYA_KEY)}`
       const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
       const alyaDl = alyaJson?.status !== false ? (alyaJson?.data?.dl || extractAlyaDownloadUrl(alyaJson, 'audio')) : null
-      if (alyaDl) return {
-        downloadUrl: alyaDl,
-        isGoogleVideo: false,
-        mimetype: detectMimetype(alyaDl, 'audio/mpeg'),
-        title: alyaJson?.data?.title || 'Audio',
-        thumbnail: alyaJson?.data?.thumbnail || null
-      }
-      throw new Error('AlyaCore v1 falló')
+      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: false, title: alyaJson?.data?.title || 'Audio', thumbnail: alyaJson?.data?.thumbnail || null }
+      throw new Error('AlyaCore v1 Falló')
     },
-  ]
+    async () => {
+      const newApiResult = await getNewApiDownload(youtubeUrl, 'audio')
+      if (newApiResult) return newApiResult
+      throw new Error('NewAPI Falló')
+    }
+  ];
 }
 
 function getVideoApis(youtubeUrl, quality = '360') {
   return [
     async () => {
-      const result = await getNewApiDownload(youtubeUrl, 'video', quality)
-      if (result) return result
-      throw new Error('NewAPI video falló')
-    },
-    async () => {
       const alyaUrl = `https://api.alyacore.xyz/dl/ytmp4v2?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}&key=${encodeURIComponent(ALYA_KEY)}`
       const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
       const alyaDl = alyaJson?.status !== false ? (alyaJson?.data?.dl || extractAlyaDownloadUrl(alyaJson, 'video')) : null
-      if (alyaDl) return {
-        downloadUrl: alyaDl,
-        isGoogleVideo: /googlevideo\.com/i.test(alyaDl),
-        mimetype: detectMimetype(alyaDl, 'video/mp4'),
-        title: alyaJson?.data?.title || 'Video',
-        thumbnail: alyaJson?.data?.thumbnail || null
-      }
-      throw new Error('AlyaCore v2 falló')
+      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: /googlevideo\.com/i.test(alyaDl), title: alyaJson?.data?.title || 'Video', thumbnail: alyaJson?.data?.thumbnail || null }
+      throw new Error('AlyaCore v2 Falló')
     },
     async () => {
       const alyaUrl = `https://api.alyacore.xyz/dl/ytmp4?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}&key=${encodeURIComponent(ALYA_KEY)}`
       const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
       const alyaDl = alyaJson?.status !== false ? (alyaJson?.data?.dl || extractAlyaDownloadUrl(alyaJson, 'video')) : null
-      if (alyaDl) return {
-        downloadUrl: alyaDl,
-        isGoogleVideo: /googlevideo\.com/i.test(alyaDl),
-        mimetype: detectMimetype(alyaDl, 'video/mp4'),
-        title: alyaJson?.data?.title || 'Video',
-        thumbnail: alyaJson?.data?.thumbnail || null
-      }
-      throw new Error('AlyaCore v1 falló')
+      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: /googlevideo\.com/i.test(alyaDl), title: alyaJson?.data?.title || 'Video', thumbnail: alyaJson?.data?.thumbnail || null }
+      throw new Error('AlyaCore v1 Falló')
     },
-  ]
+    async () => {
+      const newApiResult = await getNewApiDownload(youtubeUrl, 'video', 20000)
+      if (newApiResult) return newApiResult
+      throw new Error('NewAPI Falló')
+    }
+  ];
 }
 
 async function downloadFile(url, filename, isGoogleVideo = false) {
@@ -285,7 +245,7 @@ async function downloadFile(url, filename, isGoogleVideo = false) {
     const stats = fs.statSync(tempPath)
     if (stats.size < 1024) {
       fs.unlinkSync(tempPath)
-      throw new Error(`Archivo muy pequeño (${stats.size} bytes)`)
+      throw new Error(`Archivo muy pequeno (${stats.size} bytes)`)
     }
     return tempPath
   } catch (e) {
@@ -337,8 +297,8 @@ function getMikuMenuText(title, author, duration, views) {
     `│💙 *MIKU YOUTUBE PLAY*\n` +
     `│\n` +
     `│🎵 *Título:* ${String(title).substring(0, 45)}\n` +
-    (author   ? `│ 👤 *Canal:* ${author}\n`           : '') +
-    (duration ? `│ ⏱️ *Duración:* ${duration}\n`       : '') +
+    (author   ? `│ 👤 *Canal:* ${author}\n`                   : '') +
+    (duration ? `│ ⏱️ *Duración:* ${duration}\n`                 : '') +
     (views    ? `│ 👁️ *Vistas:* ${formatViews(views)}\n` : '') +
     `│\n` +
     `│ 『 *OPCIONES DE DESCARGA* 』\n` +
@@ -368,10 +328,11 @@ export async function processDownload(conn, m, videoInfo, option) {
   }
   activeYouTubeDownloads.set(lockKey, { startedAt: Date.now(), sender: m.sender })
   await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
-
   const isAudio    = option === 1 || option === 4
   const asDocument = option === 3 || option === 4
   const fileName   = String(videoInfo.title || 'descarga').replace(/[^\w\s]/gi, '').trim().substring(0, 50) || 'descarga'
+  const ext        = isAudio ? 'mp3' : 'mp4'
+  const mimetype   = isAudio ? 'audio/mpeg' : 'video/mp4'
   let tempFilePath = null
   let success = false
   let lastError = null
@@ -382,13 +343,6 @@ export async function processDownload(conn, m, videoInfo, option) {
     try {
       const data = await api()
       if (!data || !data.downloadUrl) continue
-
-      // Determina extensión y mimetype real desde la respuesta de la API
-      const resolvedMimetype = data.mimetype || (isAudio ? 'audio/mpeg' : 'video/mp4')
-      const ext = resolvedMimetype.includes('m4a') || resolvedMimetype.includes('mp4') && isAudio
-        ? 'm4a'
-        : isAudio ? 'mp3' : 'mp4'
-      const sendMimetype = isAudio ? resolvedMimetype : 'video/mp4'
 
       let thumbnailBuffer = null
       if (isAudio) {
@@ -419,7 +373,7 @@ export async function processDownload(conn, m, videoInfo, option) {
           if (asDocument) {
             await conn.sendMessage(m.chat, {
               document: fileBuffer,
-              mimetype: sendMimetype,
+              mimetype,
               fileName: `${fileName}.${ext}`,
               caption: `📄 ${videoInfo.title}`,
               contextInfo: { externalAdReply: adReply }
@@ -428,12 +382,13 @@ export async function processDownload(conn, m, videoInfo, option) {
             const audioBuffer = thumbnailBuffer
               ? embedCoverArt(fileBuffer, thumbnailBuffer, videoInfo.title)
               : fileBuffer
+            
             adReply.body = '🎵 Hatsune Miku Audio'
             await conn.sendMessage(m.chat, {
               audio: audioBuffer,
-              mimetype: sendMimetype,
+              mimetype: 'audio/mpeg',
               ptt: false,
-              fileName: `${fileName}.${ext}`,
+              fileName: `${fileName}.mp3`,
               contextInfo: { externalAdReply: adReply }
             }, { quoted: m })
           } else {
@@ -448,7 +403,10 @@ export async function processDownload(conn, m, videoInfo, option) {
           success = true
           break
         } catch (e) {
-          if (tempFilePath) { deleteFile(tempFilePath); tempFilePath = null }
+          if (tempFilePath) {
+            deleteFile(tempFilePath)
+            tempFilePath = null
+          }
           retries--
           if (retries === 0) throw e
           if (e.message?.includes('rate-overlimit') || e.message?.includes('timed out') || e.message?.includes('timeout') || e.message?.includes('socket hang up')) {
@@ -460,7 +418,9 @@ export async function processDownload(conn, m, videoInfo, option) {
         }
       }
 
-      if (success) break
+      if (success) {
+        break
+      }
     } catch (e) {
       lastError = e
       continue
@@ -468,7 +428,10 @@ export async function processDownload(conn, m, videoInfo, option) {
   }
 
   try {
-    if (!success) throw lastError || new Error('Todas las APIs fallaron.')
+    if (!success) {
+      throw lastError || new Error('Todas las APIs están caídas o devuelven archivos corruptos.')
+    }
+
     await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
     const chat = global.db?.data?.chats?.[m.chat]
     const user = chat?.users?.[m.sender]
@@ -484,14 +447,17 @@ export async function processDownload(conn, m, videoInfo, option) {
     throw error
   } finally {
     activeYouTubeDownloads.delete(lockKey)
-    if (tempFilePath) deleteFile(tempFilePath)
   }
 }
 
 export async function processYouTubeButton(conn, m) {
   let buttonId = m.body || m.text || null
-  if (m.message?.buttonsResponseMessage) buttonId = m.message.buttonsResponseMessage.selectedButtonId
-  if (m.message?.templateButtonReplyMessage) buttonId = m.message.templateButtonReplyMessage.selectedId
+  if (m.message?.buttonsResponseMessage) {
+    buttonId = m.message.buttonsResponseMessage.selectedButtonId
+  }
+  if (m.message?.templateButtonReplyMessage) {
+    buttonId = m.message.templateButtonReplyMessage.selectedId
+  }
   if (m.message?.interactiveResponseMessage) {
     try {
       const paramsJson = m.message.interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson
@@ -499,14 +465,14 @@ export async function processYouTubeButton(conn, m) {
         const params = JSON.parse(paramsJson)
         buttonId = params.id
       }
-    } catch {}
+    } catch (e) {}
   }
   if (!buttonId) return false
   let option = null
   if      (buttonId === '1' || (buttonId.includes('youtube_audio_') && !buttonId.includes('_doc'))) option = 1
-  else if (buttonId === '2' || buttonId.includes('youtube_video_360_'))                             option = 2
-  else if (buttonId === '3' || buttonId.includes('youtube_video_doc_'))                             option = 3
-  else if (buttonId === '4' || buttonId.includes('youtube_audio_doc_'))                             option = 4
+  else if (buttonId === '2' || buttonId.includes('youtube_video_360_'))                        option = 2
+  else if (buttonId === '3' || buttonId.includes('youtube_video_doc_'))                        option = 3
+  else if (buttonId === '4' || buttonId.includes('youtube_audio_doc_'))                        option = 4
   if (!option) return false
   const chat = global.db?.data?.chats?.[m.chat]
   const user = chat?.users?.[m.sender]
@@ -543,7 +509,17 @@ export default {
       if (!args.length) {
         return conn.reply(
           m.chat,
-          `${DIVIDER_START}\n│ 💙 *YOUTUBE PLAY*\n│\n│ 🎵 *Uso correcto:*\n│ \`${usedPrefix}${command} <canción o URL>\`\n│\n│ 🌱 *Ejemplo:*\n│ \`${usedPrefix}${command} miku world is mine\`\n│\n│ 💎 _Costo: 🌱 500 Cebollines_\n${DIVIDER_END}`,
+          `${DIVIDER_START}\n` +
+          `│ 💙 *YOUTUBE PLAY*\n` +
+          `│\n` +
+          `│ 🎵 *Uso correcto:*\n` +
+          `│ \`${usedPrefix}${command} <canción o URL>\`\n` +
+          `│\n` +
+          `│ 🌱 *Ejemplo:*\n` +
+          `│ \`${usedPrefix}${command} miku world is mine\`\n` +
+          `│\n` +
+          `│ 💎 _Costo: 🌱 500 Cebollines_\n` +
+          `${DIVIDER_END}`,
           m
         )
       }
@@ -590,7 +566,7 @@ export default {
           headerType: 4,
           viewOnce: true,
         }, { quoted: m })
-      } catch {
+      } catch (e) {
         await conn.reply(m.chat, infoText, m)
       }
     } catch (error) {
