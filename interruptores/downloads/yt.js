@@ -81,30 +81,14 @@ export default {
       },
     }
 
-  
+
     if (thumb) {
-      const payload = {
-        viewOnceMessage: {
-          message: {
-            interactiveMessage,
-          },
-        },
-      }
-
-
       await client.relayMessage(
         m.chat,
         {
           viewOnceMessage: {
             message: {
-              interactiveMessage: {
-                ...interactiveMessage,
-              },
-              imageMessage: {
-                url: '',
-                caption: bodyText,
-                jpegThumbnail: thumb,
-              },
+              interactiveMessage,
             },
           },
         },
@@ -124,6 +108,7 @@ export default {
       },
       { messageId: m.key.id }
     )
+
   },
 }
 
