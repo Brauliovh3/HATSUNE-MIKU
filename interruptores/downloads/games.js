@@ -2,7 +2,7 @@ import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
 
 const games = [
   { name: 'Minecraft v1.21', size: '433 MB', file: 'Minecraft.apk' },
-  { name: 'Plants vs Zombies 2', size: '1.01 GB', file: 'plants_vs_zombies_2.apk' },
+  { name: 'Plants vs Zombies 2', size: '1.01 GB', file: 'PVZ2.apk' },
   { name: 'BVH3 Wallpaper', size: '8 MB', file: 'WALLPAPER.apk' },
   { name: 'GTA San Andreas v2.11', size: '2.4 GB', file: 'GTA_SanAndreas.apk' },
   { name: 'Terraria v1.4.4', size: '200 MB', file: 'Terraria.apk' },
@@ -52,7 +52,7 @@ let handler = async (client, m, args, usedPrefix, command) => {
     viewOnceMessage: {
       message: {
         interactiveMessage: {
-          body: { text: `🎮 *JUEGOS - DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Selecciona un juego o usa *${usedPrefix}games <número>*` },
+          body: { text: `🎮 *DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Selecciona un juego o usa *${usedPrefix}games <número>*` },
           footer: { text: '🎮 Bot de Juegos' },
           header: {
             title: '🎮 JUEGOS',
