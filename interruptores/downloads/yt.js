@@ -68,7 +68,12 @@ export default {
             footer: { text: '🎵 Hatsune Miku' },
             header: {
               title: '🎥 YOUTUBE SEARCH',
-              hasMediaAttachment: false
+              hasMediaAttachment: !!thumbnailBuffer,
+              ...(thumbnailBuffer && {
+                imageMessage: {
+                  jpegThumbnail: thumbnailBuffer
+                }
+              })
             },
             nativeFlowMessage: {
               buttons: [{
@@ -119,7 +124,10 @@ export async function processYouTubeButton(client, m) {
 
   const key = getKey(m.chat, m.sender)
   const state = ytState.get(key)
-  if (!state) return false
+  if (!state) {
+    console.log('No state found for key:', key)
+    return false
+  }
 
   if (Date.now() - state.timestamp > 10 * 60 * 1000) {
     ytState.delete(key)
@@ -128,15 +136,20 @@ export async function processYouTubeButton(client, m) {
   }
 
   const info = state.videoInfoByIndex?.[idx]
-  if (!info) return false
+  if (!info) {
+    console.log('No info found for index:', idx, 'total videos:', state.videoInfoByIndex.length)
+    return false
+  }
 
+  console.log('Processing download:', { kind, idx, info: info.title })
 
   const option = kind === 'mp3' ? 1 : 2
 
   try {
     await processDownload(client, m, info, option)
     return true
-  } catch {
+  } catch (error) {
+    console.log('Download error:', error)
     return false
   }
 }
