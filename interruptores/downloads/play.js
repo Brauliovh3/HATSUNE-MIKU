@@ -151,9 +151,11 @@ async function getNewApiDownload(youtubeUrl, type, quality = null, timeoutMs = 2
 function getAudioApis(youtubeUrl) {
   return [
     async () => {
-      const newApiResult = await getNewApiDownload(youtubeUrl, 'audio')
-      if (newApiResult) return newApiResult
-      throw new Error('NewAPI Falló')
+      const alyaUrl = `https://api.alyacore.xyz/dl/ytmp3?url=${encodeURIComponent(youtubeUrl)}&key=${encodeURIComponent(ALYA_KEY)}`
+      const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
+      const alyaDl = alyaJson?.status === true ? alyaJson?.data?.dl : null
+      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: false, title: alyaJson?.data?.fileName?.replace('.mp3', '') || 'Audio', thumbnail: alyaJson?.data?.thumbnail || null }
+      throw new Error('AlyaCore v1 Falló')
     },
     async () => {
       const alyaUrl = `https://api.alyacore.xyz/dl/ytmp3v2?url=${encodeURIComponent(youtubeUrl)}&key=${encodeURIComponent(ALYA_KEY)}`
@@ -163,11 +165,9 @@ function getAudioApis(youtubeUrl) {
       throw new Error('AlyaCore v2 Falló')
     },
     async () => {
-      const alyaUrl = `https://api.alyacore.xyz/dl/ytmp3?url=${encodeURIComponent(youtubeUrl)}&key=${encodeURIComponent(ALYA_KEY)}`
-      const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
-      const alyaDl = alyaJson?.status !== false ? (alyaJson?.data?.dl || extractAlyaDownloadUrl(alyaJson, 'audio')) : null
-      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: false, title: alyaJson?.data?.title || 'Audio', thumbnail: alyaJson?.data?.thumbnail || null }
-      throw new Error('AlyaCore v1 Falló')
+      const newApiResult = await getNewApiDownload(youtubeUrl, 'audio')
+      if (newApiResult) return newApiResult
+      throw new Error('NewAPI Falló')
     }
   ];
 }
@@ -175,9 +175,11 @@ function getAudioApis(youtubeUrl) {
 function getVideoApis(youtubeUrl, quality = '360') {
   return [
     async () => {
-      const newApiResult = await getNewApiDownload(youtubeUrl, 'video', quality)
-      if (newApiResult) return newApiResult
-      throw new Error('NewAPI Falló')
+      const alyaUrl = `https://api.alyacore.xyz/dl/ytmp4?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}&key=${encodeURIComponent(ALYA_KEY)}`
+      const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
+      const alyaDl = alyaJson?.status === true ? alyaJson?.data?.dl : null
+      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: /googlevideo\.com/i.test(alyaDl), title: alyaJson?.data?.fileName?.replace('.mp4', '') || 'Video', thumbnail: alyaJson?.data?.thumbnail || null }
+      throw new Error('AlyaCore v1 Falló')
     },
     async () => {
       const alyaUrl = `https://api.alyacore.xyz/dl/ytmp4v2?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}&key=${encodeURIComponent(ALYA_KEY)}`
@@ -187,11 +189,9 @@ function getVideoApis(youtubeUrl, quality = '360') {
       throw new Error('AlyaCore v2 Falló')
     },
     async () => {
-      const alyaUrl = `https://api.alyacore.xyz/dl/ytmp4?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}&key=${encodeURIComponent(ALYA_KEY)}`
-      const alyaJson = await fetchJsonWithRetry(alyaUrl, ALYA_TIMEOUT_MS, ALYA_RETRIES, ALYA_RETRY_DELAY_MS)
-      const alyaDl = alyaJson?.status !== false ? (alyaJson?.data?.dl || extractAlyaDownloadUrl(alyaJson, 'video')) : null
-      if (alyaDl) return { downloadUrl: alyaDl, isGoogleVideo: /googlevideo\.com/i.test(alyaDl), title: alyaJson?.data?.title || 'Video', thumbnail: alyaJson?.data?.thumbnail || null }
-      throw new Error('AlyaCore v1 Falló')
+      const newApiResult = await getNewApiDownload(youtubeUrl, 'video', quality)
+      if (newApiResult) return newApiResult
+      throw new Error('NewAPI Falló')
     }
   ];
 }
