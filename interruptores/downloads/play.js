@@ -358,23 +358,23 @@ export async function processDownload(conn, m, videoInfo, option) {
           }
 
           if (asDocument) {
+            
             await conn.sendMessage(m.chat, {
               document: fileBuffer,
               mimetype,
               fileName: `${fileName}.${ext}`,
-              caption: `📄 ${videoInfo.title}`,
-              contextInfo: { externalAdReply: adReply }
+              caption: `📄 ${videoInfo.title}`
             }, { quoted: m })
           } else if (isAudio) {
-            adReply.body = '🎵 Hatsune Miku Audio'
+            
             await conn.sendMessage(m.chat, {
               audio: fileBuffer,
               mimetype: 'audio/mpeg',
               ptt: false,
-              fileName: `${fileName}.mp3`,
-              contextInfo: { externalAdReply: adReply }
+              fileName: `${fileName}.mp3`
             }, { quoted: m })
           } else {
+
             await conn.sendMessage(m.chat, {
               video: fileBuffer,
               mimetype: 'video/mp4',
