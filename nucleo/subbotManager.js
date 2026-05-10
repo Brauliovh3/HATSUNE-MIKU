@@ -61,14 +61,23 @@ const shouldProcessRaw = (sock, raw) => {
   chat.adminonly ??= false
   chat.antilinks ??= true
 
-  const primaryBotId = chat.primaryBot
+  
   const currentBotId = sock.user?.id
   const normalizeJid = (jid = '') => String(jid).split(':')[0].replace(/\D/g, '')
+  const currentBotClean = normalizeJid(currentBotId)
+
+
+  const sessionId = currentBotClean
+  const isSubBotSession = subBotManager?.subbots?.has(sessionId) && 
+                          subBotManager?.subbots?.get(sessionId)?.isInit
+  
+  if (isSubBotSession) return true
+
+  const primaryBotId = chat.primaryBot
 
   if (!primaryBotId) return true
 
   const primaryBotClean = normalizeJid(primaryBotId)
-  const currentBotClean = normalizeJid(currentBotId)
 
   const isPrimaryInConns = global.conns?.some(c => {
     const connId = c.user?.id || c.userId

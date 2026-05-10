@@ -53,8 +53,28 @@ const isOwnerBot = (client) => {
   }) || false
 }
 
-const isPrimaryHandler = (client, chat) => {
+const isSubBotOwner = (client, sender) => {
+ 
+  const botJid = getBotJid(client)
+  const sessionId = botJid.split('@')[0]
+  
+ 
+  if (!subBotManager.subbots?.has(sessionId)) return false
+  
+ 
+  const subbotSettings = global.db.data?.subbots?.[botJid] || {}
+  const owner = subbotSettings.owner
+  
+  if (!owner) return false
+  return normalizeJidDigits(owner) === normalizeJidDigits(sender)
+}
+
+const isPrimaryHandler = (client, chat, sender) => {
   const assignedBot = getAssignedPrimaryBot(chat)
+  
+  
+  if (isSubBotOwner(client, sender)) return true
+  
   if (isOwnerBot(client)) return true
   if (!assignedBot) return true
 
@@ -108,7 +128,7 @@ export default async (client, m) => {
 
   if (buttonId && (buttonId.startsWith('menu_') || buttonId.startsWith('shop_') || buttonId.startsWith('buy_'))) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
-    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn, m.sender) || chatDataBtn?.isBanned)) return
 
     if (buttonId.startsWith('menu_')) {
       const { processMenuButton } = await import('./interruptores/main/menu.js')
@@ -133,7 +153,7 @@ export default async (client, m) => {
 
 
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
-    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn, m.sender) || chatDataBtn?.isBanned)) return
 
     const { processDownload } = await import('./interruptores/downloads/play.js')
     let option = null
@@ -165,7 +185,7 @@ export default async (client, m) => {
 
   if (buttonId && (buttonId.startsWith('waifu_claim_') || buttonId.startsWith('waifu_sell_'))) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
-    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn, m.sender) || chatDataBtn?.isBanned)) return
 
     let userId
     try {
@@ -262,7 +282,7 @@ export default async (client, m) => {
 
   if (buttonId && (buttonId.startsWith('gallery_prev_') || buttonId.startsWith('gallery_next_'))) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
-    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn, m.sender) || chatDataBtn?.isBanned)) return
 
     const sessionId = buttonId.split('_').slice(2).join('_')
     const session   = gallerySessions.get(sessionId)
@@ -314,7 +334,7 @@ export default async (client, m) => {
 
   if (buttonId && buttonId.startsWith('hgame_')) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
-    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn, m.sender) || chatDataBtn?.isBanned)) return
     const { processHgameButton } = await import('./interruptores/nsfw/hgames.js')
     await processHgameButton(client, m, buttonId)
     return
@@ -322,7 +342,7 @@ export default async (client, m) => {
 
   if (buttonId && buttonId.startsWith('game_')) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
-    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn, m.sender) || chatDataBtn?.isBanned)) return
     const { processGamesButton } = await import('./interruptores/downloads/games.js')
     await processGamesButton(client, m, buttonId)
     return
@@ -330,7 +350,7 @@ export default async (client, m) => {
 
   if (buttonId && buttonId.startsWith('yt_')) {
     const chatDataBtn = global.db?.data?.chats?.[m.chat]
-    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn) || chatDataBtn?.isBanned)) return
+    if (m.isGroup && (!isPrimaryHandler(client, chatDataBtn, m.sender) || chatDataBtn?.isBanned)) return
     const { processYouTubeButton } = await import('./interruptores/downloads/yt.js')
     const processed = await processYouTubeButton(client, m)
     if (processed) return
@@ -506,13 +526,15 @@ export default async (client, m) => {
     : (Array.isArray(settings.prefix) ? settings.prefix : typeof settings.prefix === 'string' ? [settings.prefix] : [])
       .some(p => textToMatch?.startsWith(p))
   
-  if (m.isGroup && hasPrefix && !isPrimaryHandler(client, chat) && command !== 'setprimary') {
+  
+  if (m.isGroup && hasPrefix && !isPrimaryHandler(client, chat, sender) && !isSubBot && command !== 'setprimary') {
     return
   }
 
   if (!isOwners && settings.self)   return
   if (m.chat && !m.chat.endsWith('g.us')) {
-    const allowedInPrivate = ['allmenu','help','menu','infobot','botinfo','invite','invitar','ping','speed','p','status','estado','report','reporte','sug','suggest','token','join','unir','logout','reload','self','setbanner','setbotbanner','setchannel','setbotchannel','setbotcurrency','setcurrency','seticon','setboticon','setlink','setbotlink','setbotname','setname','setbotowner','setowner','setimage','setpfp','setprefix','setbotprefix','setstatus','setusername','code','qr']
+    const allowedInPrivate = ['allmenu','help','menu','infobot','botinfo','invite','invitar','ping','speed','p','status','estado','report','reporte','sug','suggest','token','join','unir','logout','reload','self','setbanner','setbotbanner','setchannel','setbotchannel','setbotcurrency','setcurrency','seticon','setboticon','setlink','setbotlink','setbotname','setname','setbotowner','setowner','setimage','setpfp','setprefix','setbotprefix','setstatus','setusername','code','qr',
+      'fb','facebook','yt','youtube','play','tiktok','tt','ig','instagram','twitter','x','pinterest','pinterestvid','mediafire','mf','gdrive','gd','apk','modapk','imagen','img','anime-dl','toimg','toimage','sticker','s','wm','take','attp','ttp']
     if (!global.owner.map(n => n + '@s.whatsapp.net').includes(sender) && !allowedInPrivate.includes(command)) return
   }
   if (chat?.isBanned && !/^(bot|banchat|unbanchat|enable|disable|options)$/i.test(command)) return
