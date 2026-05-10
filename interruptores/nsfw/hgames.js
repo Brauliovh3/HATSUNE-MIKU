@@ -27,7 +27,9 @@ const games = [
   { name: 'My Best Deal', size: '519 MB', file: 'MY.BEST.DEAL.apk' },
   { name: 'Nemurimouto', size: '240 MB', file: 'NEMURIMOUTO.apk' },
   { name: 'Bosque Minielfas', size: '430 MB', file: 'Bosque_minielfas.apk' },
-  { name: 'Kizuna player', size: '37 MB', file: 'KIZUNA-PLAYER-v2.1.0-JuegosH.com.apk' }
+  { name: 'Kizuna player', size: '37 MB', file: 'KIZUNA-PLAYER-v2.1.0-JuegosH.com.apk' },
+  { name: 'Lust In Suburbs', size: '632 MB', file: 'lust_in-suburbs.apk' },
+  { name: 'Indecent Wife Hana', size: '188 MB', file: 'Indecent-Wife-Hana.apk' }
 ]
 
 const COVER_URL = 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg'
