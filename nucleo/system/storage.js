@@ -40,14 +40,14 @@ export function detectPterodactylServer() {
 
 export const HOST_LIMITS = detectPterodactylServer()
 export const STORAGE_LIMITS = {
-  maxDownloadBytes: Number(process.env.MIKU_MAX_DOWNLOAD_MB || 80) * MB,
-  maxTmpDirBytes: Number(process.env.MIKU_TMP_QUOTA_MB || 250) * MB,
+  maxDownloadBytes: Number(process.env.MIKU_MAX_DOWNLOAD_MB || 3072) * MB,
+  maxTmpDirBytes: Number(process.env.MIKU_TMP_QUOTA_MB || 6144) * MB,
   minFreeBytes: Math.max(
-    Number(process.env.MIKU_MIN_FREE_MB || 512) * MB,
-    HOST_LIMITS.diskBytes ? Math.min(HOST_LIMITS.diskBytes * 0.05, 1024 * MB) : 0
+    Number(process.env.MIKU_MIN_FREE_MB || 2048) * MB,
+    HOST_LIMITS.diskBytes ? Math.min(HOST_LIMITS.diskBytes * 0.15, 3072 * MB) : 0
   ),
-  tmpMaxAgeMs: Number(process.env.MIKU_TMP_MAX_AGE_MIN || 30) * 60 * 1000,
-  sessionFileMaxAgeMs: Number(process.env.MIKU_SESSION_FILE_MAX_HOURS || 6) * 60 * 60 * 1000,
+  tmpMaxAgeMs: Number(process.env.MIKU_TMP_MAX_AGE_MIN || 5) * 60 * 1000,
+  sessionFileMaxAgeMs: Number(process.env.MIKU_SESSION_FILE_MAX_HOURS || 2) * 60 * 60 * 1000,
 }
 
 export const PROJECT_TMP_DIR = path.join(root, 'tmp')
