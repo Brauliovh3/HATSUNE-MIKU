@@ -61,9 +61,28 @@ export default {
       connectedBots.forEach((bot, i) => {
         const botJid  = bot.sessionId + '@s.whatsapp.net';
         const botName = global.db?.data?.settings?.[botJid]?.namebot || `Subbot ${i + 1}`;
+        
+        
+        let uptimeText = 'Desconocido';
+        if (bot.sock.uptime) {
+          const uptimeMs = Date.now() - bot.sock.uptime;
+          const days = Math.floor(uptimeMs / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((uptimeMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((uptimeMs % (1000 * 60 * 60)) / (1000 * 60));
+          
+          if (days > 0) {
+            uptimeText = `${days}d ${hours}h ${minutes}m`;
+          } else if (hours > 0) {
+            uptimeText = `${hours}h ${minutes}m`;
+          } else {
+            uptimeText = `${minutes}m`;
+          }
+        }
+        
         msg += `🎵 *${i + 1}. ${botName}*\n`;
         msg += `🌿 *Número:* wa.me/${bot.sessionId}\n`;
-        msg += `💙 *Estado:* ✅ En línea\n\n`;
+        msg += `💙 *Estado:* ✅ En línea\n`;
+        msg += `⏱️ *Uptime:* ${uptimeText}\n\n`;
       });
     }
 
