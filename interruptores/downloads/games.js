@@ -1,6 +1,6 @@
 import { generateWAMessageFromContent, prepareWAMessageMedia, getDevice } from '@whiskeysockets/baileys'
 
-const COVER_URL = 'https://file.garden/ae-9DPf0ekWVe7ex/juegosmiku.png'
+const COVER_URL = 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg'
 
 const games = [
   { name: 'Minecraft', size: '433 MB', file: 'Minecraft.apk' },
@@ -58,6 +58,10 @@ async function enviarListaJuegos(conn, chat, m, usedPrefix) {
       const interactiveMessage = {
         body:   { text: descripcion },
         footer: { text: '🎮 Seccion de Juegos' },
+        header: {
+          title: '🎮 JUEGOS',
+          hasMediaAttachment: true
+        },
         nativeFlowMessage: {
           buttons: [{
             name: 'single_select',
