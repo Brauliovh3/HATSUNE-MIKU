@@ -38,7 +38,7 @@ async function enviarListaJuegos(conn, chat, m, usedPrefix) {
   const device   = getDevice(m.key.id)
   const isMobile = device !== 'desktop' && device !== 'web'
 
-  const descripcion = `🎮 *DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💡 Selecciona un juego o usa *${usedPrefix}games <número>*`
+  const descripcion = `🎮 *DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💡 Selecciona un juego o usa *${usedPrefix}juegos <número>*`
 
   if (isMobile) {
     try {
