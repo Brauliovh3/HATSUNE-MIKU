@@ -190,7 +190,7 @@ async function startBot() {
       creds: state.creds,
       keys:  makeCacheableSignalKeyStore(state.keys, logger),
     },
-    markOnlineOnConnect:        false,
+    markOnlineOnConnect:        true,
     generateHighQualityLinkPreview: false,
     syncFullHistory:            false,
     getMessage:                 async () => "",
