@@ -27,7 +27,7 @@ async function webp2mp4(source) {
   const $2 = cheerio.load(html2);
   const videoUrl = new URL($2('div#output > p.outfile > video > source').attr('src'), res2.url).toString();  
   let videoRes = await fetch(videoUrl);
-  let videoBuffer = await videoRes.buffer();
+  let videoBuffer = Buffer.from(await videoRes.arrayBuffer());
   return videoBuffer;
 }
 
@@ -52,7 +52,7 @@ async function webp2png(source) {
   const $2 = cheerio.load(html2);
   const imgUrl = new URL($2('div#output > p.outfile > img').attr('src'), res2.url).toString();  
   let imgRes = await fetch(imgUrl);
-  let imgBuffer = await imgRes.buffer();
+  let imgBuffer = Buffer.from(await imgRes.arrayBuffer());
   return imgBuffer;
 }
 
