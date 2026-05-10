@@ -68,10 +68,6 @@ async function enviarListaJuegos(conn, chat, m, usedPrefix) {
       const interactiveMessage = {
         body:   { text: descripcion },
         footer: { text: '💙 Hatsune Miku Bot' },
-        header: {
-          title: '🎮 JUEGOS H',
-          hasMediaAttachment: true
-        },
         nativeFlowMessage: {
           buttons: [{
             name: 'single_select',

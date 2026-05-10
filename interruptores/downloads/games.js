@@ -58,10 +58,6 @@ async function enviarListaJuegos(conn, chat, m, usedPrefix) {
       const interactiveMessage = {
         body:   { text: descripcion },
         footer: { text: '🎮 Seccion de Juegos' },
-        header: {
-          title: '🎮 JUEGOS',
-          hasMediaAttachment: true
-        },
         nativeFlowMessage: {
           buttons: [{
             name: 'single_select',
