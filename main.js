@@ -11,6 +11,7 @@ import subBotManager from './nucleo/subbotManager.js'
 
 
 const COMMAND_TIMEOUT = 60000
+const DOWNLOAD_TIMEOUT = 300000 
 const commandTimeouts = new Map()
 
 
@@ -587,10 +588,15 @@ export default async (client, m) => {
     markDatabaseDirty()
 
     const cmdPromise = cmdData.run(client, m, args, usedPrefix, command, text)
+
+    // Usar timeout extendido para descargas de archivos grandes
+    const isDownloadCommand = cmdData.category === 'downloader' || ['mediafire','mf','fb','facebook','yt','youtube','play','tiktok','tt','ig','instagram','twitter','x','pinterest','pinterestvid','gdrive','gd','anime-dl','apk','modapk'].includes(command)
+    const timeoutDuration = isDownloadCommand ? DOWNLOAD_TIMEOUT : COMMAND_TIMEOUT
+
     const timeoutPromise = new Promise((_, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error(`TIMEOUT_LIMIT`))
-      }, COMMAND_TIMEOUT)
+      }, timeoutDuration)
       commandTimeouts.set(m.sender + command, timeout)
     })
 
@@ -607,7 +613,11 @@ export default async (client, m) => {
     }
     
     if (errMsg.includes('TIMEOUT_LIMIT')) {
-        return await client.sendMessage(m.chat, { text: '⏳ *El comando tardó demasiado:* El servidor está procesando muchas peticiones, intenta de nuevo en unos segundos.' }, { quoted: m })
+        const isDownloadCmd = cmdData?.category === 'downloader'
+        const msg = isDownloadCmd
+          ? '⏳ *Descarga en proceso...*\n\nEl archivo se está enviando y puede tardar varios minutos.\n💙 *No reenvíes el comando*, espera a que llegue el archivo.'
+          : '⏳ *El comando tardó demasiado:* El servidor está procesando muchas peticiones, intenta de nuevo en unos segundos.'
+        return await client.sendMessage(m.chat, { text: msg }, { quoted: m })
     }
 
     if (

@@ -106,9 +106,10 @@ export default {
       const ext   = path.extname(title) || (scraped.type ? `.${scraped.type}` : '')
       const tipo  = lookup((ext || '').toLowerCase()) || 'application/octet-stream'
 
-      const caption = `${DIVIDER_START}\n│ 💙 *MEDIAFIRE DOWNLOAD*\n│\n│ ${MIKU.file} *Nombre:* ${title}\n│ ${MIKU.type} *Tipo:* ${tipo}${scraped.size ? `\n│ ${MIKU.size} *Peso:* ${scraped.size}` : ''}${scraped.uploaded ? `\n│ ${MIKU.clock} *Subido:* ${scraped.uploaded}` : ''}\n│\n│ ⏳ *Enviando archivo...*\n${DIVIDER_END}`
+      const caption = `${DIVIDER_START}\n│ 💙 *MEDIAFIRE DOWNLOAD*\n│\n│ ${MIKU.file} *Nombre:* ${title}\n│ ${MIKU.type} *Tipo:* ${tipo}${scraped.size ? `\n│ ${MIKU.size} *Peso:* ${scraped.size}` : ''}${scraped.uploaded ? `\n│ ${MIKU.clock} *Subido:* ${scraped.uploaded}` : ''}\n│\n│ ⏳ *Enviando archivo...*\n│ ⏱️ *Esto puede tardar varios minutos*\n${DIVIDER_END}`
 
-     
+      
+
       try {
         await client.sendMessage(
           m.chat,
@@ -135,6 +136,17 @@ export default {
 
     } catch (e) {
       await m.react(MIKU.cross)
+
+     
+      if (e.message?.includes('TIMEOUT') || e.message?.includes('timed out')) {
+        return client.reply(
+          m.chat,
+          `${DIVIDER_START}\n│ ⏳ *DESCARGA EN PROCESO*\n│\n│ 🎵 El archivo está siendo enviado\n│ 🌱 Puede tardar varios minutos\n│\n│ 💙 *No reenvíes el comando*\n│ ✨ Espera a que llegue el archivo\n${DIVIDER_END}`,
+          m,
+          global.miku,
+        )
+      }
+
       return client.reply(
         m.chat,
         `${DIVIDER_START}\n│ 💔 *ERROR*\n│\n│ 🎵 Ocurrió un error al ejecutar *${usedPrefix + command}*\n│\n│ 🌱 *Detalle:* ${e.message}\n│\n│ ✨ Inténtalo de nuevo o contacta soporte.\n${DIVIDER_END}`,
