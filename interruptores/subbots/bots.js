@@ -66,17 +66,10 @@ export default {
         let uptimeText = 'Desconocido';
         if (bot.sock.uptime) {
           const uptimeMs = Date.now() - bot.sock.uptime;
-          const days = Math.floor(uptimeMs / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((uptimeMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const totalHours = Math.floor(uptimeMs / (1000 * 60 * 60));
           const minutes = Math.floor((uptimeMs % (1000 * 60 * 60)) / (1000 * 60));
           
-          if (days > 0) {
-            uptimeText = `${days}d ${hours}h ${minutes}m`;
-          } else if (hours > 0) {
-            uptimeText = `${hours}h ${minutes}m`;
-          } else {
-            uptimeText = `${minutes}m`;
-          }
+          uptimeText = `${totalHours}h ${minutes}m`;
         }
         
         msg += `🎵 *${i + 1}. ${botName}*\n`;
