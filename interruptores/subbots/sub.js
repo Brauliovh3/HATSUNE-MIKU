@@ -375,33 +375,53 @@ export default {
             await new Promise(r => setTimeout(r, 2000));
             if (done) return;
 
-            await client.sendMessage(m.chat, {
-              text: MSG.codeInstructions(usedPrefix),
-              ...global.miku
-            }, { quoted: m });
-
             const { state } = await useMultiFileAuthState(sessionFolder);
+            
+           
             if (!state.creds.registered && !done) {
               try {
+                await client.sendMessage(m.chat, {
+                  text: MSG.codeInstructions(usedPrefix),
+                  ...global.miku
+                }, { quoted: m });
+
                 const codePromise = sock.requestPairingCode(phoneNumber);
                 const timeoutPromise = new Promise((_, reject) =>
                   setTimeout(() => reject(new Error('Timeout generando código')), 30000)
                 );
 
                 const code = await Promise.race([codePromise, timeoutPromise]);
-                const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
+                
                 if (done) return;
+                
+               
+                const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
+                
+                console.log(chalk.cyan(`💙 Código generado para ${sessionId}: ${formattedCode}`));
 
                 await client.sendMessage(m.chat, {
                   text: MSG.pairingCode(formattedCode),
                   ...global.miku
                 }, { quoted: m });
+
               } catch (err) {
                 if (done) return;
-                fallbackToQR = true;
+                
+                console.log(chalk.yellow(`💙 Error generando código para ${sessionId}: ${err.message}`));
+                
+
                 await client.sendMessage(m.chat, {
-                  text: `⚠️ No se pudo generar el código de emparejamiento para WhatsApp normal.
-Usa el comando *${usedPrefix}qr* o vuelve a intentarlo con QR.`,
+                  text: `❌ *ERROR GENERANDO CÓDIGO*\n\n` +
+                        `No se pudo generar el código de vinculación.\n` +
+                        `Posibles causas:\n` +
+                        `• El número no tiene WhatsApp activo\n` +
+                        `• Ya tienes demasiados dispositivos vinculados\n` +
+                        `• Problemas temporales de WhatsApp\n\n` +
+                        `Soluciones:\n` +
+                        `• Usa *${usedPrefix}qr* para escanear código QR\n` +
+                        `• Espera unos minutos y vuelve a intentar\n` +
+                        `• Verifica que tu número tenga WhatsApp activo\n\n` +
+                        `> 💙 *Miku Bot*`,
                   ...global.miku
                 }, { quoted: m }).catch(() => {});
               }
