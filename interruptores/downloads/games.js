@@ -34,7 +34,16 @@ async function sendGame(client, m, index) {
   }
 }
 
+global.gameSessions = global.gameSessions || {}
+
 async function enviarListaJuegos(conn, chat, m, usedPrefix) {
+  const now = Date.now()
+  for (const k of Object.keys(global.gameSessions))
+    if (global.gameSessions[k].expiry < now) delete global.gameSessions[k]
+
+  const sessionKey = `${chat}|${m.sender}`
+  global.gameSessions[sessionKey] = { owner: m.sender, chat, expiry: Date.now() + 300_000 }
+
   const device   = getDevice(m.key.id)
   const isMobile = device !== 'desktop' && device !== 'web'
 
@@ -98,6 +107,39 @@ let handler = async (client, m, args, usedPrefix, command) => {
   }
 
   await enviarListaJuegos(client, m.chat, m, usedPrefix)
+}
+
+handler.before = async (m, { conn }) => {
+  const nativeFlow = m.message?.interactiveResponseMessage?.nativeFlowResponseMessage
+  if (nativeFlow) {
+    try {
+      const selectedId = JSON.parse(nativeFlow.paramsJson || '{}')?.id || null
+      if (!selectedId || !selectedId.startsWith('game_')) return true
+
+      const sessionKey = `${m.chat}|${m.sender}`
+      const session    = global.gameSessions?.[sessionKey]
+      if (!session || session.owner !== m.sender || Date.now() > session.expiry) return true
+
+      delete global.gameSessions[sessionKey]
+      await sendGame(conn, m, parseInt(selectedId.replace('game_', '')) - 1)
+    } catch (err) { console.error('[games before nativeFlow]', err.message) }
+    return false
+  }
+
+  const rawInput = m.message?.listResponseMessage?.singleSelectReply?.selectedRowId
+    || (m.text && /^\d+$/.test(m.text.trim()) ? m.text.trim() : null)
+
+  if (!rawInput) return false
+
+  const sessionKey = `${m.chat}|${m.sender}`
+  const session    = global.gameSessions?.[sessionKey]
+  if (!session || session.owner !== m.sender || Date.now() > session.expiry) return false
+
+  delete global.gameSessions[sessionKey]
+
+  const index = parseInt(rawInput) - 1
+  await sendGame(conn, m, index)
+  return true
 }
 
 export default {
