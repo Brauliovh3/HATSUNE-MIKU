@@ -41,13 +41,15 @@ const cleanFolder = (folder) => {
 
 
 const MSG = {
-  codeInstructions: (usedPrefix) =>
+  codeInstructions: (usedPrefix, phoneNumber) =>
     `🎤 *VINCULACIÓN POR CÓDIGO*\n\n` +
+    `📱 *Número:* ${phoneNumber || 'detectado automáticamente'}\n\n` +
     `*①* Abre WhatsApp → ⠿ → *Dispositivos vinculados*\n` +
     `*②* Toca *Vincular un dispositivo*\n` +
     `*③* Elige *Vincular con número de teléfono*\n` +
     `*④* Ingresa el código que recibirás 👇\n\n` +
     `⏳ _Generando tu código..._\n\n` +
+    `💡 _Si el número es incorrecto, usa: *${usedPrefix}code <número>*_\n\n` +
     `> 💙 *Miku Bot* · *${usedPrefix}deletebot* para eliminar`,
 
   qrInstructions: (usedPrefix) =>
@@ -116,10 +118,21 @@ const MSG = {
     `Intenta de nuevo con *${usedPrefix}sub*\n\n` +
     `> 💙 *Miku Bot*`,
 
-  errorConnection: (reason, usedPrefix) =>
+  errorConnection: (reason, usedPrefix, phoneNumber) =>
     `❌ *ERROR DE CONEXIÓN*\n\n` +
     `Código: *${reason}*\n\n` +
-    `Intenta de nuevo con *${usedPrefix}sub*\n\n` +
+    (reason === 408
+      ? `⚠️ *Timeout de conexión*\n\n` +
+        `Causas posibles:\n` +
+        `• El número ${phoneNumber || 'detectado'} no tiene WhatsApp activo\n` +
+        `• El número está incorrecto (detectado: ${phoneNumber || 'N/A'})\n` +
+        `• Problemas de red temporales\n\n` +
+        `Soluciones:\n` +
+        `• Usa número manual: *${usedPrefix}code <tu_número>*\n` +
+        `• Ejemplo: *${usedPrefix}code 5211234567890*\n` +
+        `• Intenta con QR: *${usedPrefix}qr*\n\n`
+      : `Intenta de nuevo con *${usedPrefix}sub*\n\n`)
+    +
     `> 💙 *Miku Bot*`,
 
   errorInternal: (errMsg) =>
@@ -156,9 +169,11 @@ export default {
     if (subsCount >= 50) return m.reply(MSG.full());
 
     
+    
+    const manualNumber  = args[0] ? DIGITS(args[0]) : '';
     const rawPhone      = m.sender.split('@')[0].replace(/\D/g, '');
-    const phoneNumber   = normalizePhoneForPairing(rawPhone);
-    const sessionId     = rawPhone;
+    const phoneNumber   = normalizePhoneForPairing(manualNumber || rawPhone);
+    const sessionId     = manualNumber || rawPhone;
     const sessionFolder = `./Sessions/subbots/${sessionId}`;
 
     
@@ -287,7 +302,7 @@ export default {
               silentClose(currentSock);
               await m.react('❌');
               await client.sendMessage(m.chat, {
-                text: MSG.errorConnection(reason, usedPrefix),
+                text: MSG.errorConnection(reason, usedPrefix, phoneNumber),
                 ...global.miku
               }).catch(() => {});
               return;
@@ -300,7 +315,7 @@ export default {
                 finish(false);
                 silentClose(currentSock);
                 await client.sendMessage(m.chat, {
-                  text: MSG.errorConnection(`max reintentos (${MAX_RECONNECT})`, usedPrefix),
+                  text: MSG.errorConnection(`max reintentos (${MAX_RECONNECT})`, usedPrefix, phoneNumber),
                   ...global.miku
                 }).catch(() => {});
                 return;
@@ -335,7 +350,7 @@ export default {
               finish(false);
               silentClose(currentSock);
               await client.sendMessage(m.chat, {
-                text: MSG.errorConnection(`max reintentos (${MAX_RECONNECT})`, usedPrefix),
+                text: MSG.errorConnection(`max reintentos (${MAX_RECONNECT})`, usedPrefix, phoneNumber),
                 ...global.miku
               }).catch(() => {});
               return;
@@ -381,7 +396,7 @@ export default {
             if (!state.creds.registered && !done) {
               try {
                 await client.sendMessage(m.chat, {
-                  text: MSG.codeInstructions(usedPrefix),
+                  text: MSG.codeInstructions(usedPrefix, phoneNumber),
                   ...global.miku
                 }, { quoted: m });
 
