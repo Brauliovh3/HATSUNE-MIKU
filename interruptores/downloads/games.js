@@ -1,22 +1,15 @@
-import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
+import { generateWAMessageFromContent, prepareWAMessageMedia, getDevice } from '@whiskeysockets/baileys'
+
+const COVER_URL = 'https://file.garden/ae-9DPf0ekWVe7ex/juegosmiku.png'
 
 const games = [
-  { name: 'Minecraft v1.21', size: '433 MB', file: 'Minecraft.apk' },
-  { name: 'Plants vs Zombies 2', size: '1.01 GB', file: 'PVZ2.apk' },
+  { name: 'Minecraft', size: '433 MB', file: 'Minecraft.apk' },
+  { name: 'Plants vs Zombies 2', size: '1.0 GB', file: 'PVZ2.apk' },
   { name: 'BVH3 Wallpaper', size: '8 MB', file: 'WALLPAPER.apk' },
-  { name: 'GTA San Andreas v2.11', size: '2.4 GB', file: 'GTA_SanAndreas.apk' },
-  { name: 'Terraria v1.4.4', size: '200 MB', file: 'Terraria.apk' },
-  { name: 'Stardew Valley v1.5', size: '250 MB', file: 'StardewValley.apk' },
-  { name: 'Among Us v2023', size: '180 MB', file: 'AmongUs.apk' },
-  { name: 'Geometry Dash v2.2', size: '120 MB', file: 'GeometryDash.apk' },
-  { name: 'Clash of Clans v15', size: '300 MB', file: 'ClashOfClans.apk' },
-  { name: 'Brawl Stars v52', size: '350 MB', file: 'BrawlStars.apk' },
-  { name: 'Stumble Guys v0.55', size: '400 MB', file: 'StumbleGuys.apk' },
-  { name: 'Roblox v2.6', size: '180 MB', file: 'Roblox.apk' },
-  { name: 'Angry Birds Reloaded', size: '150 MB', file: 'AngryBirds.apk' },
-  { name: 'Subway Surfers v3.21', size: '130 MB', file: 'SubwaySurfers.apk' },
-  { name: "Alto's Odyssey", size: '200 MB', file: 'AltosOdyssey.apk' },
-  { name: 'Monument Valley 2', size: '220 MB', file: 'MonumentValley2.apk' },
+  { name: 'Terraria', size: '170 MB', file: 'terraria.apk' },
+  { name: 'Among Us', size: '777 MB', file: 'among-us.apk' },
+  { name: 'Geometry Dash v2', size: '171 MB', file: 'Geometry-Dash-v2.apk' },
+  { name: 'Zombie Tsunami', size: '90 MB', file: 'zombie.tsunami.apk' },
 ]
 
 export async function processGamesButton(client, m, buttonId) {
@@ -41,46 +34,70 @@ async function sendGame(client, m, index) {
   }
 }
 
-let handler = async (client, m, args, usedPrefix, command) => {
+async function enviarListaJuegos(conn, chat, m, usedPrefix) {
+  const device   = getDevice(m.key.id)
+  const isMobile = device !== 'desktop' && device !== 'web'
 
+  const descripcion = `🎮 *DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n💡 Selecciona un juego o usa *${usedPrefix}games <número>*`
+
+  if (isMobile) {
+    try {
+      const media  = await prepareWAMessageMedia(
+        { image: { url: COVER_URL } },
+        { upload: conn.waUploadToServer }
+      )
+      const interactiveMessage = {
+        body:   { text: descripcion },
+        footer: { text: '🎮 Seccion de Juegos' },
+        nativeFlowMessage: {
+          buttons: [{
+            name: 'single_select',
+            buttonParamsJson: JSON.stringify({
+              title: '🎮 Elegir juego',
+              sections: [{
+                title: '🎮 Juegos disponibles',
+                highlight_label: '',
+                rows: games.map((game, index) => ({
+                  header:      `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
+                  title:       `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
+                  description: `📁 ${game.size}`,
+                  id:          `game_${index + 1}`
+                }))
+              }]
+            })
+          }],
+          messageParamsJson: ''
+        }
+      }
+
+      const msg = generateWAMessageFromContent(
+        chat,
+        { viewOnceMessage: { message: { interactiveMessage } } },
+        { userJid: conn.user.jid, quoted: m }
+      )
+      await conn.relayMessage(chat, msg.message, { messageId: msg.key.id })
+      return
+    } catch (err) {
+      console.error('[games interactiveMessage]', err.message)
+    }
+  }
+
+  let txt = `${descripcion}\n\n`
+  games.forEach((g, i) => {
+    txt += `${(i + 1).toString().padStart(2, '0')}. *${g.name}* — 📁 ${g.size}\n`
+  })
+  txt += `\n_Responde con el número del juego._`
+
+  await conn.sendMessage(chat, { image: { url: COVER_URL }, caption: txt }, { quoted: m })
+}
+
+let handler = async (client, m, args, usedPrefix, command) => {
   if (args[0] && !isNaN(args[0])) {
     await sendGame(client, m, parseInt(args[0]) - 1)
     return
   }
 
-  const msg = generateWAMessageFromContent(m.chat, {
-    viewOnceMessage: {
-      message: {
-        interactiveMessage: {
-          body: { text: `🎮 *DESCARGAS* 🎮\n━━━━━━━━━━━━━━━━━━\n📦 Total: *${games.length} juegos*\n━━━━━━━━━━━━━━━━━━\n\n💡 Selecciona un juego o usa *${usedPrefix}games <número>*` },
-          footer: { text: '🎮 Seccion de Juegos' },
-          header: {
-            title: '🎮 JUEGOS',
-            hasMediaAttachment: false
-          },
-          nativeFlowMessage: {
-            buttons: [{
-              name: 'single_select',
-              buttonParamsJson: JSON.stringify({
-                title: '🎮 Elegir juego',
-                sections: [{
-                  title: '🎮 Juegos disponibles',
-                  rows: games.map((game, index) => ({
-                    header: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
-                    title: `${(index + 1).toString().padStart(2, '0')}. ${game.name}`,
-                    description: `📁 ${game.size}`,
-                    id: `game_${index + 1}`
-                  }))
-                }]
-              })
-            }]
-          }
-        }
-      }
-    }
-  }, { quoted: m })
-
-  await client.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
+  await enviarListaJuegos(client, m.chat, m, usedPrefix)
 }
 
 export default {

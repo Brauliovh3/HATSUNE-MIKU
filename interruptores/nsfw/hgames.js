@@ -29,7 +29,8 @@ const games = [
   { name: 'Bosque Minielfas', size: '430 MB', file: 'Bosque_minielfas.apk' },
   { name: 'Kizuna player', size: '37 MB', file: 'KIZUNA-PLAYER-v2.1.0-JuegosH.com.apk' },
   { name: 'Lust In Suburbs', size: '632 MB', file: 'lust_in-suburbs.apk' },
-  { name: 'Indecent Wife Hana', size: '188 MB', file: 'Indecent-Wife-Hana.apk' }
+  { name: 'Indecent Wife Hana', size: '188 MB', file: 'Indecent-Wife-Hana.apk' },
+  { name: 'Max The Elf', size: '508 MB', file: 'Max-the-elf.apk' }
 ]
 
 const COVER_URL = 'https://cdn.somoskudasai.com/image/b41e537b8184463d78b6b98b3e382938/1920x1080/portada_hatsune-miku-38.jpg'
