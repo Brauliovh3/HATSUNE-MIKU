@@ -106,18 +106,28 @@ export default {
       const ext   = path.extname(title) || (scraped.type ? `.${scraped.type}` : '')
       const tipo  = lookup((ext || '').toLowerCase()) || 'application/octet-stream'
 
-      const info = `${DIVIDER_START}\n│ 💙 *MEDIAFIRE DOWNLOAD*\n│\n│ ${MIKU.file} *Nombre:* ${title}\n│ ${MIKU.type} *Tipo:* ${tipo}${scraped.size ? `\n│ ${MIKU.size} *Peso:* ${scraped.size}` : ''}${scraped.uploaded ? `\n│ ${MIKU.clock} *Subido:* ${scraped.uploaded}` : ''}\n│\n${DIVIDER_END}`
+      const caption = `${DIVIDER_START}\n│ 💙 *MEDIAFIRE DOWNLOAD*\n│\n│ ${MIKU.file} *Nombre:* ${title}\n│ ${MIKU.type} *Tipo:* ${tipo}${scraped.size ? `\n│ ${MIKU.size} *Peso:* ${scraped.size}` : ''}${scraped.uploaded ? `\n│ ${MIKU.clock} *Subido:* ${scraped.uploaded}` : ''}\n│\n│ ⏳ *Enviando archivo...*\n${DIVIDER_END}`
 
-      await client.sendContextInfoIndex(m.chat, info, {}, m, true, null, {
-        banner: MIKU.banner,
-        title:  '💙 MediaFire Downloader',
-        body:   '✨ Descarga de MediaFire',
-        redes:  global.db.data.settings[client.user.id.split(':')[0] + '@s.whatsapp.net'].link
-      })
+     
+      try {
+        await client.sendMessage(
+          m.chat,
+          {
+            image: { url: MIKU.banner },
+            caption: caption
+          },
+          { quoted: m }
+        )
+      } catch {
+      }
 
       await client.sendMessage(
         m.chat,
-        { document: { url: scraped.downloadLink }, mimetype: tipo, fileName: title },
+        {
+          document: { url: scraped.downloadLink },
+          mimetype: tipo,
+          fileName: title
+        },
         { quoted: m }
       )
 
