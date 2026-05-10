@@ -30,17 +30,6 @@ global.miku = {
       newsletterJid: "120363315369913363@newsletter", 
       serverMessageId: "0", 
       newsletterName: "💙 HATSUNE MIKU CHANNEL💙"
-    },
-    externalAdReply: {
-      title: "💙HATSUNE MIKU💙",
-      body: global.dev || "© 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ)",
-      mediaUrl: null,
-      description: null,
-      previewType: "PHOTO",
-      thumbnailUrl: global.banner || 'https://i.pinimg.com/736x/30/42/b8/3042b89ced13fefda4e75e3bc6dc2a57.jpg',
-      sourceUrl: global.links?.channel || 'https://www.whatsapp.com/channel/0029VajYamSIHphMAl3ABi1o',
-      mediaType: 1,
-      renderLargerThumbnail: false
     }
   }
 }
