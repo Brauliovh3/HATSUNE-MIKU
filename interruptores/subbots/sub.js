@@ -271,9 +271,18 @@ export default {
           if (connection === 'open') {
             const cleanId  = currentSock.user?.id?.split(':')[0]?.split('@')[0] || sessionId;
             const userName = currentSock.user?.name || 'Usuario';
+            const botJid   = cleanId + '@s.whatsapp.net';
 
             finish(true);
             global.db.data.users[m.sender].Subs = Date.now();
+
+            
+            global.db.data.subbots ||= {};
+            global.db.data.subbots[botJid] ||= {};
+            if (!global.db.data.subbots[botJid].owner) {
+              global.db.data.subbots[botJid].owner = m.sender;
+              console.log(chalk.cyan(`💙 Subbot ${sessionId} - Owner asignado: ${m.sender.split('@')[0]}`));
+            }
 
             setTimeout(async () => {
               try { await subBotManager.startSubBot(sessionId); }

@@ -528,7 +528,7 @@ export default async (client, m) => {
       .some(p => textToMatch?.startsWith(p))
   
   
-  if (m.isGroup && hasPrefix && !isPrimaryHandler(client, chat, sender) && !isSubBot && command !== 'setprimary') {
+  if (m.isGroup && hasPrefix && !isPrimaryHandler(client, chat, sender) && command !== 'setprimary') {
     return
   }
 

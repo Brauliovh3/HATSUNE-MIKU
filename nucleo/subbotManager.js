@@ -300,6 +300,11 @@ class SubBotManager {
             if (!global.db.data.settings[botDir])         global.db.data.settings[botDir] = {}
             global.db.data.settings[botDir].type = 'Sub'
 
+           
+            global.db.data.subbots ||= {}
+            global.db.data.subbots[botDir] ||= {}
+            
+
             upsertConn(sock, sessionId)
             reintentos.delete(sessionId)
             this.startingSubbots.delete(sessionId)
