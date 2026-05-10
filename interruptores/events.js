@@ -133,17 +133,6 @@ export default async (client, m) => {
             serverMessageId: '0',
             newsletterName: botSettings.nameid || '💙 HATSUNE MIKU CHANNEL💙'
           },
-          externalAdReply: {
-            title: botSettings.namebot || 'HATSUNE MIKU',
-            body: global.dev || '© 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ)',
-            mediaUrl: null,
-            description: null,
-            previewType: 'PHOTO',
-            thumbnailUrl: botSettings.icon || 'https://i.pinimg.com/736x/30/42/b8/3042b89ced13fefda4e75e3bc6dc2a57.jpg',
-            sourceUrl: botSettings.link || 'https://www.whatsapp.com/channel/0029VajYamSIHphMAl3ABi1o',
-            mediaType: 1,
-            renderLargerThumbnail: false
-          },
           mentionedJid: [validJid]
         };
         
@@ -207,17 +196,6 @@ export default async (client, m) => {
                     serverMessageId: '0',
                     newsletterName: botSettings.nameid || '💙 HATSUNE MIKU CHANNEL💙'
                   },
-                  externalAdReply: {
-                    title: botSettings.namebot || 'HATSUNE MIKU',
-                    body: global.dev || '© 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ)',
-                    mediaUrl: null,
-                    description: null,
-                    previewType: 'PHOTO',
-                    thumbnailUrl: botSettings.icon || 'https://i.pinimg.com/736x/30/42/b8/3042b89ced13fefda4e75e3bc6dc2a57.jpg',
-                    sourceUrl: botSettings.link || 'https://www.whatsapp.com/channel/0029VajYamSIHphMAl3ABi1o',
-                    mediaType: 1,
-                    renderLargerThumbnail: false
-                  },
                   mentionedJid: [validJid, kicker, ...groupAdmins.map(v => v.id)]
                 };
                 await safeSend(client, anu.id, { image: { url: kickImage }, caption: kickCaption, contextInfo: kickContextInfo })
@@ -273,17 +251,6 @@ export default async (client, m) => {
       newsletterJid: botSettings.id || '120363315369913363@newsletter',
       serverMessageId: '0',
       newsletterName: botSettings.nameid || '💙 HATSUNE MIKU CHANNEL💙'
-    },
-    externalAdReply: {
-      title: botSettings.namebot || 'HATSUNE MIKU',
-      body: global.dev || '© 🄿🄾🅆🄴🅁🄴🄳 (ㅎㅊDEPOOLㅊㅎ)',
-      mediaUrl: null,
-      description: null,
-      previewType: 'PHOTO',
-      thumbnailUrl: botSettings.icon || 'https://i.pinimg.com/736x/30/42/b8/3042b89ced13fefda4e75e3bc6dc2a57.jpg',
-      sourceUrl: botSettings.link || 'https://www.whatsapp.com/channel/0029VajYamSIHphMAl3ABi1o',
-      mediaType: 1,
-      renderLargerThumbnail: false
     },
     mentionedJid: [actor, ...groupAdmins.map(v => v.id)]
   }
