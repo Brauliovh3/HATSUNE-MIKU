@@ -307,14 +307,10 @@ export default {
             console.log(chalk.yellow(`💙 Socket pairing ${sessionId} cerrado. Razón: ${reason}`));
 
             
-            const hasValidCreds = fs.existsSync(path.join(sessionFolder, 'creds.json'));
-            const isPairingPhase = !hasValidCreds || (currentSock?.user?.id ? false : true);
-
-            if (PERMANENT_ERRORS.has(reason) || (isPairingPhase && TEMPORARY_ERRORS.has(reason))) {
+            if (PERMANENT_ERRORS.has(reason)) {
               finish(false);
               cleanFolder(sessionFolder);
               pendingSessions.delete(sessionId);
-              console.log(chalk.red(`💙 Sesión ${sessionId} limpiada por error ${reason} en fase de pairing`));
               silentClose(currentSock);
               await m.react('❌');
               await client.sendMessage(m.chat, {
@@ -324,47 +320,31 @@ export default {
               return;
             }
 
-            
             if (TEMPORARY_ERRORS.has(reason)) {
               reconnectCount++;
-
-              
-              const hasValidCredsTemp = fs.existsSync(path.join(sessionFolder, 'creds.json'));
-              const maxRetriesForPairing = hasValidCredsTemp ? MAX_RECONNECT : 3;
-
-              if (reconnectCount > maxRetriesForPairing) {
+              if (reconnectCount > MAX_RECONNECT) {
                 finish(false);
                 cleanFolder(sessionFolder);
                 pendingSessions.delete(sessionId);
-                console.log(chalk.red(`💙 Sesión ${sessionId} limpiada por max reintentos (${reconnectCount}) sin autenticación`));
                 silentClose(currentSock);
+                await m.react('❌');
                 await client.sendMessage(m.chat, {
                   text: MSG.errorConnection(`max reintentos (${reconnectCount})`, usedPrefix, phoneNumber),
                   ...global.miku
                 }).catch(() => {});
                 return;
               }
-
-              const delay = Math.min(3000 * reconnectCount, 15_000);
+              const delay = Math.min(3000 * reconnectCount, 12_000);
               silentClose(currentSock);
-
+              console.log(chalk.yellow(`💙 Reintentando pairing ${sessionId} (${reconnectCount}/${MAX_RECONNECT}) en ${delay}ms - Razón: ${reason}`));
               setTimeout(async () => {
                 if (done) return;
-                if (!fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
-                  finish(false);
-                  cleanFolder(sessionFolder);
-                  pendingSessions.delete(sessionId);
-                  console.log(chalk.red(`💙 Sesión ${sessionId} limpiada - no se autenticó después de error temporal`));
-                  return;
-                }
                 try {
                   sock = await buildSocket();
                   qrSent = false;
                   pendingSessions.set(sessionId, { sock, startTime: Date.now() });
                   attachEvents(sock);
-                  console.log(chalk.cyan(`💙 Reconexión ${sessionId} (${reconnectCount}/${MAX_RECONNECT}) - Razón: ${reason}`));
                 } catch (err) {
-                  console.error(chalk.red(`💙 Error reconectando ${sessionId}:`), err.message);
                   finish(false);
                   cleanFolder(sessionFolder);
                   pendingSessions.delete(sessionId);
@@ -373,51 +353,7 @@ export default {
               return;
             }
 
-            
-            reconnectCount++;
 
-            
-            const hasCredsGen = fs.existsSync(path.join(sessionFolder, 'creds.json'));
-            const maxRetriesGen = hasCredsGen ? MAX_RECONNECT : 1;
-
-            if (reconnectCount > maxRetriesGen) {
-              finish(false);
-              cleanFolder(sessionFolder);
-              pendingSessions.delete(sessionId);
-              console.log(chalk.red(`💙 Sesión ${sessionId} limpiada por max reintentos genéricos sin autenticación`));
-              silentClose(currentSock);
-              await client.sendMessage(m.chat, {
-                text: MSG.errorConnection(`max reintentos (${reconnectCount})`, usedPrefix, phoneNumber),
-                ...global.miku
-              }).catch(() => {});
-              return;
-            }
-
-            const delay = Math.min(5000 * reconnectCount, 20_000);
-            silentClose(currentSock);
-
-            setTimeout(async () => {
-              if (done) return;
-              if (!fs.existsSync(path.join(sessionFolder, 'creds.json'))) {
-                finish(false);
-                cleanFolder(sessionFolder);
-                pendingSessions.delete(sessionId);
-                console.log(chalk.red(`💙 Sesión ${sessionId} limpiada - sin credenciales en reintento genérico`));
-                return;
-              }
-              try {
-                sock = await buildSocket();
-                qrSent = false;
-                pendingSessions.set(sessionId, { sock, startTime: Date.now() });
-                attachEvents(sock);
-                console.log(chalk.cyan(`💙 Reconexión ${sessionId} (${reconnectCount}/${MAX_RECONNECT})`));
-              } catch (err) {
-                console.error(chalk.red(`💙 Error reconectando ${sessionId}:`), err.message);
-                finish(false);
-                cleanFolder(sessionFolder);
-                pendingSessions.delete(sessionId);
-              }
-            }, delay);
           }
         });
       };
