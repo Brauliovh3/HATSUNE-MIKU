@@ -33,8 +33,8 @@ function msToTime(duration) {
   return `${seconds} segundo${seconds > 1 ? 's' : ''}`;
 }
 
-const PERMANENT_ERRORS = new Set([401, 403, 405, 440, 500, 515]);
-const TEMPORARY_ERRORS = new Set([408, 428, 503, 502]);
+const PERMANENT_ERRORS = new Set([401, 403, 405, 440]);
+const TEMPORARY_ERRORS = new Set([408, 428, 500, 502, 503, 515]);
 const cleanFolder = (folder) => {
   try { if (fs.existsSync(folder)) fs.rmSync(folder, { recursive: true, force: true }); } catch {}
 };
@@ -330,7 +330,7 @@ export default {
 
               
               const hasValidCredsTemp = fs.existsSync(path.join(sessionFolder, 'creds.json'));
-              const maxRetriesForPairing = hasValidCredsTemp ? MAX_RECONNECT : 1;
+              const maxRetriesForPairing = hasValidCredsTemp ? MAX_RECONNECT : 3;
 
               if (reconnectCount > maxRetriesForPairing) {
                 finish(false);
