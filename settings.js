@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url'
 
 process.env.FORCE_BOT_TMPDIR = 'true'
 
-global.owner = ['51988514570']
+global.owner = ['51931619252']
 global.botNumber = ''
 
 global.sessionName = 'Sessions/Owner'
