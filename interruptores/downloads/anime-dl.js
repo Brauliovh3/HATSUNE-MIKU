@@ -2,8 +2,8 @@ import axios from 'axios'
 import fs from 'fs'
 import path from 'path'
 
-const _k = Buffer.from('REVQT09MLWtleTYwMDE1MDkx', 'base64').toString()
-const _b = Buffer.from('aHR0cHM6Ly9hcGkuYWx5YWNvcmUueHl6L2RsL2FuaW1lL2VwaXNvZGU=', 'base64').toString()
+const _k = Buffer.from('5445645664', 'base64').toString()
+const _b = Buffer.from('6456457457=', 'base64').toString()
 
 const BANNER = 'https://i.pinimg.com/736x/0c/1e/f8/0c1ef8e804983e634fbf13df1044a41f.jpg'
 
