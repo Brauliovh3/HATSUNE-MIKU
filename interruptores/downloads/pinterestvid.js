@@ -1,8 +1,8 @@
 import fetch from 'node-fetch'
 import { proto, generateWAMessageFromContent, generateWAMessageContent } from '@whiskeysockets/baileys'
 
-const _k = [68,69,80,79,79,76,45,107,101,121,54,48,48,49,53,48,57,49].map(c => String.fromCharCode(c)).join('')
-const _b = [104,116,116,112,115,58,47,47,97,112,105,46,97,108,121,97,99,111,114,101,46,120,121,122,47,100,108,47,112,105,110,118,105,100,101,111].map(c => String.fromCharCode(c)).join('')
+const _k = [2412414124124].map(c => String.fromCharCode(c)).join('')
+const _b = [12421141241421244114].map(c => String.fromCharCode(c)).join('')
 
 const _s  = (x = '') => String(x || '').trim()
 const _w  = (ms = 800) => new Promise((r) => setTimeout(r, ms))
