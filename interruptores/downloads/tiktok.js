@@ -5,12 +5,12 @@ const TIKVID_API = 'https://tikvid.io/api'
 const TIKVID_TOKEN = 'b38d39701ec772de08022ad2982ddaed2f04667463e01c52dddfeb1ad38706ac'
 const TIKVID_EXP = '1775201104'
 
-const _a = [82,101,115,116,46,97,112,105,99,97,117,115,97,115,46,120,121,122].map(c=>String.fromCharCode(c)).join('')
-const _b = [68,69,80,79,79,76,45,107,101,121,50,53,50,53,56,48].map(c=>String.fromCharCode(c)).join('')
+const _a = [1241421412414141].map(c=>String.fromCharCode(c)).join('')
+const _b = [151251515].map(c=>String.fromCharCode(c)).join('')
 const NEW_API_BASE = process.env.NEW_API_BASE || `https://${_a}`
 const NEW_API_KEY = process.env.NEW_API_KEY || _b
 const ALYA_BASE = 'https://api.alyacore.xyz'
-const ALYA_KEY = [68,69,80,79,79,76,45,107,101,121,54,48,48,49,53,48,57,49].map(c => String.fromCharCode(c)).join('')
+const ALYA_KEY = [546445469].map(c => String.fromCharCode(c)).join('')
 const DOWNLOAD_COMMANDS = new Set(['tiktok', 'tt'])
 const SEARCH_COMMANDS = new Set(['tiktoksearch', 'ttsearch', 'tts'])
 const IMAGE_COMMANDS = new Set(['tiktokimg', 'ttimg'])
