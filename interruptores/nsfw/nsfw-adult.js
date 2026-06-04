@@ -1,7 +1,7 @@
 import axios from 'axios';
 import fetch from 'node-fetch';
 
-// Caché inteligente para interceptar axios y evitar descargas repetidas de GitHub
+
 const originalAxiosGet = axios.get;
 const jsonCache = new Map();
 axios.get = async (url, config) => {
