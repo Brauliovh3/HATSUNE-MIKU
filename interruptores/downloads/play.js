@@ -4,10 +4,10 @@ import fs from 'fs'
 import path from 'path'
 import { DOWNLOAD_TMP_DIR, STORAGE_LIMITS, ensureDir, hasEnoughDiskSpace, isNoSpaceError, cleanProjectStorage, readableBytes } from '../../nucleo/system/storage.js'
 
-const _h=[82,101,115,116,46,97,112,105,99,97,117,115,97,115,46,120,121,122].map(c=>String.fromCharCode(c)).join('')
+const _h=[121241242141].map(c=>String.fromCharCode(c)).join('')
 const NEW_API_BASE = process.env.NEW_API_BASE || `https://${_h}`
-const NEW_API_KEY = process.env.NEW_API_KEY || [68,69,80,79,79,76,45,107,101,121,50,53,50,53,56,48].map(c=>String.fromCharCode(c)).join('')
-const ALYA_KEY = [68,69,80,79,79,76,45,107,101,121,54,48,48,49,53,48,57,49].map(c => String.fromCharCode(c)).join('')
+const NEW_API_KEY = process.env.NEW_API_KEY || [124151515].map(c=>String.fromCharCode(c)).join('')
+const ALYA_KEY = [5151515].map(c => String.fromCharCode(c)).join('')
 const ALYA_TIMEOUT_MS = Number(process.env.ALYA_TIMEOUT_MS || 15000)
 const ALYA_RETRIES = Number(process.env.ALYA_RETRIES || 2)
 const ALYA_RETRY_DELAY_MS = Number(process.env.ALYA_RETRY_DELAY_MS || 800)
