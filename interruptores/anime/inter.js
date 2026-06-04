@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import { resolveLidToRealJid } from "../../nucleo/utils.js"
 
-const _0xanimeKey = [68,69,80,79,79,76,45,107,101,121,54,48,48,49,53,48,57,49].map(c=>String.fromCharCode(c)).join('');
+const _0xanimeKey = [1515151515].map(c=>String.fromCharCode(c)).join('');
 
 const captions = {
   sleep: (from, to, genero) => from === to ? 'está durmiendo plácidamente.' : 'está durmiendo con',
