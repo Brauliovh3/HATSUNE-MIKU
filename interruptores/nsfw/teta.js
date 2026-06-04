@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
 
-const API_URL = 'https://api.nexylight.xyz/nsfw/boobs?key=nexy-dfc4aa'
+const API_URL = ''
 
 function isValidUrl(url) {
   return typeof url === 'string' && /^https?:\/\//i.test(url)
