@@ -187,8 +187,8 @@ El proyecto está cerrado, pero la comunidad sigue ahí.
 
 <br/>
 
-[![SOPORTE](https://img.shields.io/badge/%F0%9F%92%AC_Contacto-WhatsApp-25D366?style=for-the-badge&labelColor=000000)](https://wa.me/51988514570)
-[![COMUNIDAD](https://img.shields.io/badge/%F0%9F%91%A5_Grupo_Comunidad-%C3%9Anete-25D366?style=for-the-badge&labelColor=000000)](https://chat.whatsapp.com/FQ78boTUpJ7Ge3oEtn8pRE)
+[![SOPORTE](https://img.shields.io/badge/%F0%9F%92%AC_Contacto-WhatsApp-25D366?style=for-the-badge&labelColor=000000)](https://wa.me/51926017929)
+[![COMUNIDAD](https://img.shields.io/badge/%F0%9F%91%A5_Grupo_Comunidad-%C3%9Anete-25D366?style=for-the-badge&labelColor=000000)](https://chat.whatsapp.com/JrikzVgD7LOLKsfCPVESgk)
 
 </div>
 
